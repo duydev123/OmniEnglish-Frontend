@@ -2,7 +2,7 @@ import { GraduationCap } from "lucide-react";
 
 const Hero = () => {
   return (
-    <div className="flex justify-start w-[24vw] items-center gap-4 my-4">
+    <div className="flex justify-start items-center gap-4 my-4">
       <div className="bg-blue-700 rounded-sm p-2">
         <GraduationCap color="white" />
       </div>
