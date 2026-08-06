@@ -335,3 +335,25 @@ export async function updateCollectionProgress(payload: UpdateProgressPayload): 
     }
   }
 }
+
+export async function fetchIPA(word: string): Promise<string> {
+  if (!word || !word.trim()) return ''
+  try {
+    const cleanWord = word.trim().toLowerCase()
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`)
+    if (!res.ok) return ''
+    const data = await res.json()
+    if (Array.isArray(data) && data[0]) {
+      if (data[0].phonetic) return data[0].phonetic
+      if (data[0].phonetics && Array.isArray(data[0].phonetics)) {
+        for (const p of data[0].phonetics) {
+          if (p.text) return p.text
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Could not fetch IPA for word:', word, err)
+  }
+  return ''
+}
+

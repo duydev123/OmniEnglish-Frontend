@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import { useToast } from '../../components/common/Toast'
-import { bulkAddWords, pasteText, getCollection } from '../../services/vocabularyApi'
+import { bulkAddWords, pasteText, getCollection, fetchIPA } from '../../services/vocabularyApi'
 import type { AddWordPayload } from '../../types/vocabulary'
 
 interface BulkRow extends AddWordPayload {
@@ -34,6 +34,7 @@ export default function BulkAddPage() {
   const [aiResult, setAiResult] = useState<string[] | null>(null)
   const [aiMessage, setAiMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetchingIpa, setFetchingIpa] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -45,6 +46,35 @@ export default function BulkAddPage() {
 
   function updateRow(key: number, field: keyof Omit<BulkRow, '_key'>, value: string) {
     setRows(prev => prev.map(r => r._key === key ? { ...r, [field]: value } : r))
+  }
+
+  async function handleWordBlur(key: number, wordVal: string, currentIpa?: string) {
+    if (!wordVal.trim() || (currentIpa && currentIpa.trim())) return
+    const ipaResult = await fetchIPA(wordVal)
+    if (ipaResult) {
+      updateRow(key, 'ipa', ipaResult)
+    }
+  }
+
+  async function handleAutoFillAllIPA() {
+    setFetchingIpa(true)
+    try {
+      const updated = await Promise.all(
+        rows.map(async (row) => {
+          if (row.word.trim() && (!row.ipa || !row.ipa.trim())) {
+            const fetched = await fetchIPA(row.word)
+            return fetched ? { ...row, ipa: fetched } : row
+          }
+          return row
+        })
+      )
+      setRows(updated)
+      showToast('✨ Đã tự động tra cứu và điền phiên âm IPA!', 'success')
+    } catch {
+      showToast('Lấy IPA thất bại', 'error')
+    } finally {
+      setFetchingIpa(false)
+    }
   }
 
   function addRow() {
@@ -67,10 +97,23 @@ export default function BulkAddPage() {
         const valid = rows.filter(r => r.word.trim() && r.meaning.trim())
         if (valid.length === 0) {
           showToast('Vui lòng nhập ít nhất 1 từ có đầy đủ thông tin!', 'error')
+          setLoading(false)
           return
         }
+
+        // Auto-fill missing IPAs before save
+        const rowsWithIpa = await Promise.all(
+          valid.map(async ({ _key: _k, ...rest }) => {
+            if (!rest.ipa || !rest.ipa.trim()) {
+              const fetched = await fetchIPA(rest.word)
+              return { ...rest, ipa: fetched || '' }
+            }
+            return rest
+          })
+        )
+
         if (!id.startsWith('650000000000')) {
-          await bulkAddWords(id, valid.map(({ _key: _k, ...rest }) => rest))
+          await bulkAddWords(id, rowsWithIpa)
         }
         showToast(`✅ Đã thêm ${valid.length} từ vào bộ!`, 'success')
         setRows([makeRow(), makeRow(), makeRow()])
@@ -162,6 +205,16 @@ export default function BulkAddPage() {
                     <Plus size={14} /> Add New Row
                   </button>
                   <button
+                    onClick={handleAutoFillAllIPA}
+                    disabled={fetchingIpa}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-purple-600
+                      border border-purple-200 rounded-lg hover:bg-purple-50 transition-all disabled:opacity-50"
+                    title="Tự động tra cứu và điền IPA cho tất cả các từ"
+                  >
+                    <Sparkles size={14} className={fetchingIpa ? 'animate-spin' : ''} />
+                    {fetchingIpa ? 'Đang lấy IPA...' : 'Auto-fill IPA'}
+                  </button>
+                  <button
                     onClick={clearAll}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-500
                       border border-slate-200 rounded-lg hover:bg-slate-100 transition-all"
@@ -193,6 +246,7 @@ export default function BulkAddPage() {
                             type="text"
                             value={row.word}
                             onChange={e => updateRow(row._key, 'word', e.target.value)}
+                            onBlur={e => handleWordBlur(row._key, e.target.value, row.ipa)}
                             placeholder={i === 0 ? 'Serendipity' : 'Required word...'}
                             className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg
                               focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
@@ -256,55 +310,60 @@ export default function BulkAddPage() {
 
           {activeTab === 'paste' && (
             <div className="flex flex-col lg:flex-row gap-5">
-              <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+              <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm self-start">
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <AlignLeft size={15} className="text-blue-500" />
                     Paste Raw Text
                   </div>
                   <button
                     onClick={() => { setPasteTextValue(''); setAiResult(null); setAiMessage('') }}
-                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors"
                   >
                     <X size={12} /> Clear All
                   </button>
                 </div>
 
+                {/* Fixed-height gray box: textarea + AI pills inside, scrollable */}
                 <div className="p-4">
-                  <textarea
-                    ref={textareaRef}
-                    value={pasteTextValue}
-                    onChange={e => {
-                      if (e.target.value.length <= 5000) setPasteTextValue(e.target.value)
-                    }}
-                    placeholder={`Enter your text here...\n\nExample formats:\n– ephemeral: lasting for a very short time.\n– ubiquitous – existing or being everywhere at the same time.\n– Or just paste an article and let AI find the key terms!`}
-                    rows={12}
-                    className="w-full text-sm text-slate-700 resize-none focus:outline-none placeholder:text-slate-300
-                      leading-relaxed"
-                  />
+                  <div className="bg-slate-100 rounded-xl px-4 py-3 h-56 overflow-y-auto flex flex-col gap-3">
+                    <textarea
+                      ref={textareaRef}
+                      value={pasteTextValue}
+                      onChange={e => {
+                        if (e.target.value.length <= 5000) setPasteTextValue(e.target.value)
+                      }}
+                      placeholder={`Enter your text here...\n\nExample formats:\n- ephemeral: lasting for a very short time.\n- ubiquitous - existing or being everywhere at the same time.\n- Or just paste an article and let AI find the key terms!`}
+                      className="w-full flex-1 text-sm text-slate-600 resize-none focus:outline-none bg-transparent
+                        placeholder:text-slate-400 leading-relaxed min-h-[120px]"
+                    />
+
+                    {/* AI result pills — inside the same box, no layout shift */}
+                    {aiResult && aiResult.length > 0 && (
+                      <div className="border-t border-slate-200 pt-2">
+                        <p className="text-xs font-semibold text-emerald-600 mb-1.5">{aiMessage}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {aiResult.map(w => (
+                            <span key={w} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium
+                              bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                              ✓ {w}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {aiResult && aiResult.length > 0 && (
-                  <div className="px-4 pb-4">
-                    <p className="text-xs font-semibold text-emerald-600 mb-2">{aiMessage}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {aiResult.map(w => (
-                        <span key={w} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium
-                          bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
-                          ✓ {w}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
+                {/* Button — tight, right-aligned, no extra space */}
                 <div className="px-4 pb-4 flex justify-end">
                   <button
                     onClick={handleSave}
                     disabled={loading || !pasteTextValue.trim()}
-                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white
-                      bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-sm
-                      disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white
+                      bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-xl transition-all shadow-sm
+                      disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -315,6 +374,9 @@ export default function BulkAddPage() {
                   </button>
                 </div>
               </div>
+
+
+
 
               <div className="w-full lg:w-72 shrink-0 space-y-4">
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
