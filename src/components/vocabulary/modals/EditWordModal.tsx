@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { X, Loader2, Image as ImageIcon } from 'lucide-react'
+import { X, Loader2, Image as ImageIcon, Sparkles } from 'lucide-react'
 import type { WordDetail } from '../../../types/vocabulary'
-import { updateWord } from '../../../services/vocabularyApi'
+import { updateWord, fetchIPA } from '../../../services/vocabularyApi'
 
 interface EditWordModalProps {
   open: boolean
@@ -36,6 +36,7 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
   const [example, setExample] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFetchingIPA, setIsFetchingIPA] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -50,6 +51,17 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
   }, [word])
 
   if (!open || !word) return null
+
+  const handleAutoFetchIPA = async () => {
+    if (!wordText.trim()) return
+    setIsFetchingIPA(true)
+    try {
+      const fetched = await fetchIPA(wordText)
+      if (fetched) setIpa(fetched)
+    } finally {
+      setIsFetchingIPA(false)
+    }
+  }
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -144,9 +156,21 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold text-slate-700">
-                Phiên âm
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-bold text-slate-700">
+                  Phiên âm
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAutoFetchIPA}
+                  disabled={isFetchingIPA || !wordText.trim()}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1 disabled:opacity-40"
+                  title="Tra cứu tự động IPA từ từ điển"
+                >
+                  <Sparkles size={12} className={isFetchingIPA ? 'animate-spin' : ''} />
+                  {isFetchingIPA ? 'Đang lấy...' : 'Tự động lấy'}
+                </button>
+              </div>
               <input
                 type="text"
                 value={ipa}

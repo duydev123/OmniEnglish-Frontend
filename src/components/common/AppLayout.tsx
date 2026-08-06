@@ -8,7 +8,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ breadcrumbs, children }: AppLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Mở sidebar mặc định trên desktop (>=1024px), đóng trên mobile để tránh backdrop blur
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-['Be_Vietnam_Pro'] flex flex-col">
@@ -32,4 +33,3 @@ export function AppLayout({ breadcrumbs, children }: AppLayoutProps) {
 }
 
 export default AppLayout;
-

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Plus, Search, SlidersHorizontal, LayoutGrid, List,
-  ChevronDown, Layers
+  Plus, Search, SlidersHorizontal, LayoutGrid, List
 } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import CollectionCard from '../../components/vocabulary/collections/CollectionCard'
@@ -165,8 +164,6 @@ export default function VocabularyPage() {
     az: 'A – Z',
   }
 
-  const defaultTargetCollectionId = myCollections[0]?.id || ''
-
   return (
     <VocabLayout breadcrumbs={[
       { label: 'BASIC', href: '/vocabulary' },
@@ -180,7 +177,7 @@ export default function VocabularyPage() {
         </h1>
 
         {/* Tab switch bar + Action buttons */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 min-h-[42px]">
           <div className="flex bg-slate-200/60 p-1 rounded-2xl border border-slate-200/60 self-start">
             <button
               onClick={() => setActiveTab('default')}
@@ -205,22 +202,6 @@ export default function VocabularyPage() {
           {/* Action buttons on top right */}
           {activeTab === 'mine' && (
             <div className="flex items-center gap-2.5 flex-wrap">
-              <button
-                onClick={() => { setAddWordTargetId(undefined); setShowAddWordModal(true) }}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-700
-                  bg-slate-200/70 rounded-xl hover:bg-slate-300/70 transition-all"
-              >
-                <Plus size={14} /> Thêm từ vựng
-              </button>
-              {defaultTargetCollectionId && (
-                <button
-                  onClick={() => navigate(`/vocabulary/${defaultTargetCollectionId}/bulk-add`)}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-700
-                    bg-slate-200/70 rounded-xl hover:bg-slate-300/70 transition-all"
-                >
-                  <Layers size={14} /> Thêm hàng loạt
-                </button>
-              )}
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white
@@ -312,19 +293,21 @@ export default function VocabularyPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
+          <div className="bg-white/60 border border-slate-200/80 rounded-2xl min-h-[280px] flex flex-col items-center justify-center text-center p-8 text-slate-400 mb-8">
             <div className="text-5xl mb-3">📚</div>
             <p className="font-semibold text-slate-500">
               {activeTab === 'default' ? 'Không tìm thấy bộ từ vựng mặc định nào' : 'Chưa có bộ từ vựng cá nhân nào'}
             </p>
-            {activeTab === 'mine' && (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="mt-3 px-4 py-2 text-xs font-bold text-[#1D4ED8] border border-blue-300 rounded-xl hover:bg-blue-50 transition-all"
-              >
-                + Tạo bộ từ đầu tiên
-              </button>
-            )}
+            <div className="h-10 mt-3 flex items-center justify-center">
+              {activeTab === 'mine' && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-4 py-2 text-xs font-bold text-[#1D4ED8] border border-blue-300 rounded-xl hover:bg-blue-50 transition-all bg-white shadow-xs"
+                >
+                  + Tạo bộ từ đầu tiên
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className={`grid gap-5 mb-8 ${displayMode === 'grid'

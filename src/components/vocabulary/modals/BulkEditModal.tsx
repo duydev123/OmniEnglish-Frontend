@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom'
-import { X, Loader2, Save, Trash2, Plus } from 'lucide-react'
+import { X, Loader2, Save, Trash2, Sparkles } from 'lucide-react'
 import type { VocabularyCollection, WordDetail } from '../../../types/vocabulary'
-import { bulkUpdateWords } from '../../../services/vocabularyApi'
+import { bulkUpdateWords, fetchIPA } from '../../../services/vocabularyApi'
 
 interface BulkEditModalProps {
   open: boolean
@@ -31,6 +31,7 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
 }) => {
   const [words, setWords] = useState<WordDetail[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFetchingIPA, setIsFetchingIPA] = useState(false)
 
   useEffect(() => {
     if (collection) {
@@ -52,16 +53,46 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
     setWords(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleAutoFillIPA = async () => {
+    setIsFetchingIPA(true)
+    try {
+      const updated = await Promise.all(
+        words.map(async w => {
+          if (w.word.trim() && (!w.ipa || !w.ipa.trim())) {
+            const fetched = await fetchIPA(w.word)
+            return fetched ? { ...w, ipa: fetched } : w
+          }
+          return w
+        })
+      )
+      setWords(updated)
+    } finally {
+      setIsFetchingIPA(false)
+    }
+  }
+
   const handleSave = async () => {
     if (words.length === 0) return
 
     try {
       setIsSubmitting(true)
+
+      // Auto fill empty IPAs
+      const finalWords = await Promise.all(
+        words.map(async w => {
+          if (w.word.trim() && (!w.ipa || !w.ipa.trim())) {
+            const fetched = await fetchIPA(w.word)
+            return fetched ? { ...w, ipa: fetched } : w
+          }
+          return w
+        })
+      )
+
       // Call Backend bulkUpdateWords API if real MongoDB collection ID
       if (collection.id && !collection.id.startsWith('650000000000')) {
         await bulkUpdateWords(
           collection.id,
-          words.map(w => ({
+          finalWords.map(w => ({
             id: w.id,
             word: w.word,
             word_type: w.word_type ?? 'noun',
@@ -73,7 +104,7 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
         )
       }
 
-      onUpdated(words)
+      onUpdated(finalWords)
       onClose()
     } catch (error) {
       console.error('Failed bulk edit', error)
@@ -172,16 +203,31 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between shrink-0">
-          <span className="text-xs font-bold text-slate-400">
-            Tổng cộng: {words.length} từ vựng
-          </span>
-          <div className="flex items-center gap-3">
+        <div className="px-4 py-3 border-t border-slate-100 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0">
+          {/* Left: count + auto IPA */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
+              Tổng cộng: {words.length} từ vựng
+            </span>
+            <button
+              type="button"
+              onClick={handleAutoFillIPA}
+              disabled={isFetchingIPA}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all disabled:opacity-50 whitespace-nowrap"
+              title="Tự động tra cứu và điền IPA cho các từ chưa có"
+            >
+              <Sparkles size={12} className={isFetchingIPA ? 'animate-spin' : ''} />
+              {isFetchingIPA ? 'Đang lấy...' : 'Tự động lấy IPA'}
+            </button>
+          </div>
+
+          {/* Right: Cancel + Save */}
+          <div className="flex items-center gap-2 ml-auto">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
+              className="px-4 py-2 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
             >
               Hủy bỏ
             </button>
@@ -189,7 +235,7 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
               type="button"
               onClick={handleSave}
               disabled={isSubmitting || words.length === 0}
-              className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-bold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 min-w-[150px] shadow-md shadow-blue-500/20 gap-2"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 shadow-md shadow-blue-500/20 gap-1.5 whitespace-nowrap"
             >
               {isSubmitting ? (
                 <>
@@ -198,13 +244,14 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
                 </>
               ) : (
                 <>
-                  <Save size={16} />
+                  <Save size={15} />
                   Lưu tất cả thay đổi
                 </>
               )}
             </button>
           </div>
         </div>
+
       </div>
     </div>
   )
