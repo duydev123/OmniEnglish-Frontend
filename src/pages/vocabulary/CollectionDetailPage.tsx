@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Layers, Edit3 } from 'lucide-react'
+import { ArrowLeft, Plus, Edit3 } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import StatsBar from '../../components/vocabulary/detail/StatsBar'
 import FilterSidebar from '../../components/vocabulary/detail/FilterSidebar'

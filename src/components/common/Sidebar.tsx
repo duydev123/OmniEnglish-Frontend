@@ -130,13 +130,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div
-          onClick={onClose}
-          className="lg:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs"
-        />
-      )}
 
       {/* Sidebar Container */}
       <aside

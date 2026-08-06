@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { X, Loader2, Image as ImageIcon } from 'lucide-react'
+import { X, Loader2, Image as ImageIcon, Sparkles } from 'lucide-react'
 import type { VocabularyCollection, AddWordPayload } from '../../../types/vocabulary'
-import { addWord } from '../../../services/vocabularyApi'
+import { addWord, fetchIPA } from '../../../services/vocabularyApi'
 
 interface AddWordModalProps {
   open: boolean
@@ -41,9 +41,28 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
   const [example, setExample] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isFetchingIPA, setIsFetchingIPA] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!open) return null
+
+  const handleAutoFetchIPA = async (targetWord?: string) => {
+    const w = targetWord || word
+    if (!w.trim()) return
+    setIsFetchingIPA(true)
+    try {
+      const fetched = await fetchIPA(w)
+      if (fetched) setIpa(fetched)
+    } finally {
+      setIsFetchingIPA(false)
+    }
+  }
+
+  const handleWordBlur = () => {
+    if (word.trim() && !ipa.trim()) {
+      handleAutoFetchIPA(word)
+    }
+  }
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -60,10 +79,15 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
 
     try {
       setIsSubmitting(true)
+      let finalIpa = ipa.trim()
+      if (!finalIpa && word.trim()) {
+        finalIpa = await fetchIPA(word.trim())
+      }
+
       const payload: AddWordPayload = {
         word: word.trim(),
         word_type: wordType.trim(),
-        ipa: ipa.trim(),
+        ipa: finalIpa,
         meaning: meaning.trim(),
         example_sentence: example.trim(),
         image_url: imageUrl.trim(),
@@ -134,6 +158,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
               type="text"
               value={word}
               onChange={(e) => setWord(e.target.value)}
+              onBlur={handleWordBlur}
               required
               placeholder="Vd: Resilience"
               className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all"
@@ -160,9 +185,21 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold text-slate-700">
-                Phiên âm
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-bold text-slate-700">
+                  Phiên âm
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleAutoFetchIPA()}
+                  disabled={isFetchingIPA || !word.trim()}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1 disabled:opacity-40"
+                  title="Tra cứu tự động IPA từ từ điển"
+                >
+                  <Sparkles size={12} className={isFetchingIPA ? 'animate-spin' : ''} />
+                  {isFetchingIPA ? 'Đang lấy...' : 'Tự động lấy'}
+                </button>
+              </div>
               <input
                 type="text"
                 value={ipa}
