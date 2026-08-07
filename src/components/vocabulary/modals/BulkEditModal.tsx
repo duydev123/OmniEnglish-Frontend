@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Loader2, Save, Trash2, Sparkles } from 'lucide-react'
+import CustomSelect from '../../common/CustomSelect'
 import type { VocabularyCollection, WordDetail } from '../../../types/vocabulary'
 import { bulkUpdateWords, fetchIPA } from '../../../services/vocabularyApi'
 
@@ -156,15 +157,12 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
                     />
                   </td>
                   <td className="py-2.5 px-3">
-                    <select
+                    <CustomSelect
                       value={(w.word_type || 'noun').toLowerCase()}
-                      onChange={e => updateRow(index, 'word_type', e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-                    >
-                      {WORD_TYPES.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
+                      onChange={v => updateRow(index, 'word_type', v)}
+                      options={WORD_TYPES}
+                      placeholder="Chọn loại từ..."
+                    />
                   </td>
                   <td className="py-2.5 px-3">
                     <input

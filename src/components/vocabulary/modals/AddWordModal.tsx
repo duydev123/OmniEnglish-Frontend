@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Loader2, Image as ImageIcon, Sparkles } from 'lucide-react'
 import type { VocabularyCollection, AddWordPayload } from '../../../types/vocabulary'
 import { addWord, fetchWordDetails } from '../../../services/vocabularyApi'
 import { useToast } from '../../common/Toast'
+import CustomSelect from '../../common/CustomSelect'
 
 interface AddWordModalProps {
   open: boolean
@@ -36,6 +37,14 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
   const [selectedCollectionId, setSelectedCollectionId] = useState(
     preselectedCollectionId || (collections[0]?.id ?? '')
   )
+
+  useEffect(() => {
+    if (preselectedCollectionId) {
+      setSelectedCollectionId(preselectedCollectionId)
+    } else if (collections.length > 0 && !selectedCollectionId) {
+      setSelectedCollectionId(collections[0].id)
+    }
+  }, [preselectedCollectionId, collections, selectedCollectionId])
 
   const [word, setWord] = useState('')
   const [wordType, setWordType] = useState('noun')
@@ -78,9 +87,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
     } finally {
       setIsFetchingIPA(false)
     }
-
   }
-
 
   const handleWordBlur = () => {
     const clean = word.trim()
@@ -111,7 +118,6 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
     const targetId = preselectedCollectionId || selectedCollectionId
     if (!targetId || !word.trim() || !meaning.trim()) return
 
-    // Validate word: must contain at least 2 letters
     const letters = word.trim().match(/[a-zA-Z]/g) || []
     if (letters.length < 2) {
       showToast('Từ vựng phải chứa ít nhất 2 chữ cái tiếng Anh!', 'warning')
@@ -120,15 +126,10 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
 
     try {
       setIsSubmitting(true)
-      let finalIpa = ipa.trim()
-      if (!finalIpa && word.trim()) {
-        finalIpa = await fetchIPA(word.trim())
-      }
-
       const payload: AddWordPayload = {
         word: word.trim(),
         word_type: wordType.trim(),
-        ipa: finalIpa,
+        ipa: ipa.trim(),
         meaning: meaning.trim(),
         example_sentence: example.trim(),
         image_url: imageUrl.trim(),
@@ -147,7 +148,6 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
       setExample('')
       setImageUrl('')
     } catch (error: unknown) {
-      // Handle duplicate word (HTTP 409)
       const axiosError = error as { response?: { status?: number; data?: { detail?: string } } }
       if (axiosError?.response?.status === 409) {
         showToast(axiosError.response.data?.detail || `Từ "${word.trim()}" đã tồn tại trong bộ từ vựng này!`, 'warning')
@@ -160,10 +160,11 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
     }
   }
 
+  const collectionOptions = collections.map(col => ({ value: col.id, label: col.title }))
+
   const modalContent = (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
       <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl scale-100 animate-in zoom-in-95 duration-200 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
           <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">Tạo từ vựng mới</h2>
           <button
@@ -174,29 +175,21 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
         <form id="add-word-form" onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
-          {/* Collection selection if not preselected */}
           {!preselectedCollectionId && collections.length > 0 && (
             <div className="space-y-1.5">
               <label className="block text-xs sm:text-sm font-bold text-slate-700">
                 Bộ từ vựng <span className="text-red-500">*</span>
               </label>
-              <select
+              <CustomSelect
                 value={selectedCollectionId}
-                onChange={(e) => setSelectedCollectionId(e.target.value)}
-                className="w-full px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white font-medium transition-all"
-              >
-                {collections.map((col) => (
-                  <option key={col.id} value={col.id}>
-                    {col.title}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedCollectionId}
+                options={collectionOptions}
+                placeholder="Chọn bộ từ vựng..."
+              />
             </div>
           )}
 
-          {/* Từ mới * */}
           <div className="space-y-1.5">
             <label className="block text-xs sm:text-sm font-bold text-slate-700">
               Từ mới <span className="text-red-500">*</span>
@@ -212,24 +205,17 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
             />
           </div>
 
-          {/* Grid: Loại từ & Phiên âm */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="block text-xs sm:text-sm font-bold text-slate-700">
                 Loại từ
               </label>
-              <select
+              <CustomSelect
                 value={wordType.toLowerCase()}
-                onChange={(e) => setWordType(e.target.value)}
-                className="w-full px-3 sm:px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white font-medium transition-all cursor-pointer text-slate-800"
-              >
-                <option value="">Chọn loại từ...</option>
-                {WORD_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setWordType}
+                options={WORD_TYPES}
+                placeholder="Chọn loại từ..."
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
