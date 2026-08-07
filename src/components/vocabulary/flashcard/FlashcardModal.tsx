@@ -6,6 +6,7 @@ import {
 import type { VocabularyCollection, WordDetail, WordStatus } from '../../../types/vocabulary'
 import { updateWordStatus } from '../../../services/vocabularyApi'
 import EditWordModal from '../modals/EditWordModal'
+import { speakText } from '../../../utils/tts'
 
 interface FlashcardModalProps {
   open: boolean
@@ -52,15 +53,8 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
 
   // Text to speech
   const speakWord = useCallback((text: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation()
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'en-US'
-      utterance.rate = speechRate
-      window.speechSynthesis.speak(utterance)
-    }
-  }, [speechRate])
+    speakText(text, collection?.language, speechRate, e)
+  }, [collection?.language, speechRate])
 
   // Auto speech on card change
   useEffect(() => {
@@ -167,8 +161,8 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
     const masteredCount = Object.values(ratings).filter(s => s === 'MASTERED').length
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-        <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/25 backdrop-blur-[2px]">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95">
           <div className="text-5xl mb-3">🎉</div>
           <h2 className="text-xl font-black text-slate-800 mb-1">Tuyệt vời!</h2>
           <p className="text-slate-500 text-xs mb-5">Bạn đã hoàn thành phiên luyện tập</p>
@@ -207,37 +201,39 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 font-['Be_Vietnam_Pro'] overflow-y-auto select-none">
       {/* ── Top Bar ── */}
-      <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
+      <header className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
             title="Đóng (Esc)"
           >
             <X size={18} />
           </button>
-          <div>
-            <h1 className="font-extrabold text-[#1D4ED8] text-base leading-snug">{collection.title}</h1>
-            <p className="text-[11px] text-slate-400 font-semibold">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-extrabold text-[#1D4ED8] text-sm sm:text-base leading-snug truncate">
+              {collection.title}
+            </h1>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 font-semibold truncate">
               Practice Session • {currentIndex + 1}/{words.length} words
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Edit Word Button */}
           <button
             onClick={() => setEditingWord(currentWord)}
-            className="flex items-center gap-1 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors"
             title="Sửa từ vựng này"
           >
-            <Edit3 size={14} className="text-[#1D4ED8]" />
-            <span>Sửa từ</span>
+            <Edit3 size={13} className="text-[#1D4ED8]" />
+            <span className="hidden xs:inline">Sửa từ</span>
           </button>
 
-          <div className="flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 text-slate-700 text-[11px] font-black rounded-full border border-slate-200">
-            <Zap size={13} className="fill-[#1D4ED8] text-[#1D4ED8]" />
-            <span>STREAK : {streak}</span>
+          <div className="flex items-center gap-1 px-2 sm:px-2.5 py-0.5 bg-slate-100 text-slate-700 text-[10px] sm:text-[11px] font-black rounded-full border border-slate-200">
+            <Zap size={12} className="fill-[#1D4ED8] text-[#1D4ED8]" />
+            <span>STREAK: {streak}</span>
           </div>
           <button 
             onClick={() => setShowSettings(v => !v)}
@@ -250,11 +246,11 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
       </header>
 
       {/* ── Main Body Content (Container max-w-4xl) ── */}
-      <div className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-5 flex flex-col justify-between">
+      <div className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-6 py-3 sm:py-5 flex flex-col justify-between overflow-y-auto">
         <div>
           {/* Progress Bar */}
-          <div className="mb-5">
-            <div className="flex justify-between items-center text-[11px] font-black text-[#1D4ED8] uppercase tracking-wider mb-1.5">
+          <div className="mb-3 sm:mb-5">
+            <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-black text-[#1D4ED8] uppercase tracking-wider mb-1">
               <span>PROGRESS</span>
               <span>{progressPct}%</span>
             </div>
@@ -267,38 +263,38 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
           </div>
 
           {/* Flashcard Card + Right Stats Sidebar */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-start">
             {/* Center 3D Perspective Flashcard Container (8 cols) */}
             <div className="md:col-span-8 flex items-center justify-center [perspective:1200px]">
               {/* 3D Flip Card Inner Box */}
               <div
                 onClick={() => setIsFlipped(v => !v)}
-                className={`w-full min-h-[350px] relative cursor-pointer rounded-3xl transition-transform duration-700 [transform-style:preserve-3d] ${
+                className={`w-full min-h-[260px] sm:min-h-[350px] relative cursor-pointer rounded-3xl transition-transform duration-700 [transform-style:preserve-3d] ${
                   isFlipped ? '[transform:rotateY(180deg)]' : ''
                 }`}
               >
                 {/* ── FRONT FACE (rotateY 0deg) ── */}
                 <div
                   className="absolute inset-0 w-full h-full bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-200/60
-                    p-6 sm:p-8 flex flex-col items-center justify-between [backface-visibility:hidden] [webkit-backface-visibility:hidden]"
+                    p-5 sm:p-8 flex flex-col items-center justify-between [backface-visibility:hidden] [webkit-backface-visibility:hidden]"
                 >
                   <div className="w-full h-2" />
 
                   <div className="flex flex-col items-center justify-center text-center my-auto">
-                    <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
+                    <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mb-3 sm:mb-4 tracking-tight">
                       {currentWord.word}
                     </h2>
 
                     <button
                       onClick={(e) => speakWord(currentWord.word, e)}
-                      className="w-12 h-12 rounded-full bg-blue-100/90 hover:bg-blue-200 text-[#1D4ED8] flex items-center justify-center transition-colors shadow-sm"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100/90 hover:bg-blue-200 text-[#1D4ED8] flex items-center justify-center transition-colors shadow-sm"
                       title="Phát âm"
                     >
-                      <Volume2 size={22} />
+                      <Volume2 size={20} className="sm:w-5 sm:h-5" />
                     </button>
                   </div>
 
-                  <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase pb-1">
+                  <p className="text-[9px] sm:text-[10px] font-black text-slate-400 tracking-widest uppercase pb-1">
                     TOUCH TO REVEAL DEFINITION
                   </p>
                 </div>
@@ -306,54 +302,61 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
                 {/* ── BACK FACE (rotateY 180deg) ── */}
                 <div
                   className="absolute inset-0 w-full h-full bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-200/60
-                    p-6 sm:p-8 flex flex-col justify-between [transform:rotateY(180deg)] [backface-visibility:hidden] [webkit-backface-visibility:hidden]"
+                    p-4 sm:p-8 flex flex-col justify-between [transform:rotateY(180deg)] [backface-visibility:hidden] [webkit-backface-visibility:hidden] overflow-y-auto"
                 >
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      {/* Header row: Left (Word + Badge + IPA) | Right (Photo) */}
-                      <div className="flex items-center justify-between gap-4 mb-4">
-                        <div className="flex flex-col justify-center">
-                          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-                            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+                      {/* Header row with fixed height so MEANING and EXAMPLE remain at a locked Y-position */}
+                      <div className="min-h-[112px] sm:min-h-[144px] flex items-start justify-between gap-3 sm:gap-4 mb-3">
+                        <div className="flex flex-col justify-center min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
                               {currentWord.word}
                             </h2>
                             {currentWord.word_type && (
-                              <span className="px-2.5 py-0.5 bg-blue-100/90 text-[#1D4ED8] text-[10px] font-black rounded-md uppercase tracking-wider">
+                              <span className="px-2.5 py-0.5 bg-blue-100/90 text-[#1D4ED8] text-[9px] sm:text-[10px] font-black rounded-md uppercase tracking-wider">
                                 {currentWord.word_type}
                               </span>
                             )}
                           </div>
                           {currentWord.ipa && (
-                            <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                            <div className="flex items-center gap-1.5 text-slate-400 text-xs sm:text-sm font-medium">
                               <span>/{currentWord.ipa.replace(/\//g,'')}/</span>
                               <button
                                 onClick={(e) => speakWord(currentWord.word, e)}
                                 className="text-slate-400 hover:text-[#1D4ED8] transition-colors"
                               >
-                                <Volume2 size={14} />
+                                <Volume2 size={15} />
                               </button>
                             </div>
                           )}
                         </div>
 
-                        {/* Large Photo Image Box */}
-                        <div className="w-48 sm:w-56 h-28 sm:h-34 rounded-2xl overflow-hidden border border-slate-200 shrink-0 shadow-sm">
-                          <img
-                            src={photoUrl}
-                            alt={currentWord.word}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                        {/* Larger Square Photo Image Box */}
+                        {currentWord.image_url && (
+                          <div className="w-28 h-28 sm:w-36 sm:h-36 aspect-square rounded-2xl overflow-hidden border border-slate-200 shrink-0 shadow-sm">
+                            <img
+                              src={photoUrl}
+                              alt={currentWord.word}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                if (e.currentTarget.parentElement) {
+                                  e.currentTarget.parentElement.style.display = 'none';
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
 
-                      <div className="border-t border-slate-100 my-3" />
+                      <div className="border-t border-slate-100 my-2 sm:my-3" />
 
                       {/* Meaning */}
-                      <div className="mb-3">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
+                      <div className="mb-2 sm:mb-3">
+                        <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-0.5 sm:mb-1">
                           MEANING
                         </span>
-                        <p className="text-slate-800 text-sm font-semibold leading-relaxed">
+                        <p className="text-slate-800 text-xs sm:text-sm font-semibold leading-relaxed">
                           {currentWord.meaning}
                         </p>
                       </div>
@@ -361,10 +364,10 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
                       {/* Example */}
                       {currentWord.example_sentence && (
                         <div>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
+                          <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-0.5 sm:mb-1">
                             EXAMPLE
                           </span>
-                          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                          <div className="bg-slate-50 rounded-xl p-2.5 sm:p-3 border border-slate-100">
                             <p className="text-slate-600 text-xs italic">
                               "{currentWord.example_sentence}"
                             </p>
@@ -403,7 +406,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
               </div>
 
               {/* Daily Goal card */}
-              <div className="bg-gradient-to-br from-[#1D4ED8] to-blue-800 rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
+              <div className="bg-gradient-to-br from-[#1D4ED8] to-blue-800 rounded-2xl p-4 text-white shadow-md relative overflow-hidden hidden md:block">
                 <h3 className="font-bold text-base mb-1">Daily Goal</h3>
                 <p className="text-blue-100 text-[11px] leading-relaxed mb-3">
                   Complete 50 more words to reach your goal!
@@ -417,13 +420,13 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
         </div>
 
         {/* ── Bottom Controls & Decision Buttons ── */}
-        <div className="mt-4">
+        <div className="mt-3 sm:mt-4">
           {/* Navigation row: Quay lại | Dots | Tiếp theo */}
-          <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center justify-between mb-2.5 px-1">
             <button
               onClick={handlePrev}
               disabled={currentIndex === 0}
-              className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900
+              className="flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900
                 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ArrowLeft size={14} /> Quay lại
@@ -443,36 +446,36 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
 
             <button
               onClick={handleNextOnly}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#1D4ED8] hover:text-blue-800 transition-colors"
+              className="flex items-center gap-1 text-xs font-bold text-[#1D4ED8] hover:text-blue-800 transition-colors"
             >
               Tiếp theo <ArrowRight size={14} />
             </button>
           </div>
 
-          {/* Decision Buttons (Chưa thuộc / Đã thuộc) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-4xl mx-auto">
+          {/* Decision Buttons (Chưa thuộc / Đã thuộc) - Responsive 2 columns on all devices */}
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 max-w-4xl mx-auto">
             {/* Chưa thuộc */}
             <button
               onClick={() => handleRating('NEEDS_REVIEW')}
               className="group bg-white hover:bg-red-50/50 border-2 border-red-200 hover:border-red-400
-                rounded-2xl py-3 px-4 text-center transition-all shadow-sm hover:shadow-md flex flex-col items-center justify-center gap-0.5"
+                rounded-2xl py-2.5 sm:py-3 px-3 sm:px-4 text-center transition-all shadow-sm hover:shadow-md flex flex-col items-center justify-center gap-0.5"
             >
-              <Frown size={24} className="text-red-500 mb-0.5 group-hover:scale-110 transition-transform" />
-              <span className="font-extrabold text-red-600 text-base">Chưa thuộc</span>
-              <span className="text-[10px] text-slate-400 font-semibold">Sẽ ôn lại sớm</span>
+              <Frown size={20} className="text-red-500 mb-0.5 group-hover:scale-110 transition-transform" />
+              <span className="font-extrabold text-red-600 text-sm sm:text-base">Chưa thuộc</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-400 font-semibold hidden sm:inline">Sẽ ôn lại sớm</span>
             </button>
 
             {/* Đã thuộc */}
             <button
               onClick={() => handleRating('MASTERED')}
               className="group bg-white hover:bg-emerald-50/50 border-2 border-emerald-200 hover:border-emerald-400
-                rounded-2xl py-3 px-4 text-center transition-all shadow-sm hover:shadow-md flex flex-col items-center justify-center gap-0.5"
+                rounded-2xl py-2.5 sm:py-3 px-3 sm:px-4 text-center transition-all shadow-sm hover:shadow-md flex flex-col items-center justify-center gap-0.5"
             >
-              <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center mb-0.5 group-hover:scale-110 transition-transform">
-                <Check size={16} strokeWidth={3} />
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center mb-0.5 group-hover:scale-110 transition-transform">
+                <Check size={14} strokeWidth={3} />
               </div>
-              <span className="font-extrabold text-emerald-600 text-base">Đã thuộc</span>
-              <span className="text-[10px] text-slate-400 font-semibold">Đã nhớ kỹ</span>
+              <span className="font-extrabold text-emerald-600 text-sm sm:text-base">Đã thuộc</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-400 font-semibold hidden sm:inline">Đã nhớ kỹ</span>
             </button>
           </div>
         </div>
@@ -488,7 +491,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
 
       {/* ── Settings Modal ── */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/25 backdrop-blur-[2px]">
           <div className="bg-white rounded-3xl w-full max-w-sm p-5 shadow-2xl border border-slate-100 animate-in zoom-in-95">
             <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
               <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
