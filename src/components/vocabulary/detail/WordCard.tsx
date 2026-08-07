@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { Volume2, Edit3 } from 'lucide-react';
 import type { WordDetail } from '../../../types/vocabulary';
 import EditWordModal from '../modals/EditWordModal';
+import { speakText } from '../../../utils/tts';
 
 interface WordCardProps {
   word?: WordDetail;
   showIPA: boolean;
   onWordUpdated?: (updatedWord: WordDetail) => void;
+  language?: string;
 }
 
-export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated }) => {
+export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated, language }) => {
   const [editingWord, setEditingWord] = useState<WordDetail | null>(null);
 
   if (!word) {
@@ -26,13 +28,9 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
     );
   }
 
-  const speakWord = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word.word);
-      utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
+  const handleSpeak = (e: React.MouseEvent) => {
+    if (word) {
+      speakText(word.word, language, 1.0, e);
     }
   };
 
@@ -84,7 +82,7 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
             <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mb-3">
               <span>/{word.ipa.replace(/\//g, '')}/</span>
               <button
-                onClick={speakWord}
+                onClick={handleSpeak}
                 className="p-0.5 hover:text-blue-600 transition-colors"
                 title="Nghe âm"
               >

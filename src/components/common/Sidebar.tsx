@@ -16,7 +16,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const [basicOpen, setBasicOpen] = useState(true)
 
   const isVocabActive = location.pathname.startsWith('/vocabulary')
+  const isPracticeActive = location.pathname.startsWith('/practice')
   const isHomeActive = location.pathname === '/'
+
 
   const navContent = (
     <div className="flex flex-col h-full select-none justify-between">
@@ -25,7 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         {/* Home Link */}
         <button
           onClick={() => { navigate('/'); onClose?.() }}
-          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
             isHomeActive
               ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -39,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         <div>
           <button
             onClick={() => setBasicOpen(v => !v)}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+            className="w-full flex items-center justify-between px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <BookOpen size={16} />
@@ -55,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
             <div className="ml-4 pl-3 border-l-2 border-slate-200/80 my-1 space-y-1">
               <button
                 onClick={() => { navigate('/vocabulary'); onClose?.() }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition-all ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                   isVocabActive
                     ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -67,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
               <button
                 onClick={() => onClose?.()}
-                className="w-full flex items-center gap-3 px-3.5 py-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all"
+                className="w-full flex items-center gap-3 px-3.5 py-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all cursor-pointer"
               >
                 <FileText size={15} />
                 <span>Grammar</span>
@@ -78,8 +80,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
         {/* Practice Module */}
         <button
-          onClick={() => onClose?.()}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all"
+          onClick={() => { navigate('/practice'); onClose?.() }}
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+            isPracticeActive
+              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
         >
           <Clock size={16} />
           <span>Practice Module</span>
@@ -88,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         {/* Computer-based Tests */}
         <button
           onClick={() => onClose?.()}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all"
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all cursor-pointer"
         >
           <Monitor size={16} />
           <span>Computer-based Tests</span>
@@ -97,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         {/* Profile */}
         <button
           onClick={() => onClose?.()}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all"
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all cursor-pointer"
         >
           <User size={16} />
           <span>Profile</span>
