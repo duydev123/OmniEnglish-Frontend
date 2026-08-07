@@ -28,6 +28,7 @@ export interface User {
   email: string;
   role: string;
   id: string;
+  avatar?: string;
   avarta?: string;
   proficiency_level: string;
   status: string;
