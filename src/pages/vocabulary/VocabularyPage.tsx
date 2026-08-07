@@ -21,6 +21,7 @@ import {
   updateCollectionProgress,
   getMyCollections,
   getOfficialCollections,
+  getCachedCollections,
 } from '../../services/vocabularyApi'
 import type { VocabularyCollection, WordStatus } from '../../types/vocabulary'
 
@@ -33,9 +34,9 @@ export default function VocabularyPage() {
   const { showToast } = useToast()
 
   const [activeTab, setActiveTab] = useState<TabType>('mine')
-  const [myCollections, setMyCollections] = useState<VocabularyCollection[]>([])
+  const [myCollections, setMyCollections] = useState<VocabularyCollection[]>(() => getCachedCollections())
   const [officialCollections, setOfficialCollections] = useState<VocabularyCollection[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState<boolean>(() => getCachedCollections().length === 0)
   const [searchQuery, setSearchQuery] = useState('')
   const [displayMode, setDisplayMode] = useState<DisplayMode>('grid')
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest')
@@ -65,38 +66,21 @@ export default function VocabularyPage() {
   }, [])
 
   async function loadAllCollections() {
-    setLoading(true)
     try {
-      try {
-        const official = await getOfficialCollections()
-        setOfficialCollections(official || [])
-      } catch (err) {
-        console.warn('Could not fetch official collections:', err)
-        setOfficialCollections([])
+      const [officialResult, mineResult] = await Promise.allSettled([
+        getOfficialCollections(),
+        getMyCollections()
+      ])
+
+      if (officialResult.status === 'fulfilled') {
+        setOfficialCollections(officialResult.value || [])
       }
 
-      try {
-        const mine = await getMyCollections()
-        const storedIds = getStoredIds()
-
-        let loaded: VocabularyCollection[] = mine || []
-
-        if (storedIds.length > 0) {
-          const storedResults = await Promise.allSettled(storedIds.map(id => getCollection(id)))
-          const extraLoaded = storedResults
-            .filter((r): r is PromiseFulfilledResult<VocabularyCollection> => r.status === 'fulfilled')
-            .map(r => r.value)
-
-          const existingMap = new Map(loaded.map(c => [c.id, c]))
-          extraLoaded.forEach(col => existingMap.set(col.id, col))
-          loaded = Array.from(existingMap.values())
-        }
-
-        setMyCollections(loaded)
-      } catch (err) {
-        console.warn('Could not fetch personal collections:', err)
-        setMyCollections([])
+      if (mineResult.status === 'fulfilled') {
+        setMyCollections(mineResult.value || [])
       }
+    } catch (err) {
+      console.warn('Could not refresh collections from server:', err)
     } finally {
       setLoading(false)
     }

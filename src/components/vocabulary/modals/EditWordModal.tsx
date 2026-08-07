@@ -71,12 +71,15 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
       const details = await fetchWordDetails(cleanWord)
       if (details.ipa && details.ipa.trim() && details.ipa !== '/No IPA available/') {
         setIpa(details.ipa)
-        if (details.word_type) {
-          setWordType(details.word_type)
-        }
+        if (details.word_type) setWordType(details.word_type)
         showToast(`✨ Đã tự động điền IPA và loại từ cho "${cleanWord}"!`, 'success')
+      } else if (details.word_type && details.word_type !== 'noun') {
+        setIpa('')
+        setWordType(details.word_type)
+        showToast(`✨ Đã nhận diện loại từ cho "${cleanWord}"!`, 'info')
       } else {
-        showToast(`Không tìm thấy phiên âm cho từ "${cleanWord}". Vui lòng nhập đúng từ tiếng Anh hợp lệ!`, 'warning')
+        setIpa('')
+        showToast(`⚠️ Không tìm thấy từ "${cleanWord}" trong từ điển tiếng Anh!`, 'warning')
       }
     } catch {
       showToast('Vui lòng nhập từ tiếng Anh hợp lệ!', 'warning')

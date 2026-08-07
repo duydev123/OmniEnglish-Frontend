@@ -47,7 +47,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
   }, [preselectedCollectionId, collections, selectedCollectionId])
 
   const [word, setWord] = useState('')
-  const [wordType, setWordType] = useState('noun')
+  const [wordType, setWordType] = useState('')
   const [ipa, setIpa] = useState('')
   const [meaning, setMeaning] = useState('')
   const [example, setExample] = useState('')
@@ -55,6 +55,26 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isFetchingIPA, setIsFetchingIPA] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const resetForm = () => {
+    setWord('')
+    setWordType('')
+    setIpa('')
+    setMeaning('')
+    setExample('')
+    setImageUrl('')
+  }
+
+  useEffect(() => {
+    if (!open) {
+      resetForm()
+    }
+  }, [open])
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
 
   if (!open) return null
 
@@ -75,12 +95,15 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
       const details = await fetchWordDetails(cleanWord)
       if (details.ipa && details.ipa.trim() && details.ipa !== '/No IPA available/') {
         setIpa(details.ipa)
-        if (details.word_type) {
-          setWordType(details.word_type)
-        }
+        if (details.word_type) setWordType(details.word_type)
         showToast(`✨ Đã tự động điền IPA và loại từ cho "${cleanWord}"!`, 'success')
+      } else if (details.word_type && details.word_type !== 'noun') {
+        setIpa('')
+        setWordType(details.word_type)
+        showToast(`✨ Đã nhận diện loại từ cho "${cleanWord}"!`, 'info')
       } else {
-        showToast(`Không tìm thấy phiên âm cho từ "${cleanWord}". Vui lòng nhập đúng từ tiếng Anh hợp lệ!`, 'warning')
+        setIpa('')
+        showToast(`⚠️ Không tìm thấy từ "${cleanWord}" trong từ điển tiếng Anh!`, 'warning')
       }
     } catch {
       showToast('Vui lòng nhập từ tiếng Anh hợp lệ!', 'warning')
@@ -91,12 +114,8 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
 
   const handleWordBlur = () => {
     const clean = word.trim()
-    if (clean) {
-      if (!/[a-zA-Z]/.test(clean)) {
-        showToast(`"${clean}" không phải là từ tiếng Anh hợp lệ. Vui lòng nhập từ có chứa chữ cái!`, 'warning')
-      } else if (!ipa.trim()) {
-        handleAutoFetchIPA(word)
-      }
+    if (clean && /[a-zA-Z]/.test(clean) && !ipa.trim()) {
+      handleAutoFetchIPA(word)
     }
   }
 
@@ -128,7 +147,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
       setIsSubmitting(true)
       const payload: AddWordPayload = {
         word: word.trim(),
-        word_type: wordType.trim(),
+        word_type: (wordType || 'noun').trim(),
         ipa: ipa.trim(),
         meaning: meaning.trim(),
         example_sentence: example.trim(),
@@ -140,19 +159,13 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
       }
 
       onWordAdded(targetId)
-      onClose()
-      setWord('')
-      setWordType('noun')
-      setIpa('')
-      setMeaning('')
-      setExample('')
-      setImageUrl('')
+      handleClose()
     } catch (error: unknown) {
       const axiosError = error as { response?: { status?: number; data?: { detail?: string } } }
       if (axiosError?.response?.status === 409) {
         showToast(axiosError.response.data?.detail || `Từ "${word.trim()}" đã tồn tại trong bộ từ vựng này!`, 'warning')
       } else {
-        showToast('Không thếm được từ. Vui lòng thử lại!', 'error')
+        showToast('Không thêm được từ. Vui lòng thử lại!', 'error')
         console.error('Failed to add word', error)
       }
     } finally {
@@ -168,7 +181,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
           <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">Tạo từ vựng mới</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
           >
             <X size={20} />
@@ -319,7 +332,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
         <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:justify-end sm:gap-3 shrink-0">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isSubmitting}
             className="w-full sm:w-auto px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-extrabold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors text-center whitespace-nowrap cursor-pointer"
           >

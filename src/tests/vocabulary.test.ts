@@ -5,11 +5,13 @@ import {
   saveCachedCollections,
   updateSingleCachedCollection,
   sanitizeCollection,
+  cleanWordType,
   fetchIPA,
   getStoredIds,
   storeId,
   removeId,
   vocabAxios,
+  getCollection,
 } from '../services/vocabularyApi'
 import { speakText, getLangCode } from '../utils/tts'
 import type { VocabularyCollection } from '../types/vocabulary'
@@ -181,6 +183,143 @@ describe('Vocabulary Frontend Services & Utils', () => {
       speakText('serendipity', 'Anh-Mỹ', 1.0)
       expect(mockCancel).toHaveBeenCalled()
       expect(mockSpeak).toHaveBeenCalled()
+    })
+  })
+
+  describe('getCollection - Local Fallback ID Bypass', () => {
+
+    it('should return cached collection without calling API for col_ prefixed IDs', async () => {
+      // Regression: col_ IDs are local-only fallbacks; calling the backend always 404s
+      const localCol: VocabularyCollection = {
+        id: 'col_1786079810413',
+        title: 'Offline Collection',
+        description: '',
+        topic: 'Custom',
+        language: 'Anh-Mỹ',
+        is_official: false,
+        total_learners: 1,
+        accuracy_percentage: 0,
+        study_time_seconds: 0,
+        words_list: [],
+      }
+      updateSingleCachedCollection(localCol)
+
+      const apiSpy = vi.spyOn(vocabAxios, 'get')
+      const result = await getCollection('col_1786079810413')
+
+      expect(apiSpy).not.toHaveBeenCalled()
+      expect(result.id).toBe('col_1786079810413')
+      expect(result.title).toBe('Offline Collection')
+    })
+
+    it('should throw when col_ ID is not found in cache', async () => {
+      await expect(getCollection('col_not_in_cache_xyz')).rejects.toThrow(
+        'Vocabulary collection not found'
+      )
+    })
+  })
+
+  describe('sanitizeCollection - Edge Cases', () => {
+    it('should handle empty words_list without crashing', () => {
+      const col: VocabularyCollection = {
+        id: 'col_empty',
+        title: 'Empty',
+        description: '',
+        topic: 'General',
+        language: 'Anh-Mỹ',
+        is_official: false,
+        total_learners: 0,
+        accuracy_percentage: 0,
+        study_time_seconds: 0,
+        words_list: [],
+      }
+      const result = sanitizeCollection(col)
+      expect(result.words_list).toEqual([])
+    })
+
+    it('should preserve non-blob and empty image_url values untouched', () => {
+      const col: VocabularyCollection = {
+        id: 'col_img',
+        title: 'Image Test',
+        description: '',
+        topic: 'General',
+        language: 'Anh-Mỹ',
+        is_official: false,
+        total_learners: 0,
+        accuracy_percentage: 0,
+        study_time_seconds: 0,
+        words_list: [
+          { id: 'w1', word: 'cat', word_type: 'noun', meaning: 'con mèo', ipa: '', image_url: '' },
+          {
+            id: 'w2',
+            word: 'dog',
+            word_type: 'noun',
+            meaning: 'con chó',
+            ipa: '',
+            image_url: 'https://cdn.example.com/dog.png',
+          },
+        ],
+      }
+      const result = sanitizeCollection(col)
+      expect(result.words_list[0].image_url).toBe('')
+      expect(result.words_list[1].image_url).toBe('https://cdn.example.com/dog.png')
+    })
+  })
+
+  describe('storeId - Idempotency', () => {
+    it('should not create duplicate entries when storing the same ID twice', () => {
+      storeId('dup_id_99')
+      storeId('dup_id_99')
+      const ids = getStoredIds()
+      const count = ids.filter((id) => id === 'dup_id_99').length
+      expect(count).toBe(1)
+    })
+  })
+
+  describe('getLangCode - Unknown Input', () => {
+    it('should return en-US fallback for completely unknown language string', () => {
+      expect(getLangCode('Unknown Language XYZ')).toBe('en-US')
+    })
+  })
+
+  describe('fetchIPA - Whitespace Input', () => {
+    it('should return empty string for whitespace-only word without calling API', async () => {
+      const apiSpy = vi.spyOn(vocabAxios, 'get')
+      const ipa = await fetchIPA('   ')
+      expect(ipa).toBe('')
+      expect(apiSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('WordType Sanitization & Cleaning Helpers', () => {
+    it('should clean legacy WordType. enum prefixes to lowercase strings', () => {
+      expect(cleanWordType('WordType.NOUN')).toBe('noun')
+      expect(cleanWordType('WORDTYPE.VERB')).toBe('verb')
+      expect(cleanWordType('  WordType.ADJECTIVE  ')).toBe('adjective')
+      expect(cleanWordType('idiom')).toBe('idiom')
+      expect(cleanWordType('')).toBe('noun')
+      expect(cleanWordType(undefined)).toBe('noun')
+    })
+
+    it('should sanitize word_type across words_list in a collection', () => {
+      const colWithEnumTypes: VocabularyCollection = {
+        id: 'col_enum_test',
+        title: 'Enum Sanitize Test',
+        description: '',
+        topic: 'General',
+        language: 'Anh-Mỹ',
+        is_official: false,
+        total_learners: 0,
+        accuracy_percentage: 0,
+        study_time_seconds: 0,
+        words_list: [
+          { id: 'w1', word: 'apple', word_type: 'WordType.NOUN', meaning: 'táo', ipa: '' },
+          { id: 'w2', word: 'run', word_type: 'WORDTYPE.VERB', meaning: 'chạy', ipa: '' },
+        ],
+      }
+      const sanitized = sanitizeCollection(colWithEnumTypes)
+      expect(sanitized.words_list[0].word_type).toBe('noun')
+      expect(sanitized.words_list[1].word_type).toBe('verb')
     })
   })
 })

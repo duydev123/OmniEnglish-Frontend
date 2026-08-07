@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Edit3, Zap, ArrowUpAZ, ArrowDownAZ, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Plus, Edit3, Zap, ArrowUpAZ, ArrowDownAZ, ChevronDown, Layers } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import StatsBar from '../../components/vocabulary/detail/StatsBar'
 import FilterSidebar from '../../components/vocabulary/detail/FilterSidebar'
@@ -163,6 +163,18 @@ export default function CollectionDetailPage() {
   const hasMore = visibleCount < sortedWords.length
   const remainingCount = sortedWords.length - visibleCount
 
+  const handleStartFlashcard = () => {
+    if (filteredWords.length === 0) {
+      showToast('Không có từ vựng nào thuộc trạng thái này để luyện tập!', 'warning')
+      return
+    }
+    setShowFlashcard(true)
+  }
+
+  const flashcardCollection = collection
+    ? { ...collection, words_list: filteredWords }
+    : null
+
   return (
     <VocabLayout breadcrumbs={[
       { label: 'BASIC', href: '/vocabulary' },
@@ -323,7 +335,7 @@ export default function CollectionDetailPage() {
               showIPA={showIPA}
               onFilterChange={f => { setFilter(f); setVisibleCount(WORDS_PER_PAGE) }}
               onToggleIPA={() => setShowIPA(v => !v)}
-              onStartFlashcard={() => setShowFlashcard(true)}
+              onStartFlashcard={handleStartFlashcard}
             />
           </div>
 
@@ -332,14 +344,12 @@ export default function CollectionDetailPage() {
             <div className="lg:hidden mb-5 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-4 select-none">
               {/* Row 1: Flashcard Button full width */}
               <button
-                onClick={() => setShowFlashcard(true)}
-                className="w-full flex items-center justify-center gap-2 bg-[#1D4ED8] hover:bg-blue-800 text-white py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+                onClick={handleStartFlashcard}
+                className="w-full flex items-center justify-center gap-2 bg-[#1D4ED8] hover:bg-blue-800 text-white py-2.5 px-3.5 rounded-full font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Zap size={16} className="fill-white" />
+                <Layers size={16} className="shrink-0 stroke-[2.5]" />
                 <span>Luyện tập Flashcard</span>
               </button>
-
-              {/* Row 2: Categorization Options Header + IPA Switch */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Phân loại từ vựng</p>
@@ -516,7 +526,7 @@ export default function CollectionDetailPage() {
 
       <FlashcardModal
         open={showFlashcard}
-        collection={collection}
+        collection={flashcardCollection}
         onClose={() => setShowFlashcard(false)}
         onSessionComplete={handleFlashcardComplete}
       />
