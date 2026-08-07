@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Loader2, Image as ImageIcon, Sparkles } from 'lucide-react'
+import CustomSelect from '../../common/CustomSelect'
 import type { WordDetail } from '../../../types/vocabulary'
 import { updateWord, fetchWordDetails } from '../../../services/vocabularyApi'
 import { useToast } from '../../common/Toast'
@@ -181,16 +182,12 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
               <label className="block text-xs sm:text-sm font-bold text-slate-700">
                 Loại từ
               </label>
-              <select
+              <CustomSelect
                 value={wordType.toLowerCase()}
-                onChange={(e) => setWordType(e.target.value)}
-                className="w-full px-3 sm:px-3.5 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white font-medium transition-all cursor-pointer text-slate-800"
-              >
-                <option value="">Chọn loại từ...</option>
-                {WORD_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
+                onChange={setWordType}
+                options={WORD_TYPES}
+                placeholder="Chọn loại từ..."
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
