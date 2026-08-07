@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Edit3, Zap, ArrowUpAZ, ArrowDownAZ } from 'lucide-react'
+import { ArrowLeft, Plus, Edit3, Zap, ArrowUpAZ, ArrowDownAZ, ChevronDown } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import StatsBar from '../../components/vocabulary/detail/StatsBar'
 import FilterSidebar from '../../components/vocabulary/detail/FilterSidebar'
@@ -33,8 +33,25 @@ export default function CollectionDetailPage() {
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [showFlashcard, setShowFlashcard] = useState(false)
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none')
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [showActionDropdown, setShowActionDropdown] = useState(false)
+  const filterDropdownRef = useRef<HTMLDivElement>(null)
+  const actionDropdownRef = useRef<HTMLDivElement>(null)
 
-  const toggleSort = () => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+  const toggleSort = () => setSortOrder(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none')
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target as Node)) {
+        setShowFilterDropdown(false)
+      }
+      if (actionDropdownRef.current && !actionDropdownRef.current.contains(e.target as Node)) {
+        setShowActionDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     if (!id) return
@@ -169,50 +186,125 @@ export default function CollectionDetailPage() {
             </h1>
           </div>
 
-          {/* Top Bar Action Buttons - Flex wrap layout for all viewports down to 280px */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
+          {/* Desktop Top Bar Actions (Full 5 buttons on Web/Desktop) */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <button
               onClick={() => setShowAddWord(true)}
-              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold text-slate-700
-                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
             >
               <Plus size={14} className="shrink-0" /> <span>Thêm từ vựng</span>
             </button>
             <button
               onClick={() => navigate(`/vocabulary/${id}/bulk-add`)}
-              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold text-slate-700
-                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
             >
               <Plus size={14} className="shrink-0" /> <span>Thêm hàng loạt</span>
             </button>
             <button
               onClick={toggleSort}
-              title={sortOrder === 'asc' ? 'Đang sắp xếp A→Z, bấm để đảo ngược' : sortOrder === 'desc' ? 'Đang sắp xếp Z→A, bấm để đảo ngược' : 'Sắp xếp theo bảng chữ cái'}
-              className={`flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold
-                rounded-xl transition-all shadow-xs cursor-pointer text-center whitespace-nowrap
-                ${sortOrder !== 'none'
+              title={
+                sortOrder === 'asc'
+                  ? 'Đang sắp xếp A→Z (bấm để chuyển Z→A)'
+                  : sortOrder === 'desc'
+                    ? 'Đang sắp xếp Z→A (bấm để về Mặc định)'
+                    : 'Sắp xếp theo bảng chữ cái (bấm để xếp A→Z)'
+              }
+              className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all shadow-xs cursor-pointer text-center whitespace-nowrap ${
+                sortOrder !== 'none'
                   ? 'bg-blue-50 border border-blue-300 text-blue-700'
-                  : 'bg-[#F1F5F9] border border-slate-200/60 text-slate-700 hover:bg-slate-200'}`}
+                  : 'bg-[#F1F5F9] border border-slate-200/60 text-slate-700 hover:bg-slate-200'
+              }`}
             >
-              {sortOrder === 'desc'
-                ? <ArrowDownAZ size={14} className="shrink-0" />
-                : <ArrowUpAZ size={14} className="shrink-0" />}
-              <span>{sortOrder === 'desc' ? 'Z → A' : 'A → Z'}</span>
+              {sortOrder === 'desc' ? <ArrowDownAZ size={14} className="shrink-0" /> : <ArrowUpAZ size={14} className="shrink-0" />}
+              <span>{sortOrder === 'desc' ? 'Z → A' : sortOrder === 'asc' ? 'A → Z' : 'Sắp xếp'}</span>
             </button>
             <button
               onClick={() => setShowBulkEdit(true)}
-              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold text-slate-700
-                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
             >
               <Edit3 size={14} className="shrink-0" /> <span>Sửa hàng loạt</span>
             </button>
             <button
               onClick={() => setShowEditCollection(true)}
-              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-xs font-extrabold text-white
-                bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer text-center whitespace-nowrap"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-white bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer text-center whitespace-nowrap"
             >
               <Edit3 size={14} className="shrink-0" /> <span>Chỉnh sửa</span>
             </button>
+          </div>
+
+          {/* Mobile Responsive Actions (Compact Dropdown Menu on Mobile only) */}
+          <div className="flex sm:hidden items-center gap-2 w-full justify-between" ref={actionDropdownRef}>
+            <button
+              onClick={() => setShowAddWord(true)}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-extrabold text-white bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer whitespace-nowrap"
+            >
+              <Plus size={16} /> <span>Thêm từ vựng</span>
+            </button>
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowActionDropdown(v => !v)}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <span>Tùy chọn</span>
+                <ChevronDown size={16} className={`text-slate-500 transition-transform duration-200 ${showActionDropdown ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showActionDropdown && (
+                <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddWord(true); setShowActionDropdown(false) }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Plus size={14} className="text-blue-600 shrink-0" />
+                    <span>Thêm từ mới</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { navigate(`/vocabulary/${id}/bulk-add`); setShowActionDropdown(false) }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Plus size={14} className="text-purple-600 shrink-0" />
+                    <span>Thêm hàng loạt</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setShowBulkEdit(true); setShowActionDropdown(false) }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <Edit3 size={14} className="text-amber-600 shrink-0" />
+                    <span>Sửa hàng loạt</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { toggleSort(); setShowActionDropdown(false) }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {sortOrder === 'desc' ? <ArrowDownAZ size={14} className="text-blue-600 shrink-0" /> : <ArrowUpAZ size={14} className="text-blue-600 shrink-0" />}
+                      <span>Sắp xếp</span>
+                    </div>
+                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                      {sortOrder === 'desc' ? 'Z → A' : sortOrder === 'asc' ? 'A → Z' : 'Mặc định'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setShowEditCollection(true); setShowActionDropdown(false) }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer border-t border-slate-100 pt-2 mt-1"
+                  >
+                    <Edit3 size={14} className="text-slate-500 shrink-0" />
+                    <span>Chỉnh sửa bộ từ</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -261,29 +353,59 @@ export default function CollectionDetailPage() {
                   </label>
                 </div>
 
-                {/* Grid 2x2 of Options - No Horizontal Scroll */}
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { key: 'all', label: 'Tất cả', count: counts.all },
-                    { key: 'MASTERED', label: 'Đã thuộc', count: counts.mastered },
-                    { key: 'LEARNING', label: 'Đang học', count: counts.learning },
-                    { key: 'NEEDS_REVIEW', label: 'Cần ôn tập', count: counts.needsReview },
-                  ] as { key: DetailFilter; label: string; count: number }[]).map(item => (
-                    <button
-                      key={item.key}
-                      onClick={() => { setFilter(item.key); setVisibleCount(WORDS_PER_PAGE) }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${filter === item.key
-                          ? 'bg-[#1D4ED8] text-white shadow-sm'
-                          : 'bg-slate-50 border border-slate-200/70 text-slate-700 hover:bg-slate-100'
-                        }`}
-                    >
-                      <span>{item.label}</span>
-                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${filter === item.key ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'
-                        }`}>
-                        {item.count}
+                {/* Soft Rounded Pill Dropdown Menu (Danh sách lựa chọn bo tròn pill nhất quán) */}
+                <div className="relative" ref={filterDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowFilterDropdown(v => !v)}
+                    className="w-full flex items-center justify-between bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-800 transition-all cursor-pointer shadow-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-700">
+                        {filter === 'all' ? 'Tất cả' : filter === 'MASTERED' ? 'Đã thuộc' : filter === 'LEARNING' ? 'Đang học' : 'Cần ôn tập'}
                       </span>
-                    </button>
-                  ))}
+                      <span className="bg-[#1D4ED8] text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-xs">
+                        {filter === 'all' ? counts.all : filter === 'MASTERED' ? counts.mastered : filter === 'LEARNING' ? counts.learning : counts.needsReview}
+                      </span>
+                    </div>
+                    <ChevronDown size={16} className={`text-slate-500 transition-transform duration-200 ${showFilterDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showFilterDropdown && (
+                    <div className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-30 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {([
+                        { key: 'all', label: 'Tất cả', count: counts.all },
+                        { key: 'MASTERED', label: 'Đã thuộc', count: counts.mastered },
+                        { key: 'LEARNING', label: 'Đang học', count: counts.learning },
+                        { key: 'NEEDS_REVIEW', label: 'Cần ôn tập', count: counts.needsReview },
+                      ] as { key: DetailFilter; label: string; count: number }[]).map(item => {
+                        const isSelected = filter === item.key
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => {
+                              setFilter(item.key)
+                              setVisibleCount(WORDS_PER_PAGE)
+                              setShowFilterDropdown(false)
+                            }}
+                            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#1D4ED8] text-white shadow-sm'
+                                : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span>{item.label}</span>
+                            <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {item.count}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 

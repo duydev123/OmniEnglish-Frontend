@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+
 import {
   ArrowLeft, Plus, Trash2, Sparkles, X,
   Info, FileText, AlignLeft
 } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
+import CustomSelect from '../../components/common/CustomSelect'
 import { useToast } from '../../components/common/Toast'
 import { bulkAddWords, pasteText, getCollection, fetchIPA, fetchWordDetails } from '../../services/vocabularyApi'
 import type { AddWordPayload } from '../../types/vocabulary'
@@ -15,7 +17,17 @@ interface BulkRow extends AddWordPayload {
 
 type BulkTab = 'manual' | 'paste'
 
-const WORD_TYPES = ['Noun', 'Verb', 'Adjective', 'Adverb', 'Pronoun', 'Preposition', 'Conjunction', 'Interjection']
+const WORD_TYPES = [
+  { value: 'noun', label: 'Noun (Danh từ)' },
+  { value: 'verb', label: 'Verb (Động từ)' },
+  { value: 'adjective', label: 'Adjective (Tính từ)' },
+  { value: 'adverb', label: 'Adverb (Phó từ)' },
+  { value: 'phrasal verb', label: 'Phrasal Verb (Cụm động từ)' },
+  { value: 'idiom', label: 'Idiom (Thành ngữ)' },
+  { value: 'pronoun', label: 'Pronoun (Đại từ)' },
+  { value: 'preposition', label: 'Preposition (Giới từ)' },
+  { value: 'conjunction', label: 'Conjunction (Liên từ)' },
+]
 
 let keyCounter = 0
 function makeRow(): BulkRow {
@@ -173,11 +185,19 @@ export default function BulkAddPage() {
         navigate(`/vocabulary/${id}`)
       } else {
         const raw = pasteTextValue.trim()
+        if (raw.length < 20) {
+          showToast('Vui lòng nhập đoạn văn có ít nhất 20 ký tự để AI phân tích!', 'warning')
+          return
+        }
         if (!id.startsWith('650000000000')) {
           const result = await pasteText(id, raw)
           setAiResult(result.extracted_words)
           setAiMessage(result.message)
-          showToast(`AI đã thêm ${result.added_count} từ!`, 'success')
+          if (result.added_count > 0) {
+            showToast(result.message || `AI đã thêm ${result.added_count} từ!`, 'success')
+          } else {
+            showToast(result.message || 'Không trích xuất hoặc thêm được từ vựng tiếng Anh phù hợp nào từ đoạn văn trên!', 'warning')
+          }
         } else {
           setAiResult(['Analyze', 'Demonstrate', 'Evaluate'])
           setAiMessage('Gemini AI successfully analyzed the text (Demo Mode)')
@@ -197,9 +217,78 @@ export default function BulkAddPage() {
     navigate(`/vocabulary/${id}`)
   }
 
-  // Validation helpers
-  const engWordMatches = pasteTextValue.trim().match(/[a-zA-Z]{2,}/g) || []
-  const engWordCount = engWordMatches.length
+  // Danh sách stop words tiếng Anh phổ biến - không cần tra từ điển
+  const STOP_WORDS = new Set([
+    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'do', 'does', 'did', 'have', 'has', 'had', 'will', 'would', 'could',
+    'should', 'may', 'might', 'shall', 'can', 'need', 'dare', 'ought',
+    'in', 'on', 'at', 'by', 'for', 'of', 'to', 'up', 'as', 'or', 'and',
+    'but', 'nor', 'so', 'yet', 'not', 'no', 'nor', 'if', 'or', 'then',
+    'than', 'that', 'this', 'these', 'those', 'it', 'its', 'he', 'she',
+    'we', 'they', 'you', 'me', 'him', 'her', 'us', 'them', 'my', 'our',
+    'his', 'your', 'their', 'its', 'who', 'what', 'which', 'when', 'where',
+    'how', 'why', 'all', 'both', 'each', 'few', 'more', 'most', 'other',
+    'some', 'such', 'only', 'own', 'same', 'too', 'very', 'just', 'also',
+    'from', 'into', 'with', 'about', 'after', 'before', 'between', 'through',
+    'during', 'without', 'within', 'along', 'following', 'across', 'behind',
+    'beyond', 'plus', 'except', 'up', 'out', 'around', 'down', 'off', 'above',
+    'over', 'under', 'again', 'further', 'once', 'here', 'there', 'while',
+  ])
+
+  // Validation rules cơ bản loại trừ mẫu từ vô nghĩa / tiếng Việt không dấu
+  function isLikelyEnglishWordLocal(w: string): boolean {
+    const word = w.toLowerCase().trim()
+
+    // Yêu cầu tối thiểu 3 ký tự để loại các từ chức năng quá ngắn
+    if (word.length < 3 || word.length > 25) return false
+
+    // Loại stop words - những từ phổ biến không cần học
+    if (STOP_WORDS.has(word)) return false
+
+    // Bắt buộc chứa ít nhất 1 nguyên âm tiếng Anh (a, e, i, o, u, y)
+    if (!/[aeiouy]/.test(word)) return false
+
+    // Không được chứa 4 phụ âm liên tiếp
+    if (/[bcdfghjklmnpqrstvwxz]{4,}/.test(word)) return false
+
+    // Không chứa 3 ký tự lặp liên tiếp
+    if (/(.)\1\1/.test(word)) return false
+
+    // Chặn các cấu trúc âm tiết đặc trưng tiếng Việt không dấu
+    if (/^(ngh|kh|nh)[a-z]*/.test(word)) return false
+    if (/^ng[aeiouy]/.test(word)) return false
+    if (/[a-z]+nh$/.test(word) && !/[a-z]+nch$/.test(word)) return false
+
+    // Chặn các kết hợp nguyên âm đặc trưng tiếng Việt
+    if (/(uoc|uon|uong|uyen|uyet|ieu|yeu|uoi|oan|oat|oac|oam)/.test(word)) return false
+
+    // Chặn chuỗi phụ âm cuối bất thường gợi ý tên riêng nước ngoài
+    // (kết thúc bằng -tti, -lli, -ssi, -zzi thường là tên Ý)
+    if (/([tls]i|zz[ai])$/.test(word) && word.length > 6) return false
+
+    return true
+  }
+
+
+
+  const [verifiedEngWordCount, setVerifiedEngWordCount] = useState(0)
+
+  useEffect(() => {
+    const rawWords = pasteTextValue.trim().match(/[a-zA-Z]{2,}/g) || []
+    const count = rawWords.filter(w => isLikelyEnglishWordLocal(w)).length
+    setVerifiedEngWordCount(count)
+  }, [pasteTextValue])
+
+
+  // Xóa kết quả AI cũ khi khung nhập trống
+  useEffect(() => {
+    if (pasteTextValue.trim().length === 0) {
+      setAiResult(null)
+      setAiMessage('')
+    }
+  }, [pasteTextValue])
+
+  const engWordCount = verifiedEngWordCount
   const charCount = pasteTextValue.length
   const isPasteValid = charCount >= 20 && engWordCount >= 3
   const wordCount = pasteTextValue.trim().split(/\s+/).filter(Boolean).length
@@ -326,15 +415,12 @@ export default function BulkAddPage() {
                           />
                         </td>
                         <td className="py-2.5 px-3">
-                          <select
+                          <CustomSelect
                             value={row.word_type ?? ''}
-                            onChange={e => updateRow(row._key, 'word_type', e.target.value)}
-                            className="w-full px-2.5 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 border border-slate-200 rounded-xl
-                              focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white cursor-pointer"
-                          >
-                            <option value="">Select...</option>
-                            {WORD_TYPES.map(t => <option key={t} value={t.toLowerCase()}>{t}</option>)}
-                          </select>
+                            onChange={v => updateRow(row._key, 'word_type', v)}
+                            options={WORD_TYPES}
+                            placeholder="Chọn loại từ..."
+                          />
                         </td>
                         <td className="py-2.5 px-3">
                           <input
@@ -369,9 +455,10 @@ export default function BulkAddPage() {
             </div>
           )}
 
-          {/* Tab 2: Paste Text - Centered & Equal Height Layout */}
+          {/* Tab 2: Paste Text - Split Box (1) into 2 Side-by-Side Halves + Compact Sidebar Box (2) */}
           {activeTab === 'paste' && (
-            <div className="max-w-4xl mx-auto w-full flex flex-col lg:flex-row gap-5 items-stretch">
+            <div className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row gap-5 items-stretch">
+              {/* Main Box (1): Paste Raw Text */}
               <div className="w-full flex-1 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between">
                 <div>
                   {/* Header */}
@@ -388,67 +475,79 @@ export default function BulkAddPage() {
                     </button>
                   </div>
 
-                  {/* Fixed-height gray box: textarea + AI pills inside */}
-                  <div className="p-4">
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 h-56 overflow-y-auto flex flex-col gap-2 relative">
-                      {/* Character Counter - Top Right inside gray box */}
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[11px] font-semibold select-none pointer-events-none ${pasteTextValue.length === 0 ? 'text-slate-400'
-                          : !isPasteValid ? 'text-amber-500'
-                            : 'text-emerald-500'
+                  {/* Symmetrical 2-card grid */}
+                  <div className="p-4 bg-slate-50 border-b border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      
+                      {/* Left Symmetrical Card: Raw Text Area */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between h-64 shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                          <span className="text-xs font-extrabold text-slate-700">Văn bản đầu vào</span>
+                          <span className={`text-xs font-semibold select-none pointer-events-none ${
+                            charCount > 4500 ? 'text-red-500' : charCount > 3000 ? 'text-amber-500' : 'text-slate-400'
                           }`}>
-                          {pasteTextValue.length === 0
-                            ? 'Nhập ít nhất 20 ký tự và 3 từ tiếng Anh'
-                            : !isPasteValid
-                              ? `Cần thêm: ${charCount < 20 ? `${20 - charCount} ký tự` : ''} ${engWordCount < 3 ? `${3 - engWordCount} từ tiếng Anh` : ''}`.trim()
-                              : `✓ Hợp lệ • ${engWordCount} từ tiếng Anh`
-                          }
-                        </span>
-                        <span className={`text-xs font-semibold select-none pointer-events-none ${charCount > 4500 ? 'text-red-500' : charCount > 3000 ? 'text-amber-500' : 'text-slate-400'
-                          }`}>
-                          {charCount} / 5000
-                        </span>
+                            {charCount} / 5000
+                          </span>
+                        </div>
+                        <textarea
+                          ref={textareaRef}
+                          value={pasteTextValue}
+                          onChange={e => {
+                            if (e.target.value.length <= 5000) setPasteTextValue(e.target.value)
+                          }}
+                          placeholder="Nhập nội dung hoặc dán đoạn văn tại đây..."
+                          className="w-full flex-1 text-xs sm:text-sm text-slate-700 resize-none focus:outline-none bg-transparent placeholder:text-slate-400 font-medium leading-relaxed"
+                        />
                       </div>
 
-                      <textarea
-                        ref={textareaRef}
-                        value={pasteTextValue}
-                        onChange={e => {
-                          if (e.target.value.length <= 5000) setPasteTextValue(e.target.value)
-                        }}
-                        placeholder={`Enter your text here...\n\nExample formats:\n- ephemeral: lasting for a very short time.\n- ubiquitous - existing or being everywhere at the same time.\n- Or just paste an article and let AI find the key terms!`}
-                        className="w-full flex-1 text-xs sm:text-sm text-slate-700 resize-none focus:outline-none bg-transparent
-                          placeholder:text-slate-400 font-medium leading-relaxed min-h-[120px]"
-                      />
-
-                      {/* AI result pills — inside the same box, no layout shift */}
-                      {aiResult && aiResult.length > 0 && (
-                        <div className="border-t border-slate-200 pt-2">
-                          <p className="text-xs font-bold text-emerald-600 mb-1.5">{aiMessage}</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {aiResult.map(w => (
-                              <span key={w} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold
-                                bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
-                                ✓ {w}
-                              </span>
-                            ))}
-                          </div>
+                      {/* Right Symmetrical Card: AI Extracted Words Display */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between h-64 shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                          <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                            <Sparkles size={14} className="text-emerald-500" />
+                            <span>Từ vựng AI bóc tách</span>
+                          </span>
+                          {aiResult && aiResult.length > 0 && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                              {aiResult.length} từ
+                            </span>
+                          )}
                         </div>
-                      )}
+
+                        {aiResult && aiResult.length > 0 ? (
+                          <div className="flex-1 flex flex-col justify-between gap-2 overflow-hidden">
+                            <p className="text-xs font-bold text-emerald-700 leading-snug">
+                              {aiMessage}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5 overflow-y-auto max-h-[150px] pr-1 py-1">
+                              {aiResult.map(w => (
+                                <span
+                                  key={w}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200/80 rounded-xl shadow-2xs"
+                                >
+                                  ✓ {w}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-slate-400 space-y-1">
+                            <Sparkles size={26} className="text-slate-300 mb-1" />
+                            <p className="text-xs font-bold text-slate-600">Chưa có từ vựng trích xuất</p>
+                            <p className="text-[11px] text-slate-400 max-w-[200px]">Nhấn "Process Text with AI" để bóc tách từ vựng</p>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
                   </div>
                 </div>
 
                 {/* Process Button */}
-                <div className="px-4 pb-4 flex flex-col items-end gap-1.5">
-                  {pasteTextValue.length > 0 && !isPasteValid && (
-                    <p className="text-[11px] text-amber-600 font-semibold text-right">
-                      Cần ít nhất <span className="font-extrabold">20 ký tự</span> và <span className="font-extrabold">3 từ tiếng Anh</span> thực sự
-                    </p>
-                  )}
+                <div className="px-4 pb-4 flex justify-end">
                   <button
                     onClick={handleSave}
-                    disabled={loading || !isPasteValid}
+                    disabled={loading || pasteTextValue.trim().length === 0}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-white
                       bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-xl transition-all shadow-md shadow-blue-500/20
                       disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
@@ -463,8 +562,8 @@ export default function BulkAddPage() {
                 </div>
               </div>
 
-              {/* Sidebar Info Guide - Equal Height */}
-              <div className="w-full lg:w-72 shrink-0 flex flex-col">
+              {/* Sidebar Box (2): HƯỚNG DẪN DÁN DỮ LIỆU (Width reduced to w-64) */}
+              <div className="w-full lg:w-64 shrink-0 flex flex-col">
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 h-full flex flex-col justify-between">
                   <div>
                     <h3 className="text-xs sm:text-sm font-extrabold text-slate-800 mb-3.5 flex items-center gap-2">
