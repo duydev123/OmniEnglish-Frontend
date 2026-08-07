@@ -25,11 +25,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         {/* Home Link */}
         <button
           onClick={() => { navigate('/'); onClose?.() }}
-          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-            isHomeActive
-              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${isHomeActive
+            ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`}
         >
           <House size={16} />
           <span>Home</span>
@@ -55,11 +54,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
             <div className="ml-4 pl-3 border-l-2 border-slate-200/80 my-1 space-y-1">
               <button
                 onClick={() => { navigate('/vocabulary'); onClose?.() }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition-all ${
-                  isVocabActive
-                    ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition-all ${isVocabActive
+                  ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
               >
                 <BookOpen size={15} />
                 <span>Vocabulary</span>
@@ -78,8 +76,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
         {/* Practice Module */}
         <button
-          onClick={() => onClose?.()}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all"
+          onClick={() => { navigate('/practice'); onClose?.() }}
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+            location.pathname.startsWith('/practice') ||
+            location.pathname.startsWith('/listening') ||
+            location.pathname.startsWith('/reading')
+              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
         >
           <Clock size={16} />
           <span>Practice Module</span>
@@ -134,8 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
       {/* Sidebar Container */}
       <aside
         className={`fixed top-14 left-0 bottom-0 z-30 w-60 bg-white border-r border-slate-200/80
-          transition-transform duration-300 ${
-            isOpen ? 'translate-x-0' : '-translate-x-full'
+          transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
         {navContent}
