@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Loader2 } from 'lucide-react';
+import CustomSelect from '../../common/CustomSelect';
 import type { VocabularyCollection } from '../../../types/vocabulary';
 import { updateCollection } from '../../../services/vocabularyApi';
 
@@ -84,15 +85,15 @@ export const EditCollectionModal: React.FC<EditCollectionModalProps> = ({
               <label htmlFor="editLanguage" className="block text-xs sm:text-sm font-bold text-slate-700">
                 Ngôn ngữ
               </label>
-              <select
+              <CustomSelect
                 id="editLanguage"
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-3 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all font-medium text-slate-800 cursor-pointer"
-              >
-                <option value="Anh-Mỹ">Anh - Mỹ</option>
-                <option value="Anh-Anh">Anh - Anh</option>
-              </select>
+                onChange={setLanguage}
+                options={[
+                  { value: 'Anh-Mỹ', label: 'Anh - Mỹ' },
+                  { value: 'Anh-Anh', label: 'Anh - Anh' },
+                ]}
+              />
             </div>
           </div>
 
