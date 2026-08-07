@@ -69,17 +69,17 @@ function ToastItem({ toast, onRemove }: { toast: ToastMessage; onRemove: () => v
   }, [])
 
   const icons = {
-    success: <CheckCircle className="text-emerald-500 shrink-0" size={20} />,
-    error: <XCircle className="text-red-500 shrink-0" size={20} />,
-    info: <Info className="text-blue-500 shrink-0" size={20} />,
-    warning: <AlertTriangle className="text-amber-500 shrink-0" size={20} />,
+    success: <CheckCircle className="text-emerald-600 shrink-0" size={20} />,
+    error: <XCircle className="text-rose-600 shrink-0" size={20} />,
+    info: <Info className="text-[#1D4ED8] shrink-0" size={20} />,
+    warning: <AlertTriangle className="text-amber-600 shrink-0" size={20} />,
   }
 
   const bgColors = {
-    success: 'bg-emerald-50 border-emerald-200 text-emerald-900 shadow-emerald-500/10',
-    error: 'bg-red-50 border-red-200 text-red-900 shadow-red-500/10',
-    info: 'bg-blue-50 border-blue-200 text-blue-900 shadow-blue-500/10',
-    warning: 'bg-amber-50 border-amber-200 text-amber-900 shadow-amber-500/10',
+    success: 'bg-white border-slate-200 text-slate-800 shadow-2xl border-l-4 border-l-emerald-500',
+    error: 'bg-white border-slate-200 text-slate-800 shadow-2xl border-l-4 border-l-rose-500',
+    info: 'bg-white border-slate-200 text-slate-800 shadow-2xl border-l-4 border-l-[#1D4ED8]',
+    warning: 'bg-white border-slate-200 text-slate-800 shadow-2xl border-l-4 border-l-amber-500',
   }
 
   return (

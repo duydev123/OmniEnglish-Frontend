@@ -54,14 +54,27 @@ export function removeId(id: string): void {
   }
 }
 
+export function cleanWordType(wt?: string): string {
+  if (!wt) return 'noun'
+  let cleaned = String(wt).trim()
+  if (cleaned.toLowerCase().startsWith('wordtype.')) {
+    cleaned = cleaned.substring(9)
+  }
+  return cleaned.toLowerCase()
+}
+
 export function sanitizeCollection(collection: VocabularyCollection): VocabularyCollection {
   if (!collection) return collection
   if (collection.words_list && Array.isArray(collection.words_list)) {
     const cleaned = collection.words_list.map(w => {
-      if (w && w.image_url && typeof w.image_url === 'string' && w.image_url.startsWith('blob:')) {
-        return { ...w, image_url: '' }
+      let item = { ...w }
+      if (item && item.image_url && typeof item.image_url === 'string' && item.image_url.startsWith('blob:')) {
+        item.image_url = ''
       }
-      return w
+      if (item && item.word_type) {
+        item.word_type = cleanWordType(item.word_type)
+      }
+      return item
     })
     return { ...collection, words_list: cleaned }
   }
@@ -212,20 +225,27 @@ export async function updateCollection(
 }
 
 export async function getCollection(id: string): Promise<VocabularyCollection> {
-  try {
-    const col = await apiFetch<VocabularyCollection>(`/collections/${id}`)
-    if (col) {
-      const sanitized = sanitizeCollection(col)
-      updateSingleCachedCollection(sanitized)
-      return sanitized
+  // Local fallback collections (created while backend was offline) only exist in cache
+  const isLocalFallback = id.startsWith('col_')
+
+  if (!isLocalFallback) {
+    try {
+      const col = await apiFetch<VocabularyCollection>(`/collections/${id}`)
+      if (col) {
+        const sanitized = sanitizeCollection(col)
+        updateSingleCachedCollection(sanitized)
+        return sanitized
+      }
+    } catch (err) {
+      console.warn(`Could not fetch collection ${id} from API, checking cache:`, err)
     }
-  } catch (err) {
-    console.warn(`Could not fetch collection ${id} from API, checking cache:`, err)
   }
+
   const cached = getCachedCollections().find(c => c.id === id)
   if (cached) return cached
   throw new Error('Vocabulary collection not found')
 }
+
 
 export async function deleteCollection(id: string): Promise<{ status: string; message: string }> {
   try {
@@ -249,8 +269,13 @@ export async function addWord(
       body: JSON.stringify(payload),
     })
     return res
-  } catch {
-    // Add locally to cache
+  } catch (err: any) {
+    // Nếu backend trả về lỗi có response (4xx/5xx), re-throw để caller xử lý
+    // Ví dụ: 409 Conflict → từ đã tồn tại → hiện toast warning ở modal
+    if (err?.response) {
+      throw err
+    }
+    // Chỉ fallback local khi mất kết nối hoàn toàn (backend offline)
     const cached = getCachedCollections()
     const target = cached.find(c => c.id === collectionId)
     if (target) {
@@ -269,6 +294,7 @@ export async function addWord(
     return { status: 'success', message: 'Word added locally' }
   }
 }
+
 
 export async function updateWord(
   wordId: string,
