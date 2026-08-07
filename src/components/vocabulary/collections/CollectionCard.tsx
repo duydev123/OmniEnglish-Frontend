@@ -54,12 +54,12 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
     return (
       <div
         onClick={() => navigate(`/vocabulary/${collection.id}`)}
-        className="group relative bg-white rounded-3xl border border-slate-200/90 p-5 hover:shadow-lg
-          hover:border-blue-400/80 transition-all duration-200 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none min-h-[100px]"
+        className="group relative bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 hover:shadow-lg
+          hover:border-blue-400/80 transition-all duration-200 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none min-h-[90px]"
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <h3 className="font-extrabold text-lg text-slate-900 group-hover:text-[#1D4ED8] transition-colors leading-snug break-words">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h3 className="font-extrabold text-base sm:text-lg text-slate-900 group-hover:text-[#1D4ED8] transition-colors leading-snug break-words">
               {collection.title}
             </h3>
             {collection.is_official && (
@@ -68,32 +68,32 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-400 font-medium leading-relaxed">
+          <p className="text-xs text-slate-400 font-medium leading-relaxed line-clamp-2">
             {collection.description || 'Chưa có mô tả cho bộ từ này.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-6 shrink-0 justify-between sm:justify-end">
-          <div className="text-left sm:text-right">
-            <div className="flex items-center gap-1.5 text-xs font-black text-slate-700">
-              <BookOpen size={14} className="text-slate-400" />
-              <span>{wordCount} Words</span>
+        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+          <div className="text-left sm:text-right shrink-0">
+            <div className="flex items-center gap-1 text-xs font-black text-slate-700 whitespace-nowrap">
+              <BookOpen size={13} className="text-slate-400 shrink-0" />
+              <span>{wordCount} Từ</span>
             </div>
-            <span className={`text-xs font-black ${getBadgeColor(masteredPct)}`}>
-              {masteredPct}% Mastered
+            <span className={`text-xs font-black whitespace-nowrap ${getBadgeColor(masteredPct)}`}>
+              {masteredPct}% Đã thuộc
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
             <button
               onClick={onPractice}
-              className="px-5 py-2.5 bg-[#1D4ED8] hover:bg-blue-800 text-white rounded-2xl font-black text-xs shadow-md shadow-blue-500/20 transition-all"
+              className="px-4 py-2 sm:py-2.5 bg-[#1D4ED8] hover:bg-blue-800 text-white rounded-xl font-extrabold text-xs shadow-md shadow-blue-500/20 transition-all whitespace-nowrap cursor-pointer"
             >
-              Practice Now
+              Luyện tập ngay
             </button>
             <button
               onClick={() => navigate(`/vocabulary/${collection.id}`)}
-              className="p-2.5 border border-slate-200 rounded-2xl text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all"
+              className="p-2 sm:p-2.5 border border-slate-200 rounded-xl text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all shrink-0 cursor-pointer"
               title="Xem chi tiết"
             >
               <Eye size={16} />
@@ -107,15 +107,15 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
   return (
     <div
       onClick={() => navigate(`/vocabulary/${collection.id}`)}
-      className="group relative bg-white rounded-3xl border border-slate-200/90 p-6 hover:shadow-xl
+      className="group relative bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-6 hover:shadow-xl
         hover:border-blue-400/80 transition-all duration-200 cursor-pointer flex flex-col justify-between
-        h-[310px] w-full select-none overflow-hidden"
+        min-h-[290px] sm:h-[310px] w-full select-none overflow-hidden"
     >
       {/* Top Header & Description Section */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Title + 3-dots Menu */}
         <div className="flex items-start justify-between gap-2 mb-2 shrink-0">
-          <h3 className="font-extrabold text-lg text-slate-900 group-hover:text-[#1D4ED8] transition-colors leading-snug tracking-tight flex-1 break-words">
+          <h3 className="font-extrabold text-base sm:text-lg text-slate-900 group-hover:text-[#1D4ED8] transition-colors leading-snug tracking-tight flex-1 break-words">
             {collection.title}
           </h3>
 
@@ -168,7 +168,7 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
         </div>
 
         {/* Scrollable Description Box with fixed height constraint */}
-        <div className="h-[64px] overflow-y-auto pr-1 text-xs text-slate-400 font-medium leading-relaxed custom-scrollbar shrink-0">
+        <div className="h-[60px] sm:h-[64px] overflow-y-auto pr-1 text-xs text-slate-400 font-medium leading-relaxed custom-scrollbar shrink-0">
           {collection.description || 'Chưa có mô tả cho bộ từ này.'}
         </div>
       </div>
@@ -176,17 +176,17 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
       {/* Stats row & Progress Bar & Bottom Actions (Fixed position at bottom) */}
       <div className="shrink-0 pt-2">
         <div className="flex items-center justify-between text-xs font-extrabold text-slate-700 mb-2">
-          <div className="flex items-center gap-1.5">
-            <BookOpen size={15} className="text-slate-400" />
-            <span>{wordCount} Words</span>
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <BookOpen size={14} className="text-slate-400 shrink-0" />
+            <span>{wordCount} Từ</span>
           </div>
-          <span className={`text-xs font-black ${getBadgeColor(masteredPct)}`}>
-            {masteredPct}% Mastered
+          <span className={`text-xs font-black whitespace-nowrap ${getBadgeColor(masteredPct)}`}>
+            {masteredPct}% Đã thuộc
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-5">
+        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-4 sm:mb-5">
           <div
             className={`h-full rounded-full transition-all duration-500 ${getProgressColor(masteredPct)}`}
             style={{ width: `${Math.max(masteredPct, 5)}%` }}
@@ -194,21 +194,21 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
         </div>
 
         {/* Bottom Actions Row: Practice Now + Eye icon button */}
-        <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2.5 shrink-0" onClick={e => e.stopPropagation()}>
           <button
             onClick={onPractice}
-            className="flex-1 py-3 px-5 bg-[#1D4ED8] hover:bg-blue-800 text-white rounded-2xl
-              font-black text-xs transition-all shadow-md shadow-blue-500/20 text-center"
+            className="flex-1 py-2.5 sm:py-3 px-3 sm:px-5 bg-[#1D4ED8] hover:bg-blue-800 text-white rounded-xl sm:rounded-2xl
+              font-extrabold text-xs transition-all shadow-md shadow-blue-500/20 text-center whitespace-nowrap cursor-pointer"
           >
-            Practice Now
+            Luyện tập ngay
           </button>
           <button
             onClick={() => navigate(`/vocabulary/${collection.id}`)}
-            className="w-11 h-11 border border-slate-200 hover:border-slate-300 rounded-2xl
-              flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all shrink-0"
+            className="w-9 h-9 sm:w-11 sm:h-11 border border-slate-200 hover:border-slate-300 rounded-xl sm:rounded-2xl
+              flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all shrink-0 cursor-pointer"
             title="Xem chi tiết"
           >
-            <Eye size={17} />
+            <Eye size={16} />
           </button>
         </div>
       </div>

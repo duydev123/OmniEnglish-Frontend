@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Edit3 } from 'lucide-react'
+import { ArrowLeft, Plus, Edit3, Zap, ArrowUpAZ, ArrowDownAZ } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import StatsBar from '../../components/vocabulary/detail/StatsBar'
 import FilterSidebar from '../../components/vocabulary/detail/FilterSidebar'
@@ -32,6 +32,9 @@ export default function CollectionDetailPage() {
   const [showEditCollection, setShowEditCollection] = useState(false)
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [showFlashcard, setShowFlashcard] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none')
+
+  const toggleSort = () => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
 
   useEffect(() => {
     if (!id) return
@@ -56,7 +59,7 @@ export default function CollectionDetailPage() {
       if (!prev) return prev
       return { ...prev, title: newTitle, description: newDesc, language: newLang }
     })
-    showToast('✅ Đã cập nhật bộ từ vựng!', 'success')
+    showToast('Đã cập nhật bộ từ vựng!', 'success')
   }
 
   const handleWordUpdated = useCallback((updatedWord: WordDetail) => {
@@ -78,7 +81,7 @@ export default function CollectionDetailPage() {
         words_list: updatedWords
       }
     })
-    showToast(`✅ Đã cập nhật hàng loạt ${updatedWords.length} từ vựng!`, 'success')
+    showToast(`Đã cập nhật hàng loạt ${updatedWords.length} từ vựng!`, 'success')
   }, [showToast])
 
   const handleFlashcardComplete = useCallback(async (
@@ -131,9 +134,17 @@ export default function CollectionDetailPage() {
     ? words
     : words.filter(w => w.learning_status === filter)
 
-  const visibleWords = filteredWords.slice(0, visibleCount)
-  const hasMore = visibleCount < filteredWords.length
-  const remainingCount = filteredWords.length - visibleCount
+  const sortedWords = sortOrder === 'none'
+    ? filteredWords
+    : [...filteredWords].sort((a, b) =>
+      sortOrder === 'asc'
+        ? a.word.localeCompare(b.word, 'en', { sensitivity: 'base' })
+        : b.word.localeCompare(a.word, 'en', { sensitivity: 'base' })
+    )
+
+  const visibleWords = sortedWords.slice(0, visibleCount)
+  const hasMore = visibleCount < sortedWords.length
+  const remainingCount = sortedWords.length - visibleCount
 
   return (
     <VocabLayout breadcrumbs={[
@@ -144,49 +155,63 @@ export default function CollectionDetailPage() {
     ]}>
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
         {/* Main Page Action Bar Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate('/vocabulary')}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200/60 transition-colors text-slate-700 font-bold"
+              className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg hover:bg-slate-200/60 transition-colors text-slate-700 font-bold"
               title="Quay lại"
             >
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#1D4ED8] tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-[#1D4ED8] tracking-tight truncate">
               {collection.title}
             </h1>
           </div>
 
-          {/* Top Bar Action Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Top Bar Action Buttons - Flex wrap layout for all viewports down to 280px */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
             <button
               onClick={() => setShowAddWord(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-slate-700
-                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer"
+              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold text-slate-700
+                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
             >
-              <Plus size={15} /> Thêm từ vựng
+              <Plus size={14} className="shrink-0" /> <span>Thêm từ vựng</span>
             </button>
             <button
               onClick={() => navigate(`/vocabulary/${id}/bulk-add`)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-slate-700
-                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer"
+              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold text-slate-700
+                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
             >
-              <Plus size={15} /> Thêm hàng loạt
+              <Plus size={14} className="shrink-0" /> <span>Thêm hàng loạt</span>
+            </button>
+            <button
+              onClick={toggleSort}
+              title={sortOrder === 'asc' ? 'Đang sắp xếp A→Z, bấm để đảo ngược' : sortOrder === 'desc' ? 'Đang sắp xếp Z→A, bấm để đảo ngược' : 'Sắp xếp theo bảng chữ cái'}
+              className={`flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold
+                rounded-xl transition-all shadow-xs cursor-pointer text-center whitespace-nowrap
+                ${sortOrder !== 'none'
+                  ? 'bg-blue-50 border border-blue-300 text-blue-700'
+                  : 'bg-[#F1F5F9] border border-slate-200/60 text-slate-700 hover:bg-slate-200'}`}
+            >
+              {sortOrder === 'desc'
+                ? <ArrowDownAZ size={14} className="shrink-0" />
+                : <ArrowUpAZ size={14} className="shrink-0" />}
+              <span>{sortOrder === 'desc' ? 'Z → A' : 'A → Z'}</span>
             </button>
             <button
               onClick={() => setShowBulkEdit(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-slate-700
-                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer"
+              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold text-slate-700
+                bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
             >
-              <Edit3 size={15} /> Sửa hàng loạt
+              <Edit3 size={14} className="shrink-0" /> <span>Sửa hàng loạt</span>
             </button>
             <button
               onClick={() => setShowEditCollection(true)}
-              className="flex items-center gap-1.5 px-5 py-2.5 text-xs font-extrabold text-white
-                bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+              className="flex-1 min-w-[125px] sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-xs font-extrabold text-white
+                bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer text-center whitespace-nowrap"
             >
-              <Edit3 size={15} /> Chỉnh sửa
+              <Edit3 size={14} className="shrink-0" /> <span>Chỉnh sửa</span>
             </button>
           </div>
         </div>
@@ -211,30 +236,75 @@ export default function CollectionDetailPage() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="lg:hidden mb-4 flex gap-2 overflow-x-auto pb-1">
-              {([
-                { key: 'all', label: `Tất cả (${counts.all})` },
-                { key: 'MASTERED', label: `Đã thuộc (${counts.mastered})` },
-                { key: 'LEARNING', label: `Đang học (${counts.learning})` },
-                { key: 'NEEDS_REVIEW', label: `Cần ôn (${counts.needsReview})` },
-              ] as { key: DetailFilter; label: string }[]).map(item => (
-                <button
-                  key={item.key}
-                  onClick={() => { setFilter(item.key); setVisibleCount(WORDS_PER_PAGE) }}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                    ${filter === item.key
-                      ? 'bg-[#1D4ED8] text-white'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-400'
-                    }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+            {/* Mobile Filter & Control Bar Card */}
+            <div className="lg:hidden mb-5 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-4 select-none">
+              {/* Row 1: Flashcard Button full width */}
+              <button
+                onClick={() => setShowFlashcard(true)}
+                className="w-full flex items-center justify-center gap-2 bg-[#1D4ED8] hover:bg-blue-800 text-white py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+              >
+                <Zap size={16} className="fill-white" />
+                <span>Luyện tập Flashcard</span>
+              </button>
+
+              {/* Row 2: Categorization Options Header + IPA Switch */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Phân loại từ vựng</p>
+                  <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+                    <span className="text-[11px] font-bold text-slate-700">Hiện IPA</span>
+                    <div className="relative">
+                      <input type="checkbox" className="sr-only" checked={showIPA} onChange={() => setShowIPA(v => !v)} />
+                      <div className={`block w-7 h-4 rounded-full transition-colors ${showIPA ? 'bg-[#1D4ED8]' : 'bg-slate-300'}`}></div>
+                      <div className={`dot absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition-transform ${showIPA ? 'transform translate-x-3' : ''}`}></div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Grid 2x2 of Options - No Horizontal Scroll */}
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { key: 'all', label: 'Tất cả', count: counts.all },
+                    { key: 'MASTERED', label: 'Đã thuộc', count: counts.mastered },
+                    { key: 'LEARNING', label: 'Đang học', count: counts.learning },
+                    { key: 'NEEDS_REVIEW', label: 'Cần ôn tập', count: counts.needsReview },
+                  ] as { key: DetailFilter; label: string; count: number }[]).map(item => (
+                    <button
+                      key={item.key}
+                      onClick={() => { setFilter(item.key); setVisibleCount(WORDS_PER_PAGE) }}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${filter === item.key
+                          ? 'bg-[#1D4ED8] text-white shadow-sm'
+                          : 'bg-slate-50 border border-slate-200/70 text-slate-700 hover:bg-slate-100'
+                        }`}
+                    >
+                      <span>{item.label}</span>
+                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${filter === item.key ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'
+                        }`}>
+                        {item.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Row 3: Sort order toggle */}
+              <button
+                onClick={toggleSort}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-extrabold text-xs transition-all cursor-pointer ${sortOrder !== 'none'
+                    ? 'bg-blue-50 border border-blue-300 text-blue-700'
+                    : 'bg-slate-50 border border-slate-200/80 text-slate-600 hover:bg-slate-100'
+                  }`}
+              >
+                {sortOrder === 'desc'
+                  ? <ArrowDownAZ size={14} className="shrink-0" />
+                  : <ArrowUpAZ size={14} className="shrink-0" />}
+                <span>Sắp xếp: {sortOrder === 'asc' ? 'A → Z' : sortOrder === 'desc' ? 'Z → A' : 'Mặc định'}</span>
+              </button>
             </div>
 
-            {filteredWords.length === 0 ? (
+            {sortedWords.length === 0 ? (
               <div className="text-center py-16 text-slate-400">
-                <div className="text-5xl mb-3">📭</div>
+                <div className="text-5xl mb-3">📥</div>
                 <p className="font-semibold text-slate-500">
                   {filter === 'all' ? 'Bộ từ chưa có từ nào' : 'Không có từ nào trong trạng thái này'}
                 </p>
@@ -256,10 +326,11 @@ export default function CollectionDetailPage() {
                       style={{ animationDelay: `${i * 40}ms` }}
                       className="animate-[fadeInUp_0.3s_ease_both]"
                     >
-                      <WordCard 
-                        word={word} 
-                        showIPA={showIPA} 
+                      <WordCard
+                        word={word}
+                        showIPA={showIPA}
                         onWordUpdated={handleWordUpdated}
+                        language={collection.language}
                       />
                     </div>
                   ))}
@@ -302,7 +373,7 @@ export default function CollectionDetailPage() {
         preselectedCollectionId={id}
         onWordAdded={async () => {
           setShowAddWord(false)
-          showToast('✅ Đã thêm từ vựng!', 'success')
+          showToast('Đã thêm từ vựng!', 'success')
           if (id) await fetchCollection(id)
         }}
       />
