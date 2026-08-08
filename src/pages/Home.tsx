@@ -4,6 +4,7 @@ import { useUserStore, initialUser } from "../stores/user/useUserStore"
 import { userApi } from "../services/userApi"
 import { useToast } from "../components/common/Toast"
 import { LogoutModal } from "../components/common/LogoutModal"
+import Sidebar from "../components/common/Sidebar"
 import {
   Menu,
   Bell,
@@ -98,20 +99,12 @@ const Home = () => {
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-white border-b border-slate-100/80 h-16 px-4 lg:px-8 flex items-center justify-between shadow-xs backdrop-blur-md">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
-            aria-label="Toggle Menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 cursor-pointer select-none">
-            <span className="text-2xl font-extrabold tracking-tight">
-              <span className="text-[#1e50e6]">omni</span>
-              <span className="text-slate-900">English</span>
-            </span>
+          {/* Logo (Hero style) */}
+          <Link to="/" className="flex items-center gap-2.5 cursor-pointer select-none hover:opacity-90 transition">
+            <div className="bg-[#1e50e6] rounded-lg p-1.5 flex items-center justify-center shadow-xs">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
           </Link>
         </div>
 
@@ -163,115 +156,11 @@ const Home = () => {
           />
         )}
 
-        {/* Left Sidebar */}
-        <aside
-          className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] w-64 bg-[#f8fafd] border-r border-slate-200/60 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out ${
-            mobileSidebarOpen ? "translate-x-0 bg-white" : "-translate-x-full lg:translate-x-0"
-          }`}
-        >
-          {/* Navigation Links */}
-          <nav className="space-y-1.5 overflow-y-auto">
-            {/* Home (Active) */}
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-4 py-3 bg-[#1e50e6] text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/20 transition"
-            >
-              <HomeIcon className="w-4 h-4" />
-              <span>Home</span>
-            </Link>
-
-            {/* Basic Accordion */}
-            <div>
-              <button
-                onClick={() => setBasicOpen(!basicOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <BookOpen className="w-4 h-4 text-slate-500" />
-                  <span>Basic</span>
-                </div>
-                {basicOpen ? (
-                  <ChevronUp className="w-4 h-4 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                )}
-              </button>
-
-              {basicOpen && (
-                <div className="ml-7 pl-3 border-l-2 border-slate-200 mt-1 space-y-1">
-                  <Link
-                    to="/vocabulary"
-                    className="flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 text-xs font-semibold rounded-lg transition"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Vocabulary</span>
-                  </Link>
-                  <a
-                    href="#"
-                    className="flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 text-xs font-semibold rounded-lg transition"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Grammar</span>
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* Practice Module */}
-            <Link
-              to="/practice-modules"
-              className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition"
-            >
-              <GraduationCap className="w-4 h-4 text-slate-500" />
-              <span>Practice Module</span>
-            </Link>
-
-            {/* Computer-based Tests */}
-            <a
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition"
-            >
-              <Monitor className="w-4 h-4 text-slate-500" />
-              <span>Computer-based Tests</span>
-            </a>
-
-            {/* Profile */}
-            <Link
-              to="/profile"
-              className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition"
-            >
-              <User className="w-4 h-4 text-slate-500" />
-              <span>Profile</span>
-            </Link>
-          </nav>
-
-          {/* Bottom Card: Weekly Goal */}
-          <div className="bg-gradient-to-br from-[#eaf1ff] to-[#dbe7ff] border border-blue-200/60 rounded-2xl p-4 mt-auto shadow-xs">
-            <span className="text-[11px] font-bold text-blue-900/80 tracking-wide block mb-1 uppercase">
-              Weekly Goal
-            </span>
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="text-xl font-black text-slate-900">{weeklyXpPercent}%</span>
-              <span className="text-xs font-bold text-slate-600">{weeklyXp}/{weeklyGoalTarget} XP</span>
-            </div>
-            
-            {/* Progress bar */}
-            <div className="w-full bg-blue-200/80 rounded-full h-2 overflow-hidden mb-3">
-              <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-xs"
-                style={{ width: `${weeklyXpPercent}%` }}
-              />
-            </div>
-
-            <button className="w-full bg-[#1e50e6] hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition active:scale-98 cursor-pointer">
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>Upgrade</span>
-            </button>
-          </div>
-        </aside>
+        {/* Centralized Reusable Sidebar */}
+        <Sidebar isOpen={mobileSidebarOpen || true} onClose={() => setMobileSidebarOpen(false)} />
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden">
+        <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden">
           {/* Header Row: Welcome + Gamification Badges */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
