@@ -136,17 +136,23 @@ export default function PracticeModulesPage() {
     setListeningLoading(true)
     setListeningError(null)
 
+    const cardsPerPassage = (selectedQuestionType && selectedQuestionType !== 'All') ? 1 : 2
+    const limitForPassages = Math.ceil(pageSize / cardsPerPassage)
+
     getListeningPassages({
       page: currentPage,
-      limit: pageSize,
+      limit: limitForPassages,
       question_type: selectedQuestionType === 'All' ? undefined : selectedQuestionType
     })
       .then((res) => {
         if (cancelled) return
         setListeningPassages(res.items)
+        const totalCards = res.total * cardsPerPassage
         setListeningMeta({
-          page: res.page, limit: res.limit, total: res.total,
-          total_pages: Math.max(1, Math.ceil(res.total / pageSize)),
+          page: currentPage,
+          limit: pageSize,
+          total: totalCards,
+          total_pages: Math.max(1, Math.ceil(totalCards / pageSize)),
         })
       })
       .catch((err) => {
@@ -493,7 +499,7 @@ export default function PracticeModulesPage() {
             )}
             {activeTab === 'listening' && (
               <span className="text-slate-400">
-                • Page {listeningMeta.page}/{listeningMeta.total_pages} • {listeningMeta.total} listening passages
+                • Page {listeningMeta.page}/{listeningMeta.total_pages} • {listeningMeta.total} items
               </span>
             )}
           </div>

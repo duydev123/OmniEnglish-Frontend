@@ -56,8 +56,8 @@ export default function ListeningResultPage() {
       clipAudioRef.current.pause()
     }
 
-    const startSec = startTimeMs ? (startTimeMs / 1000.0) : parseTimeToSeconds(clipTime)
-    let endSec = endTimeMs ? (endTimeMs / 1000.0) : (startSec + 15)
+    const startSec = (startTimeMs !== undefined && startTimeMs !== null) ? (startTimeMs / 1000.0) : parseTimeToSeconds(clipTime)
+    let endSec = (endTimeMs !== undefined && endTimeMs !== null) ? (endTimeMs / 1000.0) : (startSec + 15)
 
     const segmentDuration = endSec - startSec
     setClipDuration(segmentDuration)

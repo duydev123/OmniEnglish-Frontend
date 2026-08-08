@@ -90,6 +90,8 @@ export interface QuestionResult {
   correct_answer: string
   statement?: string | null
   options?: string[]
+  explanation?: string | null
+  excerpt?: string | null
 }
 
 export interface ReadingSubmitResponse {
