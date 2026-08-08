@@ -37,7 +37,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
         </button>
 
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs font-extrabold shadow-xs overflow-hidden cursor-pointer ring-2 ring-blue-500/20" title="Hồ sơ cá nhân">
+        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-extrabold shadow-xs overflow-hidden cursor-pointer ring-2 ring-blue-500/20" title="Hồ sơ cá nhân">
           <img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
             alt="User Avatar"

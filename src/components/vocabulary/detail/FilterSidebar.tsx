@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlignLeft, CheckCircle2, GraduationCap, AlertCircle, Zap } from 'lucide-react';
+import { AlignLeft, CheckCircle2, GraduationCap, AlertCircle, Layers } from 'lucide-react';
 import type { DetailFilter } from '../../../types/vocabulary';
 
 interface FilterSidebarProps {
@@ -107,10 +107,10 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       {/* ── Flashcard Button ── */}
       <button 
         onClick={onStartFlashcard}
-        className="w-full flex items-center justify-center gap-2 bg-[#1D4ED8] hover:bg-blue-800 text-white py-3 px-4 rounded-full font-bold text-xs transition-all shadow-md shadow-blue-600/20"
+        className="w-full flex items-center justify-center gap-1.5 bg-[#1D4ED8] hover:bg-blue-800 text-white py-2.5 px-3 rounded-full font-extrabold text-xs transition-all shadow-md shadow-blue-600/20 cursor-pointer whitespace-nowrap"
       >
-        <Zap size={15} className="fill-white" />
-        Luyện tập Flashcard
+        <Layers size={15} className="shrink-0 stroke-[2.5]" />
+        <span>Luyện tập Flashcard</span>
       </button>
     </div>
   );
