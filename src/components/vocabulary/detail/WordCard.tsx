@@ -9,9 +9,10 @@ interface WordCardProps {
   showIPA: boolean;
   onWordUpdated?: (updatedWord: WordDetail) => void;
   language?: string;
+  isOfficial?: boolean;
 }
 
-export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated, language }) => {
+export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated, language, isOfficial }) => {
   const [editingWord, setEditingWord] = useState<WordDetail | null>(null);
 
   if (!word) {
@@ -64,13 +65,15 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
           <div className="flex justify-between items-start mb-1">
             <div className="flex items-center gap-2">
               <h3 className="font-extrabold text-xl text-slate-900 tracking-tight">{word.word}</h3>
-              <button
-                onClick={handleEditClick}
-                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#1D4ED8] hover:bg-blue-50 rounded-lg transition-all"
-                title="Chỉnh sửa từ vựng"
-              >
-                <Edit3 size={14} />
-              </button>
+              {!isOfficial && (
+                <button
+                  onClick={handleEditClick}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#1D4ED8] hover:bg-blue-50 rounded-lg transition-all"
+                  title="Chỉnh sửa từ vựng"
+                >
+                  <Edit3 size={14} />
+                </button>
+              )}
             </div>
             <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black tracking-wider ${statusBadge.bg} ${statusBadge.text}`}>
               {statusBadge.label}

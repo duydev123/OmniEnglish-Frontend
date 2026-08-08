@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   X, Zap, Settings, Volume2, ArrowLeft, ArrowRight,
-  CheckCircle2, Frown, Check, Sliders, Shuffle, Edit3
+  CheckCircle2, Frown, Check, Sliders, Shuffle, Edit3, HelpCircle
 } from 'lucide-react'
 import type { VocabularyCollection, WordDetail, WordStatus } from '../../../types/vocabulary'
 import { updateWordStatus } from '../../../services/vocabularyApi'
@@ -27,6 +27,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
   const [ratings, setRatings] = useState<Record<string, WordStatus>>({})
   const [startTime, setStartTime] = useState<number>(0)
   const [isFinished, setIsFinished] = useState(false)
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [streak] = useState(12)
 
   // Edit Word State
@@ -48,6 +49,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
       setRatings({})
       setStartTime(Date.now())
       setIsFinished(false)
+      setShowExitConfirm(false)
     }
   }, [open, collection, startWithDefinition])
 
@@ -112,6 +114,19 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
     onClose()
   }
 
+  const handleRequestClose = useCallback(() => {
+    if (isFinished) {
+      onClose()
+      return
+    }
+    const hasProgress = Object.keys(ratings).length > 0 || currentIndex > 0 || (Date.now() - startTime > 5000)
+    if (hasProgress) {
+      setShowExitConfirm(true)
+    } else {
+      onClose()
+    }
+  }, [isFinished, ratings, currentIndex, startTime, onClose])
+
   const handleWordUpdated = (updated: WordDetail) => {
     setWords(prev => prev.map(w => w.id === updated.id ? updated : w))
     if (collection && collection.words_list) {
@@ -120,11 +135,32 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
     setEditingWord(null)
   }
 
+  // Prevent accidental browser refresh / navigation
+  useEffect(() => {
+    if (!open || isFinished) return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (Object.keys(ratings).length > 0 || currentIndex > 0) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [open, isFinished, ratings, currentIndex])
+
   // Keyboard navigation
   useEffect(() => {
     if (!open || isFinished || showSettings || !!editingWord) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (showExitConfirm) {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setShowExitConfirm(false)
+        }
+        return
+      }
+
       if (e.key === ' ') {
         e.preventDefault()
         setIsFlipped(prev => !prev)
@@ -142,13 +178,13 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
         handleRating('NEEDS_REVIEW')
       } else if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        handleRequestClose()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open, isFinished, showSettings, editingWord, handlePrev, handleNextOnly, handleRating, onClose])
+  }, [open, isFinished, showSettings, editingWord, showExitConfirm, handlePrev, handleNextOnly, handleRating, handleRequestClose])
 
   if (!open || !collection) return null
 
@@ -204,7 +240,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
       <header className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
           <button
-            onClick={onClose}
+            onClick={handleRequestClose}
             className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
             title="Đóng (Esc)"
           >
@@ -406,7 +442,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
               </div>
 
               {/* Daily Goal card */}
-              <div className="bg-gradient-to-br from-[#1D4ED8] to-blue-800 rounded-2xl p-4 text-white shadow-md relative overflow-hidden hidden md:block">
+              <div className="bg-[#1D4ED8] rounded-2xl p-4 text-white shadow-md relative overflow-hidden hidden md:block">
                 <h3 className="font-bold text-base mb-1">Daily Goal</h3>
                 <p className="text-blue-100 text-[11px] leading-relaxed mb-3">
                   Complete 50 more words to reach your goal!
@@ -569,6 +605,51 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
             >
               Áp dụng tùy chỉnh
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm Exit Dialog ── */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-100 animate-in zoom-in-95">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center mx-auto mb-3">
+              <HelpCircle size={24} />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-1">Tạm dừng bài luyện tập?</h3>
+            <p className="text-slate-500 text-xs mb-5 leading-relaxed">
+              Bạn đang học dở phiên Flashcard ({currentIndex + 1}/{words.length} từ). Bạn có muốn lưu lại tiến trình đã làm không?
+            </p>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  setShowExitConfirm(false)
+                  handleFinish()
+                }}
+                className="w-full py-3 bg-[#1D4ED8] hover:bg-blue-800 text-white rounded-xl font-bold text-xs transition-colors shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 size={16} />
+                <span>Lưu tiến trình & Thoát</span>
+              </button>
+
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors"
+              >
+                Tiếp tục bài làm
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowExitConfirm(false)
+                  onClose()
+                }}
+                className="w-full py-2 text-slate-400 hover:text-rose-600 font-semibold text-[11px] transition-colors"
+              >
+                Thoát không lưu
+              </button>
+            </div>
           </div>
         </div>
       )}

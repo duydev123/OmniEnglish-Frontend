@@ -217,67 +217,11 @@ export default function BulkAddPage() {
     navigate(`/vocabulary/${id}`)
   }
 
-  // Danh sách stop words tiếng Anh phổ biến - không cần tra từ điển
-  const STOP_WORDS = new Set([
-    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-    'do', 'does', 'did', 'have', 'has', 'had', 'will', 'would', 'could',
-    'should', 'may', 'might', 'shall', 'can', 'need', 'dare', 'ought',
-    'in', 'on', 'at', 'by', 'for', 'of', 'to', 'up', 'as', 'or', 'and',
-    'but', 'nor', 'so', 'yet', 'not', 'no', 'nor', 'if', 'or', 'then',
-    'than', 'that', 'this', 'these', 'those', 'it', 'its', 'he', 'she',
-    'we', 'they', 'you', 'me', 'him', 'her', 'us', 'them', 'my', 'our',
-    'his', 'your', 'their', 'its', 'who', 'what', 'which', 'when', 'where',
-    'how', 'why', 'all', 'both', 'each', 'few', 'more', 'most', 'other',
-    'some', 'such', 'only', 'own', 'same', 'too', 'very', 'just', 'also',
-    'from', 'into', 'with', 'about', 'after', 'before', 'between', 'through',
-    'during', 'without', 'within', 'along', 'following', 'across', 'behind',
-    'beyond', 'plus', 'except', 'up', 'out', 'around', 'down', 'off', 'above',
-    'over', 'under', 'again', 'further', 'once', 'here', 'there', 'while',
-  ])
-
-  // Validation rules cơ bản loại trừ mẫu từ vô nghĩa / tiếng Việt không dấu
-  function isLikelyEnglishWordLocal(w: string): boolean {
-    const word = w.toLowerCase().trim()
-
-    // Yêu cầu tối thiểu 3 ký tự để loại các từ chức năng quá ngắn
-    if (word.length < 3 || word.length > 25) return false
-
-    // Loại stop words - những từ phổ biến không cần học
-    if (STOP_WORDS.has(word)) return false
-
-    // Bắt buộc chứa ít nhất 1 nguyên âm tiếng Anh (a, e, i, o, u, y)
-    if (!/[aeiouy]/.test(word)) return false
-
-    // Không được chứa 4 phụ âm liên tiếp
-    if (/[bcdfghjklmnpqrstvwxz]{4,}/.test(word)) return false
-
-    // Không chứa 3 ký tự lặp liên tiếp
-    if (/(.)\1\1/.test(word)) return false
-
-    // Chặn các cấu trúc âm tiết đặc trưng tiếng Việt không dấu
-    if (/^(ngh|kh|nh)[a-z]*/.test(word)) return false
-    if (/^ng[aeiouy]/.test(word)) return false
-    if (/[a-z]+nh$/.test(word) && !/[a-z]+nch$/.test(word)) return false
-
-    // Chặn các kết hợp nguyên âm đặc trưng tiếng Việt
-    if (/(uoc|uon|uong|uyen|uyet|ieu|yeu|uoi|oan|oat|oac|oam)/.test(word)) return false
-
-    // Chặn chuỗi phụ âm cuối bất thường gợi ý tên riêng nước ngoài
-    // (kết thúc bằng -tti, -lli, -ssi, -zzi thường là tên Ý)
-    if (/([tls]i|zz[ai])$/.test(word) && word.length > 6) return false
-
-    return true
-  }
 
 
 
-  const [verifiedEngWordCount, setVerifiedEngWordCount] = useState(0)
 
-  useEffect(() => {
-    const rawWords = pasteTextValue.trim().match(/[a-zA-Z]{2,}/g) || []
-    const count = rawWords.filter(w => isLikelyEnglishWordLocal(w)).length
-    setVerifiedEngWordCount(count)
-  }, [pasteTextValue])
+
 
 
   // Xóa kết quả AI cũ khi khung nhập trống
@@ -288,9 +232,7 @@ export default function BulkAddPage() {
     }
   }, [pasteTextValue])
 
-  const engWordCount = verifiedEngWordCount
   const charCount = pasteTextValue.length
-  const isPasteValid = charCount >= 20 && engWordCount >= 3
   const wordCount = pasteTextValue.trim().split(/\s+/).filter(Boolean).length
   const validRowsCount = rows.filter(r => r.word.trim()).length
 

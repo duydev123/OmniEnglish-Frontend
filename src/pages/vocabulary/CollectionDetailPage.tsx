@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Edit3, Zap, ArrowUpAZ, ArrowDownAZ, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Plus, Edit3, ArrowUpAZ, ArrowDownAZ, ChevronDown, Layers } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import StatsBar from '../../components/vocabulary/detail/StatsBar'
 import FilterSidebar from '../../components/vocabulary/detail/FilterSidebar'
@@ -163,6 +163,18 @@ export default function CollectionDetailPage() {
   const hasMore = visibleCount < sortedWords.length
   const remainingCount = sortedWords.length - visibleCount
 
+  const handleStartFlashcard = () => {
+    if (filteredWords.length === 0) {
+      showToast('Không có từ vựng nào thuộc trạng thái này để luyện tập!', 'warning')
+      return
+    }
+    setShowFlashcard(true)
+  }
+
+  const flashcardCollection = collection
+    ? { ...collection, words_list: filteredWords }
+    : null
+
   return (
     <VocabLayout breadcrumbs={[
       { label: 'BASIC', href: '/vocabulary' },
@@ -188,18 +200,22 @@ export default function CollectionDetailPage() {
 
           {/* Desktop Top Bar Actions (Full 5 buttons on Web/Desktop) */}
           <div className="hidden sm:flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowAddWord(true)}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
-            >
-              <Plus size={14} className="shrink-0" /> <span>Thêm từ vựng</span>
-            </button>
-            <button
-              onClick={() => navigate(`/vocabulary/${id}/bulk-add`)}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
-            >
-              <Plus size={14} className="shrink-0" /> <span>Thêm hàng loạt</span>
-            </button>
+            {!collection.is_official && (
+              <>
+                <button
+                  onClick={() => setShowAddWord(true)}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
+                >
+                  <Plus size={14} className="shrink-0" /> <span>Thêm từ vựng</span>
+                </button>
+                <button
+                  onClick={() => navigate(`/vocabulary/${id}/bulk-add`)}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
+                >
+                  <Plus size={14} className="shrink-0" /> <span>Thêm hàng loạt</span>
+                </button>
+              </>
+            )}
             <button
               onClick={toggleSort}
               title={
@@ -218,28 +234,46 @@ export default function CollectionDetailPage() {
               {sortOrder === 'desc' ? <ArrowDownAZ size={14} className="shrink-0" /> : <ArrowUpAZ size={14} className="shrink-0" />}
               <span>{sortOrder === 'desc' ? 'Z → A' : sortOrder === 'asc' ? 'A → Z' : 'Sắp xếp'}</span>
             </button>
-            <button
-              onClick={() => setShowBulkEdit(true)}
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
-            >
-              <Edit3 size={14} className="shrink-0" /> <span>Sửa hàng loạt</span>
-            </button>
-            <button
-              onClick={() => setShowEditCollection(true)}
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-white bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer text-center whitespace-nowrap"
-            >
-              <Edit3 size={14} className="shrink-0" /> <span>Chỉnh sửa</span>
-            </button>
+            {!collection.is_official && (
+              <>
+                <button
+                  onClick={() => setShowBulkEdit(true)}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold text-slate-700 bg-[#F1F5F9] border border-slate-200/60 rounded-xl hover:bg-slate-200 transition-all shadow-xs cursor-pointer text-center whitespace-nowrap"
+                >
+                  <Edit3 size={14} className="shrink-0" /> <span>Sửa hàng loạt</span>
+                </button>
+                <button
+                  onClick={() => setShowEditCollection(true)}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-extrabold text-white bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer text-center whitespace-nowrap"
+                >
+                  <Edit3 size={14} className="shrink-0" /> <span>Chỉnh sửa</span>
+                </button>
+              </>
+            )}
+            {collection.is_official && (
+              <span className="px-3 py-2 text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200/80 rounded-xl">
+                Bộ mặc định (Hệ thống)
+              </span>
+            )}
           </div>
 
           {/* Mobile Responsive Actions (Compact Dropdown Menu on Mobile only) */}
           <div className="flex sm:hidden items-center gap-2 w-full justify-between" ref={actionDropdownRef}>
-            <button
-              onClick={() => setShowAddWord(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-extrabold text-white bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer whitespace-nowrap"
-            >
-              <Plus size={16} /> <span>Thêm từ vựng</span>
-            </button>
+            {!collection.is_official ? (
+              <button
+                onClick={() => setShowAddWord(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-extrabold text-white bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer whitespace-nowrap"
+              >
+                <Plus size={16} /> <span>Thêm từ vựng</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleStartFlashcard}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-extrabold text-white bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer whitespace-nowrap"
+              >
+                <span>Luyện Flashcard</span>
+              </button>
+            )}
 
             <div className="relative">
               <button
@@ -253,32 +287,36 @@ export default function CollectionDetailPage() {
 
               {showActionDropdown && (
                 <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200/90 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <button
-                    type="button"
-                    onClick={() => { setShowAddWord(true); setShowActionDropdown(false) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                  >
-                    <Plus size={14} className="text-blue-600 shrink-0" />
-                    <span>Thêm từ mới</span>
-                  </button>
+                  {!collection.is_official && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddWord(true); setShowActionDropdown(false) }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      >
+                        <Plus size={14} className="text-blue-600 shrink-0" />
+                        <span>Thêm từ mới</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => { navigate(`/vocabulary/${id}/bulk-add`); setShowActionDropdown(false) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                  >
-                    <Plus size={14} className="text-purple-600 shrink-0" />
-                    <span>Thêm hàng loạt</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => { navigate(`/vocabulary/${id}/bulk-add`); setShowActionDropdown(false) }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      >
+                        <Plus size={14} className="text-purple-600 shrink-0" />
+                        <span>Thêm hàng loạt</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => { setShowBulkEdit(true); setShowActionDropdown(false) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                  >
-                    <Edit3 size={14} className="text-amber-600 shrink-0" />
-                    <span>Sửa hàng loạt</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowBulkEdit(true); setShowActionDropdown(false) }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      >
+                        <Edit3 size={14} className="text-amber-600 shrink-0" />
+                        <span>Sửa hàng loạt</span>
+                      </button>
+                    </>
+                  )}
 
                   <button
                     type="button"
@@ -294,14 +332,16 @@ export default function CollectionDetailPage() {
                     </span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => { setShowEditCollection(true); setShowActionDropdown(false) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer border-t border-slate-100 pt-2 mt-1"
-                  >
-                    <Edit3 size={14} className="text-slate-500 shrink-0" />
-                    <span>Chỉnh sửa bộ từ</span>
-                  </button>
+                  {!collection.is_official && (
+                    <button
+                      type="button"
+                      onClick={() => { setShowEditCollection(true); setShowActionDropdown(false) }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer border-t border-slate-100 pt-2 mt-1"
+                    >
+                      <Edit3 size={14} className="text-slate-500 shrink-0" />
+                      <span>Chỉnh sửa bộ từ</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -323,7 +363,7 @@ export default function CollectionDetailPage() {
               showIPA={showIPA}
               onFilterChange={f => { setFilter(f); setVisibleCount(WORDS_PER_PAGE) }}
               onToggleIPA={() => setShowIPA(v => !v)}
-              onStartFlashcard={() => setShowFlashcard(true)}
+              onStartFlashcard={handleStartFlashcard}
             />
           </div>
 
@@ -332,14 +372,12 @@ export default function CollectionDetailPage() {
             <div className="lg:hidden mb-5 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-4 select-none">
               {/* Row 1: Flashcard Button full width */}
               <button
-                onClick={() => setShowFlashcard(true)}
-                className="w-full flex items-center justify-center gap-2 bg-[#1D4ED8] hover:bg-blue-800 text-white py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all cursor-pointer"
+                onClick={handleStartFlashcard}
+                className="w-full flex items-center justify-center gap-2 bg-[#1D4ED8] hover:bg-blue-800 text-white py-2.5 px-3.5 rounded-full font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all cursor-pointer whitespace-nowrap"
               >
-                <Zap size={16} className="fill-white" />
+                <Layers size={16} className="shrink-0 stroke-[2.5]" />
                 <span>Luyện tập Flashcard</span>
               </button>
-
-              {/* Row 2: Categorization Options Header + IPA Switch */}
               <div>
                 <div className="flex items-center justify-between mb-2.5">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Phân loại từ vựng</p>
@@ -453,6 +491,7 @@ export default function CollectionDetailPage() {
                         showIPA={showIPA}
                         onWordUpdated={handleWordUpdated}
                         language={collection.language}
+                        isOfficial={collection.is_official}
                       />
                     </div>
                   ))}
@@ -516,7 +555,7 @@ export default function CollectionDetailPage() {
 
       <FlashcardModal
         open={showFlashcard}
-        collection={collection}
+        collection={flashcardCollection}
         onClose={() => setShowFlashcard(false)}
         onSessionComplete={handleFlashcardComplete}
       />
