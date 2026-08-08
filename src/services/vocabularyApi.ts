@@ -87,8 +87,7 @@ export function getCachedCollections(): VocabularyCollection[] {
     const data = localStorage.getItem(LOCAL_COLLECTIONS_KEY)
     if (!data) return []
     const parsed: VocabularyCollection[] = JSON.parse(data)
-    const sanitized = parsed.map(sanitizeCollection)
-    // Clean legacy blob URLs permanently from LocalStorage
+    const sanitized = parsed.map(sanitizeCollection).filter(c => !c.is_official)
     localStorage.setItem(LOCAL_COLLECTIONS_KEY, JSON.stringify(sanitized))
     return sanitized
   } catch {
@@ -98,7 +97,8 @@ export function getCachedCollections(): VocabularyCollection[] {
 
 export function saveCachedCollections(collections: VocabularyCollection[]): void {
   try {
-    const sanitized = (collections || []).map(sanitizeCollection)
+    const onlyPersonal = collections.filter(c => !c.is_official)
+    const sanitized = onlyPersonal.map(sanitizeCollection)
     localStorage.setItem(LOCAL_COLLECTIONS_KEY, JSON.stringify(sanitized))
   } catch (e) {
     console.warn('LocalStorage save error:', e)
@@ -106,6 +106,7 @@ export function saveCachedCollections(collections: VocabularyCollection[]): void
 }
 
 export function updateSingleCachedCollection(collection: VocabularyCollection): void {
+  if (collection.is_official) return
   try {
     const sanitized = sanitizeCollection(collection)
     const cached = getCachedCollections()
@@ -143,7 +144,8 @@ export async function getMyCollections(): Promise<VocabularyCollection[]> {
   try {
     const apiData = await apiFetch<VocabularyCollection[]>('/collections/my-collections')
     if (apiData && apiData.length > 0) {
-      const sanitized = apiData.map(sanitizeCollection)
+      const personalOnly = apiData.filter(c => !c.is_official)
+      const sanitized = personalOnly.map(sanitizeCollection)
       saveCachedCollections(sanitized)
       return sanitized
     }

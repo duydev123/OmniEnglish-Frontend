@@ -34,6 +34,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     isUp: false,
   })
   const containerRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const selectedOption = options.find((o) => o.value === value)
 
@@ -53,7 +54,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
         setOpen(false)
       }
     }
@@ -85,6 +92,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   const dropdownMenu = (
     <div
+      ref={menuRef}
+      onMouseDown={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
         left: `${coords.left}px`,

@@ -105,7 +105,7 @@ describe('Vocabulary Frontend Services & Utils', () => {
             meaning: 'quả táo',
             ipa: '/ˈæp.əl/',
             image_url: 'blob:http://localhost:5173/0696799c-a865-4914',
-          },
+          } as any,
           {
             id: 'w2',
             word: 'banana',
@@ -113,7 +113,7 @@ describe('Vocabulary Frontend Services & Utils', () => {
             meaning: 'quả chuối',
             ipa: '/bəˈnæn.ə/',
             image_url: 'https://images.unsplash.com/photo-1571771894821',
-          },
+          } as any,
         ],
       }
 
@@ -249,7 +249,7 @@ describe('Vocabulary Frontend Services & Utils', () => {
         accuracy_percentage: 0,
         study_time_seconds: 0,
         words_list: [
-          { id: 'w1', word: 'cat', word_type: 'noun', meaning: 'con mèo', ipa: '', image_url: '' },
+          { id: 'w1', word: 'cat', word_type: 'noun', meaning: 'con mèo', ipa: '', image_url: '' } as any,
           {
             id: 'w2',
             word: 'dog',
@@ -257,7 +257,7 @@ describe('Vocabulary Frontend Services & Utils', () => {
             meaning: 'con chó',
             ipa: '',
             image_url: 'https://cdn.example.com/dog.png',
-          },
+          } as any,
         ],
       }
       const result = sanitizeCollection(col)
@@ -313,8 +313,8 @@ describe('Vocabulary Frontend Services & Utils', () => {
         accuracy_percentage: 0,
         study_time_seconds: 0,
         words_list: [
-          { id: 'w1', word: 'apple', word_type: 'WordType.NOUN', meaning: 'táo', ipa: '' },
-          { id: 'w2', word: 'run', word_type: 'WORDTYPE.VERB', meaning: 'chạy', ipa: '' },
+          { id: 'w1', word: 'apple', word_type: 'WordType.NOUN', meaning: 'táo', ipa: '' } as any,
+          { id: 'w2', word: 'run', word_type: 'WORDTYPE.VERB', meaning: 'chạy', ipa: '' } as any,
         ],
       }
       const sanitized = sanitizeCollection(colWithEnumTypes)
