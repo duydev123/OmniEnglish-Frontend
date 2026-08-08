@@ -142,4 +142,23 @@ export const userApi = {
       };
     }
   },
+
+  /**
+   * Change Password POST /users/change-password
+   */
+  async changePassword(oldPassword: string, newPassword: string): Promise<{ message: string }> {
+    const response = await axiosClient.post<{ message: string }>("/users/change-password", {
+      old_password: oldPassword,
+      new_password: newPassword,
+    });
+    return response.data;
+  },
+
+  /**
+   * Update Profile PATCH /users/profile
+   */
+  async updateProfile(payload: { avatar?: string }): Promise<User> {
+    const response = await axiosClient.patch<User>("/users/profile", payload);
+    return response.data;
+  },
 };
