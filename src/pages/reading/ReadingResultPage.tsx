@@ -63,6 +63,15 @@ function buildReviews(review: ReadingSessionReview): ReviewQuestionItem[] {
       typeLabel = 'Heading Matching'
     }
 
+    let explanationParts: string[] = []
+    if (result.excerpt) {
+      explanationParts.push(`📍 Đoạn trích: "${result.excerpt}"`)
+    }
+    if (result.explanation) {
+      explanationParts.push(`💡 Giải thích: ${result.explanation}`)
+    }
+    const explanation = explanationParts.length > 0 ? explanationParts.join('\n\n') : undefined
+
     return {
       id: questionId,
       qNumber: index + 1,
@@ -71,6 +80,7 @@ function buildReviews(review: ReadingSessionReview): ReviewQuestionItem[] {
       isCorrect: result.is_correct,
       userAnswer: result.user_answer || '(Không trả lời)',
       correctAnswer: result.correct_answer,
+      explanation,
       options: result.options?.map((opt, i) => ({
         id: `opt-${i}`,
         text: opt,
@@ -503,6 +513,13 @@ export default function ReadingResultPage() {
                     <p className="text-sm font-bold text-emerald-800">{selectedModalQuestion.correctAnswer}</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Explanation & Excerpt */}
+            {selectedModalQuestion.explanation && (
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl text-xs sm:text-sm text-slate-600 font-normal leading-relaxed whitespace-pre-line">
+                {selectedModalQuestion.explanation}
               </div>
             )}
           </div>
