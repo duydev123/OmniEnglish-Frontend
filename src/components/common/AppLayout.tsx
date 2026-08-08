@@ -24,7 +24,7 @@ export function AppLayout({ breadcrumbs, children }: AppLayoutProps) {
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 min-w-0 ${sidebarOpen ? 'lg:ml-60' : 'ml-0'}`}>
+        <main className="flex-1 transition-all duration-300 min-w-0 w-full">
           {children}
         </main>
       </div>

@@ -35,6 +35,7 @@ export interface User {
   settings: UserSettings;
   stats: UserStats;
   token?: string;
+  created_at?: string;
 }
 
 export interface UserStore {
