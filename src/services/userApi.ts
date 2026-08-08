@@ -12,12 +12,12 @@ export interface RegisterPayload {
   password?: string;
 }
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  user_id: string;
-  username: string;
-  role: string;
+export interface SocialLoginPayload {
+  provider: "google" | "facebook";
+  email: string;
+  name?: string;
+  avatar?: string;
+  token?: string;
 }
 
 // Fallback demo user data for offline / fallback mode
@@ -72,10 +72,11 @@ export const userApi = {
   /**
    * Login user POST /users/signin
    */
-  async login(payload: LoginPayload): Promise<TokenResponse> {
-    const response = await axiosClient.post<TokenResponse>("/users/signin", payload);
-    if (response.data?.access_token) {
-      localStorage.setItem("token", response.data.access_token);
+  async login(payload: LoginPayload): Promise<User> {
+    const response = await axiosClient.post<User>("/users/signin", payload);
+    const token = response.data?.token || (response.data as any)?.access_token;
+    if (token) {
+      localStorage.setItem("token", token);
     }
     return response.data;
   },
@@ -83,11 +84,62 @@ export const userApi = {
   /**
    * Register user POST /users/signup
    */
-  async register(payload: RegisterPayload): Promise<TokenResponse> {
-    const response = await axiosClient.post<TokenResponse>("/users/signup", payload);
-    if (response.data?.access_token) {
-      localStorage.setItem("token", response.data.access_token);
+  async register(payload: RegisterPayload): Promise<User> {
+    const response = await axiosClient.post<User>("/users/signup", payload);
+    const token = response.data?.token || (response.data as any)?.access_token;
+    if (token) {
+      localStorage.setItem("token", token);
     }
     return response.data;
+  },
+
+  /**
+   * Google Login POST /users/google-login
+   */
+  async googleLogin(payload: SocialLoginPayload): Promise<User> {
+    try {
+      const response = await axiosClient.post<User>("/users/google-login", payload);
+      const token = response.data?.token || (response.data as any)?.access_token;
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      return response.data;
+    } catch (error) {
+      console.warn("Backend google-login unavailable, using fallback user profile:", error);
+      const token = "demo_google_token_" + Date.now();
+      localStorage.setItem("token", token);
+      return {
+        ...fallbackUserData,
+        username: payload.name || "Google User",
+        email: payload.email || "google_user@example.com",
+        avatar: payload.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
+        token: token,
+      };
+    }
+  },
+
+  /**
+   * Facebook Login POST /users/facebook-login
+   */
+  async facebookLogin(payload: SocialLoginPayload): Promise<User> {
+    try {
+      const response = await axiosClient.post<User>("/users/facebook-login", payload);
+      const token = response.data?.token || (response.data as any)?.access_token;
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      return response.data;
+    } catch (error) {
+      console.warn("Backend facebook-login unavailable, using fallback user profile:", error);
+      const token = "demo_facebook_token_" + Date.now();
+      localStorage.setItem("token", token);
+      return {
+        ...fallbackUserData,
+        username: payload.name || "Facebook User",
+        email: payload.email || "facebook_user@example.com",
+        avatar: payload.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=120",
+        token: token,
+      };
+    }
   },
 };
