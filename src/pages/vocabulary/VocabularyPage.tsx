@@ -15,7 +15,6 @@ import { useToast } from '../../components/common/Toast'
 import {
   getCollection,
   deleteCollection,
-  getStoredIds,
   storeId,
   removeId,
   updateCollectionProgress,
@@ -33,10 +32,10 @@ export default function VocabularyPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
 
-  const [activeTab, setActiveTab] = useState<TabType>('mine')
+  const [activeTab, setActiveTab] = useState<TabType>('default')
   const [myCollections, setMyCollections] = useState<VocabularyCollection[]>(() => getCachedCollections())
   const [officialCollections, setOfficialCollections] = useState<VocabularyCollection[]>([])
-  const [loading, setLoading] = useState<boolean>(() => getCachedCollections().length === 0)
+  const [loading, setLoading] = useState<boolean>(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [displayMode, setDisplayMode] = useState<DisplayMode>('grid')
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest')
@@ -127,7 +126,9 @@ export default function VocabularyPage() {
   }, [flashcardTarget, showToast])
 
   // Select list based on active tab
-  const currentList = activeTab === 'default' ? officialCollections : myCollections
+  const currentList = activeTab === 'default'
+    ? officialCollections
+    : myCollections.filter(c => !c.is_official)
 
   const filtered = currentList
     .filter(c => {
@@ -262,19 +263,24 @@ export default function VocabularyPage() {
 
         {/* Collections List Grid */}
         {loading ? (
-          <div className={`grid gap-5 mb-8 ${displayMode === 'grid'
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
-            : 'grid-cols-1'
-            }`}>
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-5 animate-pulse">
-                <div className="h-5 bg-slate-200 rounded w-3/4 mb-3" />
-                <div className="h-3 bg-slate-100 rounded w-full mb-1" />
-                <div className="h-3 bg-slate-100 rounded w-2/3 mb-4" />
-                <div className="h-2 bg-slate-100 rounded-full mb-4" />
-                <div className="h-8 bg-slate-200 rounded-lg" />
-              </div>
-            ))}
+          <div className="flex flex-col gap-6 mb-8">
+            <div className="flex flex-col items-center justify-center py-10 bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
+              <div className="w-10 h-10 mb-3 border-3 border-blue-100 border-t-[#1D4ED8] rounded-full animate-spin" />
+              <p className="text-xs font-extrabold text-slate-600 animate-pulse">
+                {activeTab === 'default' ? 'Đang tải bộ từ vựng mặc định...' : 'Đang tải bộ từ vựng của bạn...'}
+              </p>
+            </div>
+            <div className={`grid gap-5 ${displayMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1'}`}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-2xl border border-slate-200 p-5 animate-pulse">
+                  <div className="h-5 bg-slate-200 rounded w-3/4 mb-3" />
+                  <div className="h-3 bg-slate-100 rounded w-full mb-1" />
+                  <div className="h-3 bg-slate-100 rounded w-2/3 mb-4" />
+                  <div className="h-2 bg-slate-100 rounded-full mb-4" />
+                  <div className="h-8 bg-slate-200 rounded-lg" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white/60 border border-slate-200/80 rounded-2xl min-h-[280px] flex flex-col items-center justify-center text-center p-8 text-slate-400 mb-8">
