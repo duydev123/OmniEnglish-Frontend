@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { useUserStore } from "../stores/user/useUserStore"
+import { useState, useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useUserStore, initialUser } from "../stores/user/useUserStore"
 import { userApi } from "../services/userApi"
+import { useToast } from "../components/common/Toast"
+import { LogoutModal } from "../components/common/LogoutModal"
 import {
   Menu,
   Bell,
@@ -21,49 +23,84 @@ import {
   Play,
   Plus,
   Zap,
-  CheckCircle2,
-  Sparkles
+  LogOut,
+  ArrowRight
 } from "lucide-react"
 
 const Home = () => {
   const [basicOpen, setBasicOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [timeRange, setTimeRange] = useState("Last 30 Days")
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const { user, setUser } = useUserStore()
+  const navigate = useNavigate()
+  const { showToast } = useToast()
+
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    setUser(initialUser)
+    showToast("Đã đăng xuất tài khoản!", "info")
+    navigate("/login")
+  }
 
   useEffect(() => {
     const fetchUserData = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        navigate("/login")
+        return
+      }
       const data = await userApi.getUserProfile()
-      setUser(data)
+      if (data) {
+        setUser(data)
+      } else {
+        localStorage.removeItem("token")
+        setUser(initialUser)
+        navigate("/login")
+      }
     }
     fetchUserData()
-  }, [setUser])
+  }, [navigate, setUser])
 
-  const username = user?.username || "Alex"
-  const avatarUrl = user?.avatar || user?.avarta || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120"
-  const streakDays = user?.stats?.current_streak_days ?? 15
-  const weeklyXp = user?.stats?.weekly_xp ?? 420
-  const weeklyGoalTarget = 500
+  const username = user?.username || "User"
+  const email = user?.email || ""
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=128`
+  const avatarUrl = user?.avatar || user?.avarta || defaultAvatar
+  const streakDays = user?.stats?.current_streak_days ?? 0
+  const weeklyXp = user?.stats?.weekly_xp ?? 0
+  const weeklyGoalTarget = user?.settings?.daily_word_target ? user.settings.daily_word_target * 15 : 450
   const weeklyXpPercent = Math.min(100, Math.round((weeklyXp / weeklyGoalTarget) * 100))
+  const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "B1"
 
-  const readingScore = user?.stats?.avg_reading_score ? user.stats.avg_reading_score.toFixed(1) : "7.0"
-  const listeningScore = user?.stats?.avg_listening_score ? user.stats.avg_listening_score.toFixed(1) : "7.5"
-  const speakingScore = user?.stats?.avg_speaking_score ? user.stats.avg_speaking_score.toFixed(1) : "6.5"
-  const writingScore = user?.stats?.avg_writing_score ? user.stats.avg_writing_score.toFixed(1) : "6.0"
+  const rawReading = user?.stats?.avg_reading_score ?? 0
+  const rawListening = user?.stats?.avg_listening_score ?? 0
+  const rawSpeaking = user?.stats?.avg_speaking_score ?? 0
+  const rawWriting = user?.stats?.avg_writing_score ?? 0
 
-  const avgBandScore = user?.stats
-    ? ((user.stats.avg_reading_score + user.stats.avg_listening_score + user.stats.avg_speaking_score + user.stats.avg_writing_score) / 4 || 6.8).toFixed(1)
-    : "6.8"
+  const readingScore = rawReading.toFixed(1)
+  const listeningScore = rawListening.toFixed(1)
+  const speakingScore = rawSpeaking.toFixed(1)
+  const writingScore = rawWriting.toFixed(1)
+
+  const readingProgressPercent = rawReading > 0 ? Math.min(100, Math.round((rawReading / 9.0) * 100)) : 0
+  const speakingProgressPercent = rawSpeaking > 0 ? Math.min(100, Math.round((rawSpeaking / 9.0) * 100)) : 0
+  const listeningProgressPercent = rawListening > 0 ? Math.min(100, Math.round((rawListening / 9.0) * 100)) : 0
+  const writingProgressPercent = rawWriting > 0 ? Math.min(100, Math.round((rawWriting / 9.0) * 100)) : 0
+
+  const avgBandScoreNum = (rawReading + rawListening + rawSpeaking + rawWriting) / 4
+  const avgBandScore = avgBandScoreNum.toFixed(1)
+  const mockTestsTaken = user?.stats?.total_words_learned ? Math.round(user.stats.total_words_learned / 10) : 0
+  const avgImprovement = avgBandScoreNum > 0 ? "+0.4" : "0.0"
 
   return (
     <div className="min-h-screen bg-[#f8fafd] flex flex-col text-slate-800 font-sans antialiased">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-100 h-16 px-4 lg:px-8 flex items-center justify-between shadow-xs">
+      <header className="sticky top-0 z-40 bg-white border-b border-slate-100/80 h-16 px-4 lg:px-8 flex items-center justify-between shadow-xs backdrop-blur-md">
         <div className="flex items-center gap-4">
           <button
             onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
             aria-label="Toggle Menu"
           >
             <Menu className="w-5 h-5" />
@@ -80,24 +117,45 @@ const Home = () => {
 
         {/* Top Right Actions */}
         <div className="flex items-center gap-4">
-          <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition">
+          <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer">
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
           </button>
 
-          {/* User Profile Avatar */}
-          <Link to="/profile" className="flex items-center gap-3 cursor-pointer">
-            <img
-              src={avatarUrl}
-              alt={`${username} Avatar`}
-              className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/20"
-            />
+          {/* User Profile Info & Avatar */}
+          <Link to="/profile" className="flex items-center gap-3 cursor-pointer group">
+            <div className="text-right hidden sm:block">
+              <span className="text-xs font-bold text-slate-800 block leading-tight group-hover:text-blue-600 transition-colors">
+                {username}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium block leading-tight max-w-[140px] truncate">
+                {email}
+              </span>
+            </div>
+            <div className="relative">
+              <img
+                src={avatarUrl}
+                alt={`${username} Avatar`}
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/20 group-hover:ring-blue-600 transition duration-200"
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+            </div>
           </Link>
+
+          {/* Logout Button */}
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+            aria-label="Log Out"
+            title="Đăng xuất"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
       <div className="flex flex-1 relative">
-        {/* Mobile Backdrop */}
+        {/* Mobile Sidebar Backdrop */}
         {mobileSidebarOpen && (
           <div
             onClick={() => setMobileSidebarOpen(false)}
@@ -107,12 +165,13 @@ const Home = () => {
 
         {/* Left Sidebar */}
         <aside
-          className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] w-64 bg-[#f8fafd] border-r border-slate-200/60 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out ${mobileSidebarOpen ? "translate-x-0 bg-white" : "-translate-x-full lg:translate-x-0"
-            }`}
+          className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] w-64 bg-[#f8fafd] border-r border-slate-200/60 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out ${
+            mobileSidebarOpen ? "translate-x-0 bg-white" : "-translate-x-full lg:translate-x-0"
+          }`}
         >
           {/* Navigation Links */}
           <nav className="space-y-1.5 overflow-y-auto">
-            {/* Home */}
+            {/* Home (Active) */}
             <Link
               to="/"
               className="flex items-center gap-3 px-4 py-3 bg-[#1e50e6] text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/20 transition"
@@ -125,7 +184,7 @@ const Home = () => {
             <div>
               <button
                 onClick={() => setBasicOpen(!basicOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition"
+                className="w-full flex items-center justify-between px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <BookOpen className="w-4 h-4 text-slate-500" />
@@ -144,7 +203,7 @@ const Home = () => {
                     to="/vocabulary"
                     className="flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 text-xs font-semibold rounded-lg transition"
                   >
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
                     <span>Vocabulary</span>
                   </Link>
                   <a
@@ -187,24 +246,24 @@ const Home = () => {
           </nav>
 
           {/* Bottom Card: Weekly Goal */}
-          <div className="bg-[#eaf1ff] border border-blue-100 rounded-2xl p-4 mt-auto">
-            <span className="text-[11px] font-bold text-blue-900/70 tracking-wide block mb-1">
+          <div className="bg-gradient-to-br from-[#eaf1ff] to-[#dbe7ff] border border-blue-200/60 rounded-2xl p-4 mt-auto shadow-xs">
+            <span className="text-[11px] font-bold text-blue-900/80 tracking-wide block mb-1 uppercase">
               Weekly Goal
             </span>
             <div className="flex items-baseline justify-between mb-2">
-              <span className="text-xl font-extrabold text-slate-900">{weeklyXpPercent}%</span>
-              <span className="text-xs font-medium text-slate-500">{weeklyXp}/{weeklyGoalTarget} XP</span>
+              <span className="text-xl font-black text-slate-900">{weeklyXpPercent}%</span>
+              <span className="text-xs font-bold text-slate-600">{weeklyXp}/{weeklyGoalTarget} XP</span>
             </div>
-
+            
             {/* Progress bar */}
-            <div className="w-full bg-blue-200/60 rounded-full h-2 overflow-hidden mb-3">
+            <div className="w-full bg-blue-200/80 rounded-full h-2 overflow-hidden mb-3">
               <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                className="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-xs"
                 style={{ width: `${weeklyXpPercent}%` }}
               />
             </div>
 
-            <button className="w-full bg-[#1e50e6] hover:bg-blue-700 text-white font-semibold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition active:scale-98 cursor-pointer">
+            <button className="w-full bg-[#1e50e6] hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition active:scale-98 cursor-pointer">
               <Zap className="w-3.5 h-3.5 fill-current" />
               <span>Upgrade</span>
             </button>
@@ -215,15 +274,19 @@ const Home = () => {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden">
           {/* Header Row: Welcome + Gamification Badges */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Welcome back, {username}!
-            </h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Welcome back, {username}!</span>
+                <span className="text-xl">👋</span>
+              </h1>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Theo dõi tiến độ học tập và rèn luyện kỹ năng mỗi ngày.</p>
+            </div>
 
             {/* Streak & Rank Badges */}
             <div className="flex items-center gap-3">
               {/* Streak Badge */}
-              <div className="bg-white border border-slate-200/70 rounded-2xl p-2.5 px-4 shadow-2xs flex items-center gap-3 hover:border-slate-300 transition">
-                <div className="w-10 h-10 rounded-xl bg-amber-100/70 flex items-center justify-center text-amber-600 shrink-0">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-2.5 px-4 shadow-xs flex items-center gap-3 hover:border-amber-300 hover:shadow-md transition-all duration-300 group cursor-default">
+                <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center text-amber-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
                   <Flame className="w-5 h-5 fill-amber-500 text-amber-600" />
                 </div>
                 <div>
@@ -237,8 +300,8 @@ const Home = () => {
               </div>
 
               {/* Rank Badge */}
-              <div className="bg-white border border-slate-200/70 rounded-2xl p-2.5 px-4 shadow-2xs flex items-center gap-3 hover:border-slate-300 transition">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100/70 flex items-center justify-center text-emerald-600 shrink-0">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-2.5 px-4 shadow-xs flex items-center gap-3 hover:border-emerald-300 hover:shadow-md transition-all duration-300 group cursor-default">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100/80 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
                   <Award className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
@@ -246,7 +309,7 @@ const Home = () => {
                     RANK
                   </span>
                   <span className="text-base font-extrabold text-slate-800 leading-tight">
-                    #4 Gold
+                    Level {proficiencyLevel}
                   </span>
                 </div>
               </div>
@@ -263,21 +326,25 @@ const Home = () => {
                 </h2>
                 <Link
                   to="/practice-modules"
-                  className="text-xs font-bold text-[#1e50e6] hover:underline"
+                  className="text-xs font-bold text-[#1e50e6] hover:underline flex items-center gap-1"
                 >
-                  View All
+                  <span>View All</span>
+                  <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
 
               {/* 2x2 Grid */}
               <div className="grid grid-cols-2 gap-3.5 flex-1">
                 {/* Reading Test Card */}
-                <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-amber-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
                   <div>
-                    <div className="w-9 h-9 rounded-xl bg-amber-100/70 flex items-center justify-center text-amber-700 mb-3">
-                      <BookOpen className="w-4 h-4" />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-100/80 flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform duration-300">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all duration-300" />
                     </div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-amber-700 transition-colors">
                       Reading Test
                     </h3>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
@@ -285,25 +352,28 @@ const Home = () => {
                     </p>
                   </div>
                   <div className="mt-4">
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-1.5">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-1.5">
                       <div
-                        className="bg-amber-800 h-full rounded-full"
-                        style={{ width: "30%" }}
+                        className="bg-amber-600 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${readingProgressPercent}%` }}
                       />
                     </div>
                     <div className="text-right text-[11px] font-extrabold text-slate-800">
-                      30%
+                      {readingProgressPercent}%
                     </div>
                   </div>
                 </div>
 
                 {/* Speaking Test Card */}
-                <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-indigo-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
                   <div>
-                    <div className="w-9 h-9 rounded-xl bg-indigo-100/70 flex items-center justify-center text-indigo-600 mb-3">
-                      <Mic className="w-4 h-4" />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-100/80 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-300">
+                        <Mic className="w-4 h-4" />
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all duration-300" />
                     </div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
                       Speaking Test
                     </h3>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
@@ -311,25 +381,28 @@ const Home = () => {
                     </p>
                   </div>
                   <div className="mt-4">
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-1.5">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-1.5">
                       <div
-                        className="bg-indigo-300 h-full rounded-full"
-                        style={{ width: "0%" }}
+                        className="bg-indigo-600 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${speakingProgressPercent}%` }}
                       />
                     </div>
                     <div className="text-right text-[11px] font-extrabold text-slate-800">
-                      0%
+                      {speakingProgressPercent}%
                     </div>
                   </div>
                 </div>
 
                 {/* Listening Test Card */}
-                <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-blue-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
                   <div>
-                    <div className="w-9 h-9 rounded-xl bg-blue-100/70 flex items-center justify-center text-blue-600 mb-3">
-                      <Headphones className="w-4 h-4" />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100/80 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform duration-300">
+                        <Headphones className="w-4 h-4" />
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all duration-300" />
                     </div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                       Listening Test
                     </h3>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
@@ -337,25 +410,28 @@ const Home = () => {
                     </p>
                   </div>
                   <div className="mt-4">
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-1.5">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-1.5">
                       <div
-                        className="bg-blue-600 h-full rounded-full"
-                        style={{ width: "65%" }}
+                        className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${listeningProgressPercent}%` }}
                       />
                     </div>
                     <div className="text-right text-[11px] font-extrabold text-slate-800">
-                      65%
+                      {listeningProgressPercent}%
                     </div>
                   </div>
                 </div>
 
                 {/* Writing Test Card */}
-                <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-emerald-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
                   <div>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100/70 flex items-center justify-center text-emerald-600 mb-3">
-                      <Edit3 className="w-4 h-4" />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100/80 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform duration-300">
+                        <Edit3 className="w-4 h-4" />
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all duration-300" />
                     </div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
                       Writing Test
                     </h3>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
@@ -363,14 +439,14 @@ const Home = () => {
                     </p>
                   </div>
                   <div className="mt-4">
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden mb-1.5">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden mb-1.5">
                       <div
-                        className="bg-emerald-500 h-full rounded-full"
-                        style={{ width: "12%" }}
+                        className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${writingProgressPercent}%` }}
                       />
                     </div>
                     <div className="text-right text-[11px] font-extrabold text-slate-800">
-                      12%
+                      {writingProgressPercent}%
                     </div>
                   </div>
                 </div>
@@ -378,7 +454,7 @@ const Home = () => {
             </div>
 
             {/* Right: Performance Trends Chart (col-span-7) */}
-            <div className="lg:col-span-7 bg-white border border-slate-200/70 rounded-2xl p-5 shadow-2xs flex flex-col justify-between">
+            <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-slate-900">
@@ -389,13 +465,13 @@ const Home = () => {
                   <select
                     value={timeRange}
                     onChange={(e) => setTimeRange(e.target.value)}
-                    className="appearance-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg px-3 py-1.5 pr-7 cursor-pointer hover:bg-slate-100 focus:outline-none"
+                    className="appearance-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold rounded-xl px-3 py-1.5 pr-7 cursor-pointer hover:bg-slate-100 focus:outline-none transition-colors"
                   >
                     <option>Last 30 Days</option>
                     <option>Last 7 Days</option>
                     <option>Last 3 Months</option>
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2.5 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
                 </div>
               </div>
 
@@ -408,33 +484,35 @@ const Home = () => {
                 >
                   <defs>
                     <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#1e50e6" stopOpacity="0.15" />
+                      <stop offset="0%" stopColor="#1e50e6" stopOpacity="0.25" />
                       <stop offset="100%" stopColor="#1e50e6" stopOpacity="0.0" />
                     </linearGradient>
                   </defs>
 
-                  {/* Horizontal grid lines */}
-                  <line x1="0" y1="40" x2="500" y2="40" stroke="#f1f5f9" strokeWidth="1" />
-                  <line x1="0" y1="90" x2="500" y2="90" stroke="#f1f5f9" strokeWidth="1" />
+                  {/* Horizontal Grid lines */}
+                  <line x1="0" y1="40" x2="500" y2="40" stroke="#f1f5f9" strokeDasharray="4 4" strokeWidth="1" />
+                  <line x1="0" y1="90" x2="500" y2="90" stroke="#f1f5f9" strokeDasharray="4 4" strokeWidth="1" />
                   <line x1="0" y1="140" x2="500" y2="140" stroke="#e2e8f0" strokeWidth="1" />
 
-                  {/* Area fill */}
+                  {/* Gradient Area under curve */}
                   <path
-                    d="M 10 90 C 80 70, 150 20, 200 15 L 485 105 L 485 140 L 10 140 Z"
+                    d="M 10,140 Q 150,110 320,30 T 490,120 L 490,160 L 10,160 Z"
                     fill="url(#chartGrad)"
                   />
 
-                  {/* Smooth curve line */}
+                  {/* Smooth Blue Line */}
                   <path
-                    d="M 10 90 Q 75 75, 140 30 T 200 15"
+                    d="M 10,140 Q 150,110 320,30 T 490,120"
                     fill="none"
                     stroke="#1e50e6"
                     strokeWidth="3"
                     strokeLinecap="round"
+                    style={{ filter: "drop-shadow(0px 4px 6px rgba(30, 80, 230, 0.3))" }}
                   />
 
-                  {/* End active dot */}
-                  <circle cx="485" cy="105" r="4.5" fill="#1e50e6" />
+                  {/* End Dot Glow */}
+                  <circle cx="490" cy="120" r="7" fill="#1e50e6" fillOpacity="0.2" className="animate-ping" />
+                  <circle cx="490" cy="120" r="4" fill="#1e50e6" />
                 </svg>
 
                 {/* X Axis Labels */}
@@ -456,8 +534,8 @@ const Home = () => {
                     <span className="text-2xl font-extrabold text-slate-900">
                       {avgBandScore}
                     </span>
-                    <span className="text-xs font-extrabold text-emerald-500">
-                      +0.4
+                    <span className={`text-xs font-extrabold ${avgBandScoreNum > 0 ? "text-emerald-500" : "text-slate-400"}`}>
+                      {avgImprovement}
                     </span>
                   </div>
                 </div>
@@ -467,7 +545,7 @@ const Home = () => {
                     MOCK TESTS TAKEN
                   </span>
                   <span className="text-2xl font-extrabold text-slate-900">
-                    14
+                    {mockTestsTaken}
                   </span>
                 </div>
               </div>
@@ -477,98 +555,98 @@ const Home = () => {
           {/* Section: 4 Skills Overview Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* READING */}
-            <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-amber-300/60 hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
               <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  <BookOpen className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-amber-100/80 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                  +0.2
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rawReading > 0 ? "text-emerald-600 bg-emerald-50" : "text-slate-400 bg-slate-100"}`}>
+                  {rawReading > 0 ? "+0.2" : "0.0"}
                 </span>
               </div>
               <div className="mt-3">
                 <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase block">
                   READING
                 </span>
-                <span className="text-2xl font-extrabold text-slate-900 block my-0.5">
+                <span className="text-2xl font-extrabold text-slate-900 block my-0.5 group-hover:text-amber-700 transition-colors">
                   {readingScore}
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 block">
-                  High Accuracy in True/False
+                  {rawReading > 0 ? "High Accuracy in True/False" : "Chưa làm bài kiểm tra"}
                 </span>
               </div>
             </div>
 
             {/* LISTENING */}
-            <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-blue-300/60 hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
               <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  <Headphones className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-blue-100/80 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform duration-300">
+                  <Headphones className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                  +0.5
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rawListening > 0 ? "text-emerald-600 bg-emerald-50" : "text-slate-400 bg-slate-100"}`}>
+                  {rawListening > 0 ? "+0.5" : "0.0"}
                 </span>
               </div>
               <div className="mt-3">
                 <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase block">
                   LISTENING
                 </span>
-                <span className="text-2xl font-extrabold text-slate-900 block my-0.5">
+                <span className="text-2xl font-extrabold text-slate-900 block my-0.5 group-hover:text-blue-600 transition-colors">
                   {listeningScore}
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 block">
-                  Peak performance reached
+                  {rawListening > 0 ? "Peak performance reached" : "Chưa làm bài kiểm tra"}
                 </span>
               </div>
             </div>
 
             {/* SPEAKING */}
-            <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-indigo-300/60 hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
               <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  <Mic className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-indigo-100/80 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-300">
+                  <Mic className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md">
-                  -0.1
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rawSpeaking > 0 ? "text-emerald-600 bg-emerald-50" : "text-slate-400 bg-slate-100"}`}>
+                  {rawSpeaking > 0 ? "+0.1" : "0.0"}
                 </span>
               </div>
               <div className="mt-3">
                 <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase block">
                   SPEAKING
                 </span>
-                <span className="text-2xl font-extrabold text-slate-900 block my-0.5">
+                <span className="text-2xl font-extrabold text-slate-900 block my-0.5 group-hover:text-indigo-600 transition-colors">
                   {speakingScore}
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 block">
-                  Fluency needs focus
+                  {rawSpeaking > 0 ? "Fluency progressing" : "Chưa làm bài kiểm tra"}
                 </span>
               </div>
             </div>
 
             {/* WRITING */}
-            <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-emerald-300/60 hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
               <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                  <FileText className="w-4 h-4" />
+                <div className="w-9 h-9 rounded-xl bg-emerald-100/80 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform duration-300">
+                  <FileText className="w-4.5 h-4.5" />
                 </div>
-                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
-                  0.0
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${rawWriting > 0 ? "text-emerald-600 bg-emerald-50" : "text-slate-400 bg-slate-100"}`}>
+                  {rawWriting > 0 ? "+0.1" : "0.0"}
                 </span>
               </div>
               <div className="mt-3">
                 <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase block">
                   WRITING
                 </span>
-                <span className="text-2xl font-extrabold text-slate-900 block my-0.5">
+                <span className="text-2xl font-extrabold text-slate-900 block my-0.5 group-hover:text-emerald-600 transition-colors">
                   {writingScore}
                 </span>
                 <span className="text-[11px] font-medium text-slate-400 block">
-                  Grammatical range focus
+                  {rawWriting > 0 ? "Grammatical range focus" : "Chưa làm bài kiểm tra"}
                 </span>
               </div>
             </div>
           </div>
-
+          
           {/* Section: Suggestions */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -577,28 +655,32 @@ const Home = () => {
               </h2>
               <a
                 href="#"
-                className="text-xs font-bold text-[#1e50e6] hover:underline"
+                className="text-xs font-bold text-[#1e50e6] hover:underline flex items-center gap-1"
               >
-                View Learning Path
+                <span>View Learning Path</span>
+                <ArrowRight className="w-3 h-3" />
               </a>
             </div>
 
             {/* Suggestion Cards List */}
             <div className="space-y-3">
               {/* Card 1 */}
-              <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition flex items-center justify-between gap-4">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-300 flex items-center justify-between gap-4 group cursor-pointer">
                 <div className="flex items-center gap-4 min-w-0">
                   {/* Thumbnail Image */}
-                  <img
-                    src="https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&q=80&w=200"
-                    alt="Writing Task 2"
-                    className="w-20 h-16 rounded-xl object-cover shrink-0 border border-slate-100"
-                  />
+                  <div className="relative overflow-hidden rounded-xl shrink-0">
+                    <img
+                      src="https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&q=80&w=200"
+                      alt="Writing Task 2"
+                      className="w-20 h-16 object-cover border border-slate-100 group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors" />
+                  </div>
                   <div className="min-w-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md inline-block mb-1">
                       WRITING TASK 2
                     </span>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate">
                       Complex Sentence Structures & Cohesion
                     </h3>
                     <p className="text-xs text-slate-400 truncate mt-0.5">
@@ -607,25 +689,28 @@ const Home = () => {
                   </div>
                 </div>
 
-                <button className="w-10 h-10 rounded-full bg-[#1e50e6] hover:bg-blue-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0 transition active:scale-95 cursor-pointer">
+                <button className="w-10 h-10 rounded-full bg-blue-50 group-hover:bg-[#1e50e6] text-blue-600 group-hover:text-white flex items-center justify-center shadow-xs shrink-0 transition-colors duration-200 active:scale-95 cursor-pointer">
                   <Play className="w-4 h-4 fill-current ml-0.5" />
                 </button>
               </div>
 
               {/* Card 2 */}
-              <div className="bg-white border border-slate-200/70 rounded-2xl p-4 shadow-2xs hover:shadow-md transition flex items-center justify-between gap-4">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-300 flex items-center justify-between gap-4 group cursor-pointer">
                 <div className="flex items-center gap-4 min-w-0">
                   {/* Thumbnail Image */}
-                  <img
-                    src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=200"
-                    alt="Speaking Part 2"
-                    className="w-20 h-16 rounded-xl object-cover shrink-0 border border-slate-100"
-                  />
+                  <div className="relative overflow-hidden rounded-xl shrink-0">
+                    <img
+                      src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=200"
+                      alt="Speaking Part 2"
+                      className="w-20 h-16 object-cover border border-slate-100 group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors" />
+                  </div>
                   <div className="min-w-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md inline-block mb-1">
                       SPEAKING PART 2
                     </span>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate">
                       Mastering the 2-Minute Long Turn
                     </h3>
                     <p className="text-xs text-slate-400 truncate mt-0.5">
@@ -634,8 +719,8 @@ const Home = () => {
                   </div>
                 </div>
 
-                <button className="w-10 h-10 rounded-full bg-[#1e50e6] hover:bg-blue-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0 transition active:scale-95 cursor-pointer">
-                  <Mic className="w-4 h-4" />
+                <button className="w-10 h-10 rounded-full bg-blue-50 group-hover:bg-[#1e50e6] text-blue-600 group-hover:text-white flex items-center justify-center shadow-xs shrink-0 transition-colors duration-200 active:scale-95 cursor-pointer">
+                  <Mic className="w-4 h-4 fill-current" />
                 </button>
               </div>
             </div>
@@ -650,6 +735,13 @@ const Home = () => {
       >
         <Plus className="w-6 h-6 stroke-[2.5]" />
       </button>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   )
 }
