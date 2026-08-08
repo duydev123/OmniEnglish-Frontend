@@ -4,16 +4,14 @@ import { useUserStore, initialUser } from "../stores/user/useUserStore"
 import { userApi } from "../services/userApi"
 import { useToast } from "../components/common/Toast"
 import { LogoutModal } from "../components/common/LogoutModal"
+import Sidebar from "../components/common/Sidebar"
 import {
   Menu,
   Bell,
   Home as HomeIcon,
   BookOpen,
   GraduationCap,
-  Monitor,
-  User,
-  ChevronDown,
-  ChevronUp,
+
   ChevronRight,
   Flame,
   Zap,
@@ -24,7 +22,10 @@ import {
   Globe,
   Leaf,
   Sliders,
-  LogOut
+  LogOut,
+  X,
+  Loader2,
+  Check
 } from "lucide-react"
 
 const ProfilePage = () => {
@@ -33,6 +34,17 @@ const ProfilePage = () => {
   const [weekendMastery, setWeekendMastery] = useState(true)
   const [selectedGoal, setSelectedGoal] = useState<"fluency" | "steady">("fluency")
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  // Avatar & Password Modal States
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState("")
+  const [avatarLoading, setAvatarLoading] = useState(false)
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [oldPassword, setOldPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordLoading, setPasswordLoading] = useState(false)
 
   const { user, setUser } = useUserStore()
   const navigate = useNavigate()
@@ -61,6 +73,58 @@ const ProfilePage = () => {
   const email = user?.email || ""
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=128`
   const avatarUrl = user?.avatar || user?.avarta || defaultAvatar
+
+  const presetAvatars = [
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=200`,
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=059669&color=fff&size=200`,
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=7c3aed&color=fff&size=200`,
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=ea580c&color=fff&size=200`,
+    `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80`,
+    `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80`,
+    `https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80`,
+    `https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80`
+  ]
+
+  const handleSaveAvatar = async () => {
+    if (!selectedAvatarUrl) return
+    setAvatarLoading(true)
+    try {
+      const updatedUser = await userApi.updateProfile({ avatar: selectedAvatarUrl })
+      setUser(updatedUser)
+      showToast("Đã cập nhật ảnh đại diện thành công!", "success")
+      setShowAvatarModal(false)
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Không thể cập nhật ảnh đại diện!", "error")
+    } finally {
+      setAvatarLoading(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) {
+      showToast("Mật khẩu mới và xác nhận mật khẩu không khớp!", "error")
+      return
+    }
+    if (newPassword.length < 6) {
+      showToast("Mật khẩu mới phải có ít nhất 6 ký tự!", "error")
+      return
+    }
+    setPasswordLoading(true)
+    try {
+      await userApi.changePassword(oldPassword, newPassword)
+      showToast("Đổi mật khẩu thành công!", "success")
+      setShowPasswordModal(false)
+      setOldPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || "Đổi mật khẩu thất bại!", "error")
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   const streakDays = user?.stats?.current_streak_days ?? 0
   const totalWords = user?.stats?.total_words_learned ?? 0
   const speakingHours = user?.stats?.total_speaking_hours ?? 0
@@ -70,7 +134,7 @@ const ProfilePage = () => {
   const weeklyXp = user?.stats?.weekly_xp ?? 0
   const weeklyGoalTarget = dailyWordTarget * 15
   const weeklyXpPercent = Math.min(100, Math.round((weeklyXp / weeklyGoalTarget) * 100))
-  const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "B1"
+  const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "A1"
 
   const vocabProgressPercent = totalWords > 0 ? Math.min(100, Math.max(5, Math.round((totalWords / 2000) * 100))) : 0
   const speakingProgressPercent = speakingHours > 0 ? Math.min(100, Math.max(5, Math.round((speakingHours / 100) * 100))) : 0
@@ -98,20 +162,12 @@ const ProfilePage = () => {
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-white border-b border-slate-100/80 h-16 px-4 lg:px-8 flex items-center justify-between shadow-xs backdrop-blur-md">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
-            aria-label="Toggle Menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 select-none cursor-pointer">
-            <span className="text-2xl font-extrabold tracking-tight">
-              <span className="text-[#1e50e6]">omni</span>
-              <span className="text-slate-900">English</span>
-            </span>
+          {/* Logo (Hero style) */}
+          <Link to="/" className="flex items-center gap-2.5 cursor-pointer select-none hover:opacity-90 transition">
+            <div className="bg-[#1e50e6] rounded-lg p-1.5 flex items-center justify-center shadow-xs">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
           </Link>
         </div>
 
@@ -121,7 +177,7 @@ const ProfilePage = () => {
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
           </button>
-          
+
           {/* User Profile Avatar */}
           <div className="flex items-center gap-3 cursor-pointer group">
             <div className="text-right hidden sm:block">
@@ -153,115 +209,11 @@ const ProfilePage = () => {
           />
         )}
 
-        {/* Left Sidebar */}
-        <aside
-          className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] w-64 bg-[#f8fafd] border-r border-slate-200/60 p-4 flex flex-col justify-between transition-transform duration-300 ease-in-out ${
-            mobileSidebarOpen ? "translate-x-0 bg-white" : "-translate-x-full lg:translate-x-0"
-          }`}
-        >
-          {/* Navigation Links */}
-          <nav className="space-y-1.5 overflow-y-auto">
-            {/* Home */}
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition"
-            >
-              <HomeIcon className="w-4 h-4 text-slate-500" />
-              <span>Home</span>
-            </Link>
-
-            {/* Basic Accordion */}
-            <div>
-              <button
-                onClick={() => setBasicOpen(!basicOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <BookOpen className="w-4 h-4 text-slate-500" />
-                  <span>Basic</span>
-                </div>
-                {basicOpen ? (
-                  <ChevronUp className="w-4 h-4 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                )}
-              </button>
-
-              {basicOpen && (
-                <div className="ml-7 pl-3 border-l-2 border-slate-200 mt-1 space-y-1">
-                  <Link
-                    to="/vocabulary"
-                    className="flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 text-xs font-semibold rounded-lg transition"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Vocabulary</span>
-                  </Link>
-                  <a
-                    href="#"
-                    className="flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 text-xs font-semibold rounded-lg transition"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Grammar</span>
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* Practice Module */}
-            <Link
-              to="/practice-modules"
-              className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition"
-            >
-              <GraduationCap className="w-4 h-4 text-slate-500" />
-              <span>Practice Module</span>
-            </Link>
-
-            {/* Computer-based Tests */}
-            <a
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 text-sm font-medium rounded-xl transition"
-            >
-              <Monitor className="w-4 h-4 text-slate-500" />
-              <span>Computer-based Tests</span>
-            </a>
-
-            {/* Profile (Active) */}
-            <Link
-              to="/profile"
-              className="flex items-center gap-3 px-4 py-3 bg-[#1e50e6] text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/20 transition"
-            >
-              <User className="w-4 h-4" />
-              <span>Profile</span>
-            </Link>
-          </nav>
-
-          {/* Bottom Card: Weekly Goal */}
-          <div className="bg-gradient-to-br from-[#eaf1ff] to-[#dbe7ff] border border-blue-200/60 rounded-2xl p-4 mt-auto shadow-xs">
-            <span className="text-[11px] font-bold text-blue-900/80 tracking-wide block mb-1 uppercase">
-              Weekly Goal
-            </span>
-            <div className="flex items-baseline justify-between mb-2">
-              <span className="text-xl font-black text-slate-900">{weeklyXpPercent}%</span>
-              <span className="text-xs font-bold text-slate-600">{weeklyXp}/{weeklyGoalTarget} XP</span>
-            </div>
-            
-            {/* Progress bar */}
-            <div className="w-full bg-blue-200/80 rounded-full h-2 overflow-hidden mb-3">
-              <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-xs"
-                style={{ width: `${weeklyXpPercent}%` }}
-              />
-            </div>
-
-            <button className="w-full bg-[#1e50e6] hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition active:scale-98 cursor-pointer">
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>Upgrade</span>
-            </button>
-          </div>
-        </aside>
+        {/* Centralized Reusable Sidebar */}
+        <Sidebar isOpen={mobileSidebarOpen || true} onClose={() => setMobileSidebarOpen(false)} />
 
         {/* Main Profile Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden flex flex-col justify-between">
+        <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden flex flex-col justify-between">
           <div className="space-y-7">
             {/* Header Title & Description */}
             <div>
@@ -285,7 +237,12 @@ const ProfilePage = () => {
                     className="w-24 h-24 rounded-2xl object-cover ring-4 ring-slate-100 shadow-md group-hover:scale-105 transition-transform duration-300"
                   />
                   <button
+                    onClick={() => {
+                      setSelectedAvatarUrl(avatarUrl)
+                      setShowAvatarModal(true)
+                    }}
                     aria-label="Upload Photo"
+                    title="Đổi ảnh đại diện"
                     className="absolute -bottom-1 -right-1 bg-[#1e50e6] hover:bg-blue-700 text-white p-2 rounded-xl border-2 border-white shadow-md transition active:scale-95 cursor-pointer"
                   >
                     <Camera className="w-3.5 h-3.5" />
@@ -302,27 +259,38 @@ const ProfilePage = () => {
                 <div className="w-full border-t border-slate-100 my-5" />
 
                 {/* Member Since & Streak Row */}
-                <div className="w-full grid grid-cols-2 text-left">
+                <div className="w-full flex items-center justify-between px-1 text-left">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
                       MEMBER SINCE
                     </span>
                     <span className="text-sm font-extrabold text-slate-800">
-                      August 2024
+                      {user?.created_at || "August 2024"}
                     </span>
                   </div>
 
-                  <div>
+                  <div className="text-right">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
                       DAILY STREAK
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-end gap-1">
                       <span className="text-sm font-extrabold text-slate-800">
                         {streakDays} Days
                       </span>
                       <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
                     </div>
                   </div>
+                </div>
+
+                {/* Change Password Action Button */}
+                <div className="w-full pt-4 mt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="w-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Đổi Mật Khẩu</span>
+                  </button>
                 </div>
               </div>
 
@@ -353,7 +321,7 @@ const ProfilePage = () => {
                           words
                         </span>
                       </div>
-                      
+
                       {/* Progress Bar */}
                       <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div
@@ -413,11 +381,10 @@ const ProfilePage = () => {
                         return (
                           <span
                             key={lvl}
-                            className={`w-7 h-7 rounded-full text-xs flex items-center justify-center transition-all duration-200 ${
-                              isActive
-                                ? "bg-[#1e50e6] text-white font-black shadow-md ring-2 ring-blue-400/50 scale-105"
-                                : "bg-slate-100 text-slate-400 font-semibold hover:bg-slate-200"
-                            }`}
+                            className={`w-7 h-7 rounded-full text-xs flex items-center justify-center transition-all duration-200 ${isActive
+                              ? "bg-[#1e50e6] text-white font-black shadow-md ring-2 ring-blue-400/50 scale-105"
+                              : "bg-slate-100 text-slate-400 font-semibold hover:bg-slate-200"
+                              }`}
                           >
                             {lvl}
                           </span>
@@ -494,12 +461,22 @@ const ProfilePage = () => {
                   <div className="grid grid-cols-2 gap-3 mb-6">
                     {/* Option 1: Fluency Push */}
                     <div
-                      onClick={() => setSelectedGoal("fluency")}
-                      className={`rounded-2xl p-4 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center text-center ${
-                        selectedGoal === "fluency"
-                          ? "border-[#1e50e6] bg-blue-50/40 shadow-xs scale-[1.02]"
-                          : "border-slate-200/70 bg-white hover:border-slate-300"
-                      }`}
+                      onClick={() => {
+                        setSelectedGoal("fluency")
+                        if (user) {
+                          setUser({
+                            ...user,
+                            settings: {
+                              ...user.settings,
+                              learning_mode: "Fluency Push"
+                            }
+                          })
+                        }
+                      }}
+                      className={`rounded-2xl p-4 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center text-center ${selectedGoal === "fluency"
+                        ? "border-[#1e50e6] bg-blue-50/40 shadow-xs scale-[1.02]"
+                        : "border-slate-200/70 bg-white hover:border-slate-300"
+                        }`}
                     >
                       <Zap className={`w-5 h-5 mb-2 ${selectedGoal === "fluency" ? "text-blue-600 fill-current" : "text-slate-400"}`} />
                       <h4 className="text-xs sm:text-sm font-bold text-slate-800">
@@ -512,12 +489,22 @@ const ProfilePage = () => {
 
                     {/* Option 2: Steady Growth */}
                     <div
-                      onClick={() => setSelectedGoal("steady")}
-                      className={`rounded-2xl p-4 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center text-center ${
-                        selectedGoal === "steady"
-                          ? "border-[#1e50e6] bg-blue-50/40 shadow-xs scale-[1.02]"
-                          : "border-slate-200/70 bg-white hover:border-slate-300"
-                      }`}
+                      onClick={() => {
+                        setSelectedGoal("steady")
+                        if (user) {
+                          setUser({
+                            ...user,
+                            settings: {
+                              ...user.settings,
+                              learning_mode: "Steady Growth"
+                            }
+                          })
+                        }
+                      }}
+                      className={`rounded-2xl p-4 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center text-center ${selectedGoal === "steady"
+                        ? "border-[#1e50e6] bg-blue-50/40 shadow-xs scale-[1.02]"
+                        : "border-slate-200/70 bg-white hover:border-slate-300"
+                        }`}
                     >
                       <Leaf className={`w-5 h-5 mb-2 ${selectedGoal === "steady" ? "text-blue-600 fill-current" : "text-slate-400"}`} />
                       <h4 className="text-xs sm:text-sm font-bold text-slate-800">
@@ -543,14 +530,12 @@ const ProfilePage = () => {
                     {/* Switch */}
                     <button
                       onClick={() => setWeekendMastery(!weekendMastery)}
-                      className={`w-12 h-6 rounded-full transition-colors p-1 relative shrink-0 cursor-pointer ${
-                        weekendMastery ? "bg-[#1e50e6]" : "bg-slate-200"
-                      }`}
+                      className={`w-12 h-6 rounded-full transition-colors p-1 relative shrink-0 cursor-pointer ${weekendMastery ? "bg-[#1e50e6]" : "bg-slate-200"
+                        }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
-                          weekendMastery ? "translate-x-6" : "translate-x-0"
-                        }`}
+                        className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${weekendMastery ? "translate-x-6" : "translate-x-0"
+                          }`}
                       />
                     </button>
                   </div>
@@ -571,25 +556,7 @@ const ProfilePage = () => {
 
                   {/* Settings Items List */}
                   <div className="space-y-2 mb-6">
-                    {/* Item 1: Change Password */}
-                    <div className="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-xl transition cursor-pointer border border-transparent hover:border-slate-100">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <Lock className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-800">
-                            Change Password
-                          </h4>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            Quản lý mật khẩu truy cập
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
-                    </div>
-
-                    {/* Item 2: Notifications */}
+                    {/* Item 1: Notifications */}
                     <div className="flex items-center justify-between p-3.5 hover:bg-slate-50 rounded-xl transition cursor-pointer border border-transparent hover:border-slate-100">
                       <div className="flex items-center gap-3.5">
                         <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -672,6 +639,157 @@ const ProfilePage = () => {
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
       />
+
+      {/* Avatar Picker Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-xl space-y-5 relative">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Camera className="w-5 h-5 text-[#1e50e6]" />
+                <h3 className="text-base font-extrabold text-slate-900">Chọn Ảnh Đại Diện</h3>
+              </div>
+              <button
+                onClick={() => setShowAvatarModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <span className="text-xs font-semibold text-slate-500 block">Chọn từ kho avatar mẫu:</span>
+              <div className="grid grid-cols-4 gap-3">
+                {presetAvatars.map((url, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedAvatarUrl(url)}
+                    className={`relative rounded-2xl overflow-hidden ring-2 transition p-0.5 cursor-pointer ${selectedAvatarUrl === url ? "ring-[#1e50e6] scale-105 shadow-md" : "ring-transparent hover:ring-slate-300"
+                      }`}
+                  >
+                    <img src={url} alt={`Preset ${idx}`} className="w-full h-16 rounded-xl object-cover" />
+                    {selectedAvatarUrl === url && (
+                      <div className="absolute inset-0 bg-[#1e50e6]/30 flex items-center justify-center rounded-xl">
+                        <Check className="w-5 h-5 text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-2">
+                <label className="text-xs font-semibold text-slate-500 block mb-1.5">Hoặc dán URL ảnh tùy chọn:</label>
+                <input
+                  type="url"
+                  placeholder="https://example.com/avatar.jpg"
+                  value={selectedAvatarUrl}
+                  onChange={(e) => setSelectedAvatarUrl(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#1e50e6]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setShowAvatarModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveAvatar}
+                disabled={avatarLoading || !selectedAvatarUrl}
+                className="px-5 py-2 text-xs font-bold text-white bg-[#1e50e6] hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                {avatarLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Lưu Avatar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <form
+            onSubmit={handleChangePassword}
+            className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-xl space-y-5 relative"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Lock className="w-5 h-5 text-[#1e50e6]" />
+                <h3 className="text-base font-extrabold text-slate-900">Đổi Mật Khẩu</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Mật khẩu hiện tại</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Nhập mật khẩu hiện tại"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#1e50e6]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Mật khẩu mới (Tối thiểu 6 ký tự)</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Nhập mật khẩu mới"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#1e50e6]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Xác nhận mật khẩu mới</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Nhập lại mật khẩu mới"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#1e50e6]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={passwordLoading}
+                className="px-5 py-2 text-xs font-bold text-white bg-[#1e50e6] hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                {passwordLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Xác Nhận Đổi Mật Khẩu</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
