@@ -18,13 +18,28 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
     <header className="h-14 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between px-2.5 sm:px-6 font-['Be_Vietnam_Pro'] select-none w-full">
       {/* Left: omniEnglish Logo (Hero style) */}
       <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
-        {/* Logo (Hero style) */}
         <Link to="/" className="flex items-center gap-2 cursor-pointer select-none hover:opacity-90 transition">
           <div className="bg-[#1e50e6] rounded-lg p-1.5 flex items-center justify-center shadow-xs">
             <GraduationCap className="w-4 h-4 text-white" />
           </div>
           <span className="text-lg font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
         </Link>
+        {breadcrumbs && breadcrumbs.length > 0 && (
+          <nav className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 font-medium ml-2 border-l border-slate-200 pl-3">
+            {breadcrumbs.map((b, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span>/</span>}
+                {b.href ? (
+                  <Link to={b.href} className="hover:text-blue-600 font-bold transition">
+                    {b.label}
+                  </Link>
+                ) : (
+                  <span className="text-slate-600 font-bold">{b.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
+        )}
       </div>
 
       {/* Right: Notifications Bell & User Avatar */}
