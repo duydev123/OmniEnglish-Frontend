@@ -6,12 +6,9 @@ import { useToast } from "../components/common/Toast"
 import { LogoutModal } from "../components/common/LogoutModal"
 import Sidebar from "../components/common/Sidebar"
 import {
-  Menu,
   Bell,
-  Home as HomeIcon,
   BookOpen,
   GraduationCap,
-
   ChevronRight,
   Flame,
   Zap,
@@ -29,7 +26,6 @@ import {
 } from "lucide-react"
 
 const ProfilePage = () => {
-  const [basicOpen, setBasicOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [weekendMastery, setWeekendMastery] = useState(true)
   const [selectedGoal, setSelectedGoal] = useState<"fluency" | "steady">("fluency")
@@ -131,9 +127,6 @@ const ProfilePage = () => {
   const dailyWordTarget = user?.settings?.daily_word_target ?? 30
   const baseLanguage = user?.settings?.base_language || "Vietnamese (Tiếng Việt)"
 
-  const weeklyXp = user?.stats?.weekly_xp ?? 0
-  const weeklyGoalTarget = dailyWordTarget * 15
-  const weeklyXpPercent = Math.min(100, Math.round((weeklyXp / weeklyGoalTarget) * 100))
   const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "A1"
 
   const vocabProgressPercent = totalWords > 0 ? Math.min(100, Math.max(5, Math.round((totalWords / 2000) * 100))) : 0

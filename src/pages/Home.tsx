@@ -6,15 +6,10 @@ import { useToast } from "../components/common/Toast"
 import { LogoutModal } from "../components/common/LogoutModal"
 import Sidebar from "../components/common/Sidebar"
 import {
-  Menu,
   Bell,
-  Home as HomeIcon,
   BookOpen,
   GraduationCap,
-  Monitor,
-  User,
   ChevronDown,
-  ChevronUp,
   Flame,
   Award,
   Mic,
@@ -23,13 +18,11 @@ import {
   FileText,
   Play,
   Plus,
-  Zap,
   LogOut,
   ArrowRight
 } from "lucide-react"
 
 const Home = () => {
-  const [basicOpen, setBasicOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [timeRange, setTimeRange] = useState("Last 30 Days")
   const [showLogoutModal, setShowLogoutModal] = useState(false)
@@ -69,9 +62,6 @@ const Home = () => {
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=128`
   const avatarUrl = user?.avatar || user?.avarta || defaultAvatar
   const streakDays = user?.stats?.current_streak_days ?? 0
-  const weeklyXp = user?.stats?.weekly_xp ?? 0
-  const weeklyGoalTarget = user?.settings?.daily_word_target ? user.settings.daily_word_target * 15 : 450
-  const weeklyXpPercent = Math.min(100, Math.round((weeklyXp / weeklyGoalTarget) * 100))
   const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "B1"
 
   const rawReading = user?.stats?.avg_reading_score ?? 0

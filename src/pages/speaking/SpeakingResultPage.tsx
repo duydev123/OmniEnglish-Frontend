@@ -1,0 +1,640 @@
+import React, { useState, useEffect } from "react"
+import { useParams, useNavigate } from "react-router-dom"
+import { AppLayout } from "../../components/common/AppLayout"
+import { speakingApi } from "../../services/speakingApi"
+import type { SpeakingSessionDetail } from "../../types/speaking"
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Share2,
+  Bookmark,
+  Sparkles,
+  TrendingUp,
+  Volume2,
+  BookOpen,
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  X
+} from "lucide-react"
+
+interface PhonemeInfo {
+  symbol: string
+  isGood: boolean
+}
+
+interface WordIpaData {
+  word: string
+  cleanWord: string
+  ipa: string
+  status: "GOOD" | "WRONG" | "OMITTED"
+  accuracyScore: number
+  phonemes: PhonemeInfo[]
+}
+
+export const SpeakingResultPage: React.FC = () => {
+  const { sessionId } = useParams<{ sessionId?: string }>()
+  const navigate = useNavigate()
+
+  const [loading, setLoading] = useState(true)
+  const [result, setResult] = useState<SpeakingSessionDetail | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const currentTime = "0:12"
+  const duration = "0:45"
+
+  const [selectedWord, setSelectedWord] = useState<WordIpaData | null>(null)
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      setLoading(true)
+      try {
+        if (sessionId && sessionId !== "sample") {
+          const detail = await speakingApi.getSessionResult(sessionId)
+          if (detail) setResult(detail)
+        } else {
+          setResult({
+            session_id: sessionId || "sample",
+            test_type: "PART_1",
+            title: "Hometown & Studies",
+            duration_str: "04:25",
+            status: "COMPLETED",
+            overall_band_score: 7.5,
+            band_score_delta: 0.5,
+            percentile_rank: "Top 15% User",
+            pronunciation_score: 8.0,
+            fluency_score: 7.2,
+            lexical_score: 7.5,
+            grammar_score: 7.0,
+            key_strengths: [
+              { title: "Effective Collocations", desc: "You used sophisticated phrase pairs like 'evolving rapidly' which sounds very natural." },
+              { title: "Natural Intonation", desc: "Good pitch variation during long sentence delivery." }
+            ],
+            areas_for_growth: [
+              {
+                category: "PRONUNCIATION",
+                title: "Ending Sounds: '/d/'",
+                desc: "Pay attention to ending sounds for past tense words like 'standardized'.",
+                tip: "Practice shadowing exercises with emphasis on final /d/ and /t/ consonants.",
+                incorrect: "standardize",
+                correct: "standardized"
+              },
+              {
+                category: "GRAMMAR",
+                title: "Verb Patterns: 'How to'",
+                desc: "Remember to use infinitive verb form after 'how to'.",
+                tip: "Use 'how to + V-infinitive' instead of past participle.",
+                incorrect: "how to applied",
+                correct: "how to apply"
+              }
+            ],
+            questions_detail: [
+              {
+                question_text: "Can you describe the town or city where you live?",
+                user_transcript: "I believe that modern education system is evolving rapidly. However, many schools still focus too much on standardized testing. ... um ... This might limit the creativity of diverse learners in the classroom. Students need to learn how to applied their knowledge to real-world problems.",
+                user_audio_url: ""
+              },
+              {
+                question_text: "Do you work or are you a student?",
+                user_transcript: "Actually, I am a final-year student majoring in Architecture. It is quite a demanding field, but I find it immensely rewarding to see my designs come to life.",
+                user_audio_url: ""
+              }
+            ],
+            ai_insights_summary: "You tended to omit final consonants (ending sounds). Grammar and vocabulary usage are strong, but work on maintaining smooth pace without hesitation pauses.",
+            detailed_criteria_feedback: [],
+            recommended_resources: [
+              { title: "10 Common IELTS Speaking Part 1 Phrases", desc: "Useful collocations" },
+              { title: "Mastering Final Consonants /d/ & /t/", desc: "Pronunciation shadowing" }
+            ],
+            created_at: new Date().toISOString()
+          })
+        }
+      } catch (err) {
+        console.error("Failed to load session result:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchResult()
+  }, [sessionId])
+
+  const handleWordClick = (word: string, status: "GOOD" | "WRONG" | "OMITTED") => {
+    const clean = word.toLowerCase().replace(/[^a-z]/g, "")
+    const ipaMap: Record<string, { ipa: string; score: number; phonemes: PhonemeInfo[] }> = {
+      standardized: {
+        ipa: "/ˈstæn.də.daɪzd/",
+        score: 55,
+        phonemes: [
+          { symbol: "stæn", isGood: true },
+          { symbol: "də", isGood: true },
+          { symbol: "daɪzd", isGood: false }
+        ]
+      },
+      applied: {
+        ipa: "/əˈplaɪd/",
+        score: 60,
+        phonemes: [
+          { symbol: "ə", isGood: true },
+          { symbol: "plaɪd", isGood: false }
+        ]
+      },
+      modern: {
+        ipa: "/ˈmɒd.n/",
+        score: 92,
+        phonemes: [
+          { symbol: "mɒd", isGood: true },
+          { symbol: "n", isGood: true }
+        ]
+      },
+      education: {
+        ipa: "/ˌedʒ.uˈkeɪ.ʃn/",
+        score: 95,
+        phonemes: [
+          { symbol: "edʒ", isGood: true },
+          { symbol: "u", isGood: true },
+          { symbol: "keɪ", isGood: true },
+          { symbol: "ʃn", isGood: true }
+        ]
+      },
+      diverse: {
+        ipa: "/daɪˈvɜːs/",
+        score: 88,
+        phonemes: [
+          { symbol: "daɪ", isGood: true },
+          { symbol: "vɜːs", isGood: true }
+        ]
+      },
+      learners: {
+        ipa: "/ˈlɜː.nəz/",
+        score: 90,
+        phonemes: [
+          { symbol: "lɜː", isGood: true },
+          { symbol: "nəz", isGood: true }
+        ]
+      }
+    }
+
+    const data = ipaMap[clean] || {
+      ipa: `/${clean}/`,
+      score: status === "GOOD" ? 88 : 50,
+      phonemes: [
+        { symbol: clean.slice(0, Math.ceil(clean.length / 2)), isGood: status === "GOOD" },
+        { symbol: clean.slice(Math.ceil(clean.length / 2)), isGood: status === "GOOD" }
+      ]
+    }
+
+    setSelectedWord({
+      word: word,
+      cleanWord: clean || word,
+      ipa: data.ipa,
+      status: status,
+      accuracyScore: data.score,
+      phonemes: data.phonemes
+    })
+  }
+
+  const handlePlayWordAudio = (word: string) => {
+    const utterance = new SpeechSynthesisUtterance(word)
+    utterance.lang = "en-US"
+    window.speechSynthesis.speak(utterance)
+  }
+
+  if (loading) {
+    return (
+      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+        <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-3">
+          <Loader2 className="w-10 h-10 text-[#1e50e6] animate-spin" />
+          <p className="text-sm font-semibold text-slate-500">Generating AI Performance Analysis...</p>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  if (!result) {
+    return (
+      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+        <div className="p-8 text-center space-y-4">
+          <h2 className="text-xl font-bold text-slate-800">Result Not Found</h2>
+          <button
+            onClick={() => navigate("/practice-modules")}
+            className="px-5 py-2.5 bg-[#1e50e6] text-white font-bold rounded-xl text-xs"
+          >
+            Back to Practice Modules
+          </button>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  return (
+    <AppLayout
+      breadcrumbs={[
+        { label: "PRACTICE MODULE", href: "/practice-modules" },
+        { label: "SPEAKING", href: "/practice-modules" },
+        { label: `PART 1 - ${result.title.toUpperCase()}` }
+      ]}
+    >
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-7">
+        {/* Top Header Row matching Figma */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
+          <div className="space-y-1">
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block">
+              PRACTICE MODULE &gt; SPEAKING &gt; PART 1 - {result.title.toUpperCase()}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Speaking Part 1: Result Analysis
+            </h1>
+            <p className="text-xs font-semibold text-slate-400">
+              {result.title} • {new Date(result.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/practice-modules")}
+              className="px-5 py-2.5 bg-[#1e50e6] hover:bg-blue-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/20 flex items-center gap-2 transition cursor-pointer"
+            >
+              <RotateCcw size={15} />
+              <span>Practice Again</span>
+            </button>
+
+            <button className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl transition cursor-pointer shadow-2xs">
+              <Share2 size={16} />
+            </button>
+
+            <button className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl transition cursor-pointer shadow-2xs">
+              <Bookmark size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Top Metrics Cards Row matching Figma */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* Overall Score */}
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between space-y-2 col-span-2 sm:col-span-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              OVERALL PERFORMANCE
+            </span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-black text-blue-600 tracking-tight">
+                {result.overall_band_score}
+              </span>
+              <span className="text-xs font-bold text-slate-400">/10</span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-extrabold text-emerald-600">
+              <TrendingUp size={12} />
+              <span>+{result.band_score_delta || 0.5} vs last attempt</span>
+            </div>
+          </div>
+
+          {/* Pronunciation */}
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                Pronunciation
+              </span>
+              <span className="text-xs font-extrabold text-slate-800">{result.pronunciation_score}/10</span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 rounded-full" style={{ width: `${(result.pronunciation_score / 10) * 100}%` }} />
+            </div>
+            <span className="text-[10px] font-bold text-blue-600 block">Excellent</span>
+          </div>
+
+          {/* Fluency */}
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                Fluency
+              </span>
+              <span className="text-xs font-extrabold text-slate-800">{result.fluency_score}/10</span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(result.fluency_score / 10) * 100}%` }} />
+            </div>
+            <span className="text-[10px] font-bold text-emerald-600 block">Stable</span>
+          </div>
+
+          {/* Vocabulary */}
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                Vocabulary
+              </span>
+              <span className="text-xs font-extrabold text-slate-800">{result.lexical_score}/10</span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-slate-800 rounded-full" style={{ width: `${(result.lexical_score / 10) * 100}%` }} />
+            </div>
+            <span className="text-[10px] font-bold text-slate-700 block">High</span>
+          </div>
+
+          {/* Grammar */}
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                Grammar
+              </span>
+              <span className="text-xs font-extrabold text-slate-800">{result.grammar_score}/10</span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(result.grammar_score / 10) * 100}%` }} />
+            </div>
+            <span className="text-[10px] font-bold text-amber-600 block">Good</span>
+          </div>
+        </div>
+
+        {/* Main Content Split: Left (Audio & Questions) vs Right (AI Insights & Feedback) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Main Column */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Audio Player Card */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="w-12 h-12 rounded-full bg-[#1e50e6] text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition cursor-pointer shrink-0"
+              >
+                {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+              </button>
+
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-500">
+                  <span>{currentTime}</span>
+                  <span>{duration}</span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative cursor-pointer">
+                  <div className="h-full bg-[#1e50e6] rounded-full w-1/4" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
+                  <Volume2 size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Transcript Legend & Questions Breakdown */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-6">
+              {/* Legend bar */}
+              <div className="flex items-center gap-4 text-xs font-bold border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-1.5 text-emerald-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span>Good Use</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-rose-600">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                  <span>Needs Improvement</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-amber-600">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <span>Pauses</span>
+                </div>
+              </div>
+
+              {/* Questions List */}
+              <div className="space-y-6">
+                {result.questions_detail?.map((q, idx) => (
+                  <div key={idx} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-extrabold uppercase text-slate-400">
+                        QUESTION {idx + 1}
+                      </h3>
+                    </div>
+
+                    <p className="text-sm font-extrabold text-slate-900">
+                      "{q.question_text}"
+                    </p>
+
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-700 leading-relaxed">
+                      {/* Render transcript with clickable highlighted word spans */}
+                      <span className="inline">
+                        I believe that{" "}
+                        <button
+                          onClick={() => handleWordClick("modern education", "GOOD")}
+                          className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold hover:bg-emerald-200 transition cursor-pointer"
+                        >
+                          modern education
+                        </button>{" "}
+                        system is evolving rapidly. However, many schools still focus too much on{" "}
+                        <button
+                          onClick={() => handleWordClick("standardized", "WRONG")}
+                          className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded font-bold line-through hover:bg-rose-200 transition cursor-pointer"
+                        >
+                          standardized
+                        </button>{" "}
+                        testing.{" "}
+                        <button
+                          onClick={() => handleWordClick("... um ...", "OMITTED")}
+                          className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-bold hover:bg-amber-200 transition cursor-pointer"
+                        >
+                          ... um ...
+                        </button>{" "}
+                        This might limit the creativity of{" "}
+                        <button
+                          onClick={() => handleWordClick("diverse learners", "GOOD")}
+                          className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold hover:bg-emerald-200 transition cursor-pointer"
+                        >
+                          diverse learners
+                        </button>{" "}
+                        in the classroom. Students need to learn how to{" "}
+                        <button
+                          onClick={() => handleWordClick("applied", "WRONG")}
+                          className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded font-bold hover:bg-rose-200 transition cursor-pointer"
+                        >
+                          applied
+                        </button>{" "}
+                        their knowledge to real-world problems.
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Main Column */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* AI Insights (Blue Card) */}
+            <div className="bg-blue-600 text-white rounded-3xl p-6 shadow-md space-y-3">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
+                <Sparkles size={14} />
+                <span>AI Insights</span>
+              </h3>
+              <p className="text-xs font-medium leading-relaxed text-blue-100">
+                {result.ai_insights_summary || "You tend to omit final consonant sounds (ending sounds). Grammar and vocabulary are high level, but pay attention to verb patterns after 'how to'."}
+              </p>
+            </div>
+
+            {/* Key Strengths */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                  <span>Key Strengths</span>
+                </h3>
+
+                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold">
+                  {result.percentile_rank || "Top 15% User"}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {result.key_strengths?.map((strength, i) => (
+                  <div key={i} className="space-y-1">
+                    <span className="text-xs font-bold text-slate-800 block">
+                      {i + 1}. {strength.title}
+                    </span>
+                    <p className="text-xs text-slate-500 font-medium leading-snug">
+                      {strength.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Areas for Growth */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                <AlertTriangle size={14} className="text-amber-500" />
+                <span>Areas for Growth</span>
+              </h3>
+
+              <div className="space-y-4">
+                {result.areas_for_growth?.map((area, i) => (
+                  <div key={i} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600">
+                        {area.category}: {area.title}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 font-medium">
+                      {area.desc}
+                    </p>
+
+                    <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2 text-xs font-mono">
+                      <span className="text-rose-600 line-through font-bold">{area.incorrect}</span>
+                      <span>→</span>
+                      <span className="text-emerald-600 font-bold">{area.correct}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recommended Resources */}
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                <BookOpen size={14} className="text-blue-600" />
+                <span>Recommended Resources</span>
+              </h3>
+
+              <div className="space-y-3">
+                {result.recommended_resources?.map((res, i) => (
+                  <div key={i} className="p-3 bg-blue-50/60 border border-blue-100 rounded-2xl flex items-center justify-between hover:bg-blue-100/50 transition cursor-pointer">
+                    <div>
+                      <span className="text-xs font-bold text-blue-900 block">{res.title}</span>
+                      <span className="text-[10px] text-blue-600 font-medium block">{res.desc}</span>
+                    </div>
+                    <ArrowRight size={14} className="text-blue-600 shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive IPA & Phoneme Breakdown Modal Popover */}
+      {selectedWord && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-black text-slate-900 capitalize">
+                  {selectedWord.cleanWord}
+                </h3>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                    selectedWord.status === "GOOD"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : selectedWord.status === "WRONG"
+                      ? "bg-rose-100 text-rose-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  {selectedWord.accuracyScore}% Accuracy
+                </span>
+              </div>
+
+              <button
+                onClick={() => setSelectedWord(null)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-full transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Target Audio & IPA Bar */}
+            <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase text-slate-400 block">IPA PHONETIC GUIDE</span>
+                <span className="text-lg font-mono font-bold text-blue-600">{selectedWord.ipa}</span>
+              </div>
+
+              <button
+                onClick={() => handlePlayWordAudio(selectedWord.cleanWord)}
+                className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition cursor-pointer"
+                title="Listen to word pronunciation"
+              >
+                <Play size={18} className="ml-0.5" />
+              </button>
+            </div>
+
+            {/* Phonemes Breakdown Section */}
+            <div className="space-y-3">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 block">
+                Phoneme Breakdown (Phân tích âm phát âm)
+              </span>
+              <p className="text-[11px] text-slate-500">
+                Green indicates correct phoneme sounds; Red indicates sounds needing improvement.
+              </p>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {selectedWord.phonemes.map((ph, idx) => (
+                  <div
+                    key={idx}
+                    className={`px-4 py-2 rounded-2xl border text-base font-mono font-black flex flex-col items-center shadow-2xs ${
+                      ph.isGood
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                        : "bg-rose-50 text-rose-700 border-rose-300"
+                    }`}
+                  >
+                    <span>/{ph.symbol}/</span>
+                    <span className="text-[9px] font-sans font-bold uppercase mt-0.5">
+                      {ph.isGood ? "Correct" : "Needs Practice"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedWord(null)}
+              className="w-full py-3 bg-[#1e50e6] text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/20 hover:bg-blue-700 transition cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </AppLayout>
+  )
+}
+
+export default SpeakingResultPage

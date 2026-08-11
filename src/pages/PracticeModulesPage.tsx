@@ -8,15 +8,10 @@ import Sidebar from "../components/common/Sidebar"
 import { practiceApi } from "../services/practiceApi"
 import type { ReadingPassageItem, ListeningPassageItem } from "../services/practiceApi"
 import {
-  Menu,
   Bell,
-  Home as HomeIcon,
   BookOpen,
   GraduationCap,
-  Monitor,
-  User,
   ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Headphones,
@@ -33,7 +28,6 @@ import {
 } from "lucide-react"
 
 const PracticeModulesPage = () => {
-  const [basicOpen, setBasicOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<"listening" | "reading" | "speaking" | "writing">("listening")
   const [currentPage, setCurrentPage] = useState(1)
@@ -41,6 +35,9 @@ const PracticeModulesPage = () => {
   const [loading, setLoading] = useState(false)
   const [readingItems, setReadingItems] = useState<ReadingPassageItem[]>([])
   const [listeningItems, setListeningItems] = useState<ListeningPassageItem[]>([])
+  const [speakingTopics, setSpeakingTopics] = useState<import("../types/speaking").SpeakingTopic[]>([])
+  const [shadowingSentences, setShadowingSentences] = useState<import("../types/speaking").ShadowingSentence[]>([])
+  const [speakingSubTab, setSpeakingSubTab] = useState<"ielts" | "shadowing">("ielts")
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const { user, setUser } = useUserStore()
@@ -51,11 +48,6 @@ const PracticeModulesPage = () => {
   const email = user?.email || ""
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=128`
   const avatarUrl = user?.avatar || user?.avarta || defaultAvatar
-
-  const weeklyXp = user?.stats?.weekly_xp ?? 0
-  const dailyWordTarget = user?.settings?.daily_word_target ?? 30
-  const weeklyGoalTarget = dailyWordTarget * 15
-  const weeklyXpPercent = Math.min(100, Math.round((weeklyXp / weeklyGoalTarget) * 100))
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -92,12 +84,20 @@ const PracticeModulesPage = () => {
       } else if (activeTab === "listening") {
         const data = await practiceApi.getListeningPassages(currentPage, itemsPerPage)
         setListeningItems(data)
+      } else if (activeTab === "speaking") {
+        if (speakingSubTab === "ielts") {
+          const topics = await (await import("../services/speakingApi")).speakingApi.getTopics(currentPage, itemsPerPage)
+          setSpeakingTopics(topics)
+        } else {
+          const sentences = await (await import("../services/speakingApi")).speakingApi.getShadowingSentences(currentPage, itemsPerPage)
+          setShadowingSentences(sentences)
+        }
       }
       setLoading(false)
     }
 
     fetchModuleData()
-  }, [activeTab, currentPage, itemsPerPage])
+  }, [activeTab, currentPage, itemsPerPage, speakingSubTab])
 
   return (
     <div className="min-h-screen bg-[#f8fafd] flex flex-col text-slate-800 font-sans antialiased">
@@ -366,14 +366,158 @@ const PracticeModulesPage = () => {
                   <p className="text-xs text-slate-400">Hệ thống chưa tìm thấy dữ liệu bài Listening trong cơ sở dữ liệu.</p>
                 </div>
               )
+            ) : activeTab === "speaking" ? (
+              <div className="space-y-4">
+                {/* Sub-tab selection for Speaking: IELTS Tests vs Shadowing */}
+                <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+                  <button
+                    onClick={() => setSpeakingSubTab("ielts")}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      speakingSubTab === "ielts"
+                        ? "bg-[#1e50e6] text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    IELTS Speaking Tests
+                  </button>
+                  <button
+                    onClick={() => setSpeakingSubTab("shadowing")}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      speakingSubTab === "shadowing"
+                        ? "bg-[#1e50e6] text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    Shadowing Practice
+                  </button>
+                </div>
+
+                {speakingSubTab === "ielts" ? (
+                  speakingTopics.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                      {speakingTopics.map((topic, idx) => (
+                        <div
+                          key={topic.id}
+                          onClick={() => navigate(`/speaking/practice/topic/${topic.id}`)}
+                          className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-blue-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-blue-100/80 text-[#1e50e6] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                <Mic className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#1e50e6] block">
+                                  SPEAKING
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-400">
+                                  {topic.is_full_test ? "Full Mock Test" : "Topic Practice"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              aria-label="Start Speaking Test"
+                              className="w-9 h-9 rounded-full bg-blue-50 text-[#1e50e6] group-hover:bg-[#1e50e6] group-hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-xs"
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#1e50e6] transition-colors leading-snug line-clamp-2">
+                            {topic.title || `Speaking Authentic Test Practice ${idx + 1}`}
+                          </h3>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                              <span>{topic.tags?.join(" • ") || "Part 1, 2, 3"}</span>
+                              <span className="font-bold text-blue-600">{topic.prompt_count || 3} Prompts</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-[#1e50e6] rounded-full w-0 group-hover:w-full transition-all duration-500" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                      <Mic className="w-10 h-10 text-slate-300 mx-auto" />
+                      <h3 className="text-sm font-bold text-slate-700">No speaking topics found</h3>
+                      <p className="text-xs text-slate-400">Click below to start a quick sample practice.</p>
+                      <button
+                        onClick={() => navigate("/speaking/practice/topic/sample")}
+                        className="mt-2 px-5 py-2.5 bg-[#1e50e6] text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 hover:bg-blue-700 transition"
+                      >
+                        Start Speaking Practice
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  shadowingSentences.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                      {shadowingSentences.map((sentence) => (
+                        <div
+                          key={sentence.id}
+                          onClick={() => navigate(`/speaking/shadowing/${sentence.id}`, { state: { sentence } })}
+                          className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-indigo-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                <Zap className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">
+                                  SHADOWING
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-400">
+                                  {sentence.target_skill || "Intonation & Accent"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              aria-label="Start Shadowing"
+                              className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-xs"
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <p className="text-sm font-bold text-slate-800 line-clamp-2 leading-relaxed italic">
+                            "{sentence.english_text}"
+                          </p>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+                            <span>{sentence.ipa_text}</span>
+                            <span className="font-sans font-bold text-indigo-600">Practice Now →</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                      <Zap className="w-10 h-10 text-indigo-300 mx-auto" />
+                      <h3 className="text-sm font-bold text-slate-700">No Shadowing sentences available</h3>
+                      <button
+                        onClick={() => navigate("/speaking/shadowing")}
+                        className="mt-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition"
+                      >
+                        Open Shadowing Tool
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
             ) : (
               <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
-                {activeTab === "speaking" ? <Mic className="w-10 h-10 text-indigo-400 mx-auto" /> : <FileText className="w-10 h-10 text-emerald-400 mx-auto" />}
+                <FileText className="w-10 h-10 text-emerald-400 mx-auto" />
                 <h3 className="text-base font-extrabold text-slate-800">
-                  Module {activeTab.toUpperCase()} đang được hoàn thiện
+                  Module WRITING is coming soon
                 </h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                  Đội ngũ phát triển đang xây dựng tính năng nhận diện giọng nói AI và chấm điểm essay tự động. Tính năng sẽ sớm ra mắt!
+                  Our development team is preparing automated essay evaluation. Stay tuned!
                 </p>
               </div>
             )}
