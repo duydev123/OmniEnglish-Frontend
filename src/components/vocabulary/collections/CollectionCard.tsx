@@ -34,7 +34,7 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const wordCount = collection.words_list?.length ?? 0
+  const wordCount = collection.total_words ?? collection.words_list?.length ?? 0
   const masteredPct = Math.round(collection.accuracy_percentage ?? 0)
 
   // Mastery status badge color

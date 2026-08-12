@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Link, useNavigate } from "react-router-dom"
 import { useUserStore, initialUser } from "../stores/user/useUserStore"
 import { userApi } from "../services/userApi"
 import { useToast } from "../components/common/Toast"
 import { LogoutModal } from "../components/common/LogoutModal"
+import { AppLayout } from "../components/common/AppLayout"
+import { practiceApi } from "../services/practiceApi"
+import type { ReadingPassageItem, ListeningPassageItem } from "../services/practiceApi"
+import {
+  BookOpen,
 import Sidebar from "../components/common/Sidebar"
 import { practiceApi } from "../services/practiceApi"
 import type { ReadingPassageItem, ListeningPassageItem } from "../services/practiceApi"
@@ -20,6 +26,15 @@ import {
   ArrowRight,
   SlidersHorizontal,
   Filter,
+  Loader2,
+  Clock,
+  HelpCircle
+} from "lucide-react"
+
+import { writingApi } from "../services/writingApi"
+import type { WritingPrompt } from "../types/writing"
+
+const PracticeModulesPage = () => {
   Zap,
   Loader2,
   Clock,
@@ -35,6 +50,13 @@ const PracticeModulesPage = () => {
   const [loading, setLoading] = useState(false)
   const [readingItems, setReadingItems] = useState<ReadingPassageItem[]>([])
   const [listeningItems, setListeningItems] = useState<ListeningPassageItem[]>([])
+  const [writingItems, setWritingItems] = useState<WritingPrompt[]>([])
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  const { setUser } = useUserStore()
+  const navigate = useNavigate()
+  const { showToast } = useToast()
+
   const [speakingTopics, setSpeakingTopics] = useState<import("../types/speaking").SpeakingTopic[]>([])
   const [shadowingSentences, setShadowingSentences] = useState<import("../types/speaking").ShadowingSentence[]>([])
   const [speakingSubTab, setSpeakingSubTab] = useState<"ielts" | "shadowing">("ielts")
@@ -84,6 +106,9 @@ const PracticeModulesPage = () => {
       } else if (activeTab === "listening") {
         const data = await practiceApi.getListeningPassages(currentPage, itemsPerPage)
         setListeningItems(data)
+      } else if (activeTab === "writing") {
+        const data = await writingApi.getPrompts()
+        setWritingItems(data)
       } else if (activeTab === "speaking") {
         if (speakingSubTab === "ielts") {
           const topics = await (await import("../services/speakingApi")).speakingApi.getTopics(currentPage, itemsPerPage)
@@ -97,6 +122,15 @@ const PracticeModulesPage = () => {
     }
 
     fetchModuleData()
+  }, [activeTab, currentPage, itemsPerPage])
+
+  return (
+    <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULES' }]}>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden flex flex-col justify-between">
+        <div className="space-y-6">
+          {/* Top Header: Title & Recent Practice Button */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
   }, [activeTab, currentPage, itemsPerPage, speakingSubTab])
 
   return (
@@ -366,6 +400,87 @@ const PracticeModulesPage = () => {
                   <p className="text-xs text-slate-400">Hệ thống chưa tìm thấy dữ liệu bài Listening trong cơ sở dữ liệu.</p>
                 </div>
               )
+            ) : activeTab === "writing" ? (
+              writingItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                  {writingItems.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => navigate(`/writing/editor/${item.id}`)}
+                      className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-blue-400/80 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-purple-100/80 text-purple-700 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 block">
+                                {item.task_type === 'WITH_GRAPH' ? 'TASK 1 • CHART' : 'TASK 2 • ESSAY'}
+                              </span>
+                              {item.user_status === 'DRAFT' && (
+                                <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-extrabold rounded-md uppercase tracking-wider">
+                                  Draft
+                                </span>
+                              )}
+                              {item.user_status === 'REVIEWED' && (
+                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-extrabold rounded-md uppercase tracking-wider">
+                                  Reviewed
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-semibold text-slate-400">
+                              {item.ref_id || 'Academic'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          aria-label="Start Writing"
+                          className="w-9 h-9 rounded-full bg-purple-50 text-purple-700 group-hover:bg-[#1e50e6] group-hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-xs"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <h3 className="text-base font-extrabold text-slate-900 group-hover:text-purple-700 transition-colors leading-snug line-clamp-2">
+                        {item.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
+                        {item.task_description}
+                      </p>
+
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{item.word_count_target}+ Words</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{item.time_limit_minutes} Mins</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                  <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h3 className="text-sm font-bold text-slate-700">Chưa có bài viết nào</h3>
+                  <p className="text-xs text-slate-400">Hệ thống chưa tìm thấy dữ liệu bài Writing.</p>
+                </div>
+              )
+            ) : (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                <Mic className="w-10 h-10 text-indigo-400 mx-auto" />
+                <h3 className="text-base font-extrabold text-slate-800">
+                  Module SPEAKING đang được hoàn thiện
+                </h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Đội ngũ phát triển đang xây dựng tính năng nhận diện giọng nói AI và chấm điểm speaking tự động.
             ) : activeTab === "speaking" ? (
               <div className="space-y-4">
                 {/* Sub-tab selection for Speaking: IELTS Tests vs Shadowing */}
@@ -579,6 +694,7 @@ const PracticeModulesPage = () => {
               </button>
             </div>
           </div>
+        </div>
         </main>
       </div>
 
@@ -588,6 +704,7 @@ const PracticeModulesPage = () => {
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
       />
+    </AppLayout>
     </div>
   )
 }
