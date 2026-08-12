@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUserStore } from '../../stores/user/useUserStore'
 import {
-  House, BookOpen, FileText, Clock, Monitor, User,
+  House, BookOpen, FileText, Clock, User,
   ChevronDown, Zap
 } from 'lucide-react'
 
@@ -18,31 +18,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const { user } = useUserStore()
 
   const isVocabActive = location.pathname.startsWith('/vocabulary')
-  const isPracticeActive = location.pathname.startsWith('/practice')
+  const isPracticeActive = location.pathname.startsWith('/practice-modules')
   const isProfileActive = location.pathname.startsWith('/profile')
   const isHomeActive = location.pathname === '/'
 
-  // Dynamic Weekly Goal progress
+  // Dynamic Weekly Goal calculation:
+  // Fluency Push (45m/day) -> 45 * 7 = 315 mins/XP
+  // Steady Growth (15m/day) -> 15 * 7 = 105 mins/XP
   const learningMode = user?.settings?.learning_mode || "Fluency Push"
   const dailyMinsTarget = learningMode === "Steady Growth" ? 15 : 45
   const weeklyGoalTarget = dailyMinsTarget * 7
-  const weeklyXp = user?.stats?.weekly_xp ?? 420
+  const weeklyXp = user?.stats?.weekly_xp ?? 0
   const weeklyXpPercent = Math.min(100, Math.round((weeklyXp / weeklyGoalTarget) * 100))
 
   const navContent = (
     <div className="flex flex-col h-full select-none justify-between">
       {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 text-xs font-bold">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-1.5 text-sm font-semibold">
         {/* Home Link */}
         <button
           onClick={() => { navigate('/'); onClose?.() }}
-          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+          className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all cursor-pointer ${
             isHomeActive
-              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          <House size={16} />
+          <House size={18} />
           <span>Home</span>
         </button>
 
@@ -50,37 +52,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         <div>
           <button
             onClick={() => setBasicOpen(v => !v)}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+            className="w-full flex items-center justify-between px-4 py-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
           >
-            <div className="flex items-center gap-3">
-              <BookOpen size={16} />
+            <div className="flex items-center gap-3.5">
+              <BookOpen size={18} />
               <span>Basic</span>
             </div>
             <ChevronDown
-              size={14}
+              size={16}
               className={`transition-transform duration-200 ${basicOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
           {basicOpen && (
-            <div className="ml-4 pl-3 border-l-2 border-slate-200/80 my-1 space-y-1">
+            <div className="ml-5 pl-3 border-l-2 border-slate-200/80 my-1 space-y-1">
               <button
                 onClick={() => { navigate('/vocabulary'); onClose?.() }}
-                className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${
                   isVocabActive
-                    ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+                    ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <BookOpen size={15} />
+                <BookOpen size={16} />
                 <span>Vocabulary</span>
               </button>
 
               <button
                 onClick={() => onClose?.()}
-                className="w-full flex items-center gap-3 px-3.5 py-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all cursor-pointer"
+                className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all cursor-pointer text-xs font-semibold"
               >
-                <FileText size={15} />
+                <FileText size={16} />
                 <span>Grammar</span>
               </button>
             </div>
@@ -90,60 +92,55 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         {/* Practice Module */}
         <button
           onClick={() => { navigate('/practice-modules'); onClose?.() }}
-          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
-            isPracticeActive
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+            location.pathname.startsWith('/practice') ||
+            location.pathname.startsWith('/listening') ||
+            location.pathname.startsWith('/reading')
               ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          <Clock size={16} />
+          <Clock size={18} />
           <span>Practice Module</span>
-        </button>
-
-        {/* Computer-based Tests */}
-        <button
-          onClick={() => onClose?.()}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all cursor-pointer"
-        >
-          <Monitor size={16} />
-          <span>Computer-based Tests</span>
         </button>
 
         {/* Profile */}
         <button
           onClick={() => { navigate('/profile'); onClose?.() }}
-          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+          className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all cursor-pointer ${
             isProfileActive
-              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          <User size={16} />
+          <User size={18} />
           <span>Profile</span>
         </button>
       </div>
 
       {/* Footer: Goal Progress & Upgrade */}
-      <div className="p-3 border-t border-slate-200/80 space-y-2.5 bg-white shrink-0">
-        <div className="bg-blue-50/70 border border-blue-100/80 rounded-2xl p-3">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 mb-1">
+      <div className="p-4 border-t border-slate-200/80 space-y-3 bg-white shrink-0">
+        <div className="bg-blue-50/70 border border-blue-100/80 rounded-2xl p-3.5">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-600 mb-1.5">
             <span className="text-blue-600">Weekly Goal</span>
             <span className="font-extrabold text-blue-700">{weeklyXpPercent}%</span>
           </div>
-          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1.5">
+          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-1.5">
             <div
-              className="h-full bg-[#1D4ED8] rounded-full transition-all duration-300"
+              className="h-full bg-[#1D4ED8] rounded-full transition-all duration-500"
               style={{ width: `${weeklyXpPercent}%` }}
             />
           </div>
-          <p className="text-[10px] font-bold text-slate-400 text-right">{weeklyXp}/{weeklyGoalTarget} XP</p>
+          <p className="text-[10px] font-bold text-slate-400 text-right">
+            {weeklyXp}/{weeklyGoalTarget} XP ({dailyMinsTarget * 7}m)
+          </p>
         </div>
 
         <button
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#1D4ED8] hover:bg-blue-800
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#1D4ED8] hover:bg-blue-800
             text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer"
         >
-          <Zap size={14} className="fill-white" />
+          <Zap size={15} className="fill-white" />
           <span>Upgrade</span>
         </button>
       </div>
@@ -151,25 +148,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   )
 
   return (
-    <>
-      {/* Mobile Backdrop Overlay */}
-      {isOpen && (
-        <div
-          onClick={onClose}
-          className="lg:hidden fixed inset-0 top-14 z-20 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-        />
-      )}
-
-      {/* Sidebar Container */}
-      <aside
-        className={`fixed top-14 left-0 bottom-0 z-30 w-60 bg-white border-r border-slate-200/80
-          transition-transform duration-300 ${
-            isOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-      >
-        {navContent}
-      </aside>
-    </>
+    <aside
+      className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] w-64 shrink-0 bg-white border-r border-slate-200/80
+        transition-transform duration-300 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+    >
+      {navContent}
+    </aside>
   )
 }
 
