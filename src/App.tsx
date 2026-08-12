@@ -6,6 +6,9 @@ import PracticeModulesPage from "./pages/PracticeModulesPage"
 import VocabularyPage from "./pages/vocabulary/VocabularyPage"
 import CollectionDetailPage from "./pages/vocabulary/CollectionDetailPage"
 import BulkAddPage from "./pages/vocabulary/BulkAddPage"
+import SpeakingPracticePage from "./pages/speaking/SpeakingPracticePage"
+import SpeakingShadowingPage from "./pages/speaking/SpeakingShadowingPage"
+import SpeakingResultPage from "./pages/speaking/SpeakingResultPage"
 import { ToastProvider } from "./components/common/Toast"
 import { ProtectedRoute, PublicOnlyRoute } from "./components/common/ProtectedRoute"
 
@@ -26,6 +29,13 @@ const App = () => {
           <Route path="/vocabulary" element={<VocabularyPage />} />
           <Route path="/vocabulary/:id" element={<CollectionDetailPage />} />
           <Route path="/vocabulary/:id/bulk-add" element={<BulkAddPage />} />
+
+          {/* Speaking Module Routes */}
+          <Route path="/speaking/practice/topic/:topicId" element={<SpeakingPracticePage />} />
+          <Route path="/speaking/practice/prompt/:promptId" element={<SpeakingPracticePage />} />
+          <Route path="/speaking/shadowing" element={<SpeakingShadowingPage />} />
+          <Route path="/speaking/shadowing/:sentenceId" element={<SpeakingShadowingPage />} />
+          <Route path="/speaking/result/:sessionId" element={<SpeakingResultPage />} />
         </Route>
       </Routes>
     </ToastProvider>
