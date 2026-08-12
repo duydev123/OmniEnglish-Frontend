@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { useUserStore, initialUser } from "../stores/user/useUserStore"
-import { userApi } from "../services/userApi"
-import { useToast } from "../components/common/Toast"
-import { LogoutModal } from "../components/common/LogoutModal"
-import { AppLayout } from "../components/common/AppLayout"
-import {
-  BookOpen,
-import Sidebar from "../components/common/Sidebar"
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useUserStore, initialUser } from "../stores/user/useUserStore";
+import { userApi } from "../services/userApi";
+import { useToast } from "../components/common/Toast";
+import { LogoutModal } from "../components/common/LogoutModal";
+import { AppLayout } from "../components/common/AppLayout";
+import Sidebar from "../components/common/Sidebar";  // ← Import riêng, KHÔNG lồng vào import khác
+
+// 6. Import từ lucide-react - TẤT CẢ trong 1 import
 import {
   Bell,
   BookOpen,
@@ -23,7 +23,8 @@ import {
   Plus,
   LogOut,
   ArrowRight
-} from "lucide-react"
+} from "lucide-react";
+
 
 const Home = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)

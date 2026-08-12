@@ -1,27 +1,27 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { Bell, Menu } from 'lucide-react'
-import { useUserStore } from '../../stores/user/useUserStore'
-import { Bell, GraduationCap } from 'lucide-react'
+// TopHeader.tsx - Đã sửa
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Bell, Menu, GraduationCap } from 'lucide-react';
+import { useUserStore } from '../../stores/user/useUserStore';
 
 export interface BreadcrumbItem {
-  label: string
-  href?: string
-  onClick?: () => void
+  label: string;
+  href?: string;
+  onClick?: () => void;
 }
 
 interface TopHeaderProps {
-  breadcrumbs?: BreadcrumbItem[]
-  onMenuClick?: () => void
+  breadcrumbs?: BreadcrumbItem[];
+  onMenuClick?: () => void;
 }
 
-export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs, onMenuClick }) => {
-  const { user } = useUserStore()
-  const username = user?.username || 'User'
-  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1D4ED8&color=fff&size=128`
-  const avatarUrl = user?.avatar || user?.avarta || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' || defaultAvatar
+export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs = [], onMenuClick }) => {
+  const { user } = useUserStore();
+  const username = user?.username || 'User';
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1D4ED8&color=fff&size=128`;
+  const avatarUrl = user?.avatar || user?.avarta || defaultAvatar;
 
-export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
   return (
     <header className="h-14 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between px-2.5 sm:px-6 font-['Be_Vietnam_Pro'] select-none w-full">
       {/* Left: omniEnglish Logo (Hero style) */}
@@ -37,10 +37,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 hover:opacity-90 transition-opacity">
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#1D4ED8] flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
-            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white" />
+            <GraduationCap className="w-4 h-4 text-white" />
           </div>
           <span className="text-lg font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
         </Link>
+        
         {breadcrumbs && breadcrumbs.length > 0 && (
           <nav className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 font-medium ml-2 border-l border-slate-200 pl-3">
             {breadcrumbs.map((b, i) => (
@@ -82,7 +83,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
         </Link>
       </div>
     </header>
-  )
-}
+  );
+};
 
-export default TopHeader
+export default TopHeader;
