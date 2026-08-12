@@ -7,6 +7,11 @@ import { LogoutModal } from "../components/common/LogoutModal"
 import { AppLayout } from "../components/common/AppLayout"
 import {
   BookOpen,
+import Sidebar from "../components/common/Sidebar"
+import {
+  Bell,
+  BookOpen,
+  GraduationCap,
   ChevronDown,
   Flame,
   Award,
@@ -16,10 +21,12 @@ import {
   FileText,
   Play,
   Plus,
+  LogOut,
   ArrowRight
 } from "lucide-react"
 
 const Home = () => {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [timeRange, setTimeRange] = useState("Last 30 Days")
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
@@ -54,6 +61,9 @@ const Home = () => {
   }, [navigate, setUser])
 
   const username = user?.username || "User"
+  const email = user?.email || ""
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=128`
+  const avatarUrl = user?.avatar || user?.avarta || defaultAvatar
   const streakDays = user?.stats?.current_streak_days ?? 0
   const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "B1"
 
@@ -78,17 +88,81 @@ const Home = () => {
   const avgImprovement = avgBandScoreNum > 0 ? "+0.4" : "0.0"
 
   return (
-    <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden">
-        {/* Header Row: Welcome + Gamification Badges */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-              <span>Welcome back, {username}!</span>
-              <span className="text-xl">👋</span>
-            </h1>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">Theo dõi tiến độ học tập và rèn luyện kỹ năng mỗi ngày.</p>
-          </div>
+    <div className="min-h-screen bg-[#f8fafd] flex flex-col text-slate-800 font-sans antialiased">
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-40 bg-white border-b border-slate-100/80 h-16 px-4 lg:px-8 flex items-center justify-between shadow-xs backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          {/* Logo (Hero style) */}
+          <Link to="/" className="flex items-center gap-2.5 cursor-pointer select-none hover:opacity-90 transition">
+            <div className="bg-[#1e50e6] rounded-lg p-1.5 flex items-center justify-center shadow-xs">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
+          </Link>
+        </div>
+
+        {/* Top Right Actions */}
+        <div className="flex items-center gap-4">
+          <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+          </button>
+
+          {/* User Profile Info & Avatar */}
+          <Link to="/profile" className="flex items-center gap-3 cursor-pointer group">
+            <div className="text-right hidden sm:block">
+              <span className="text-xs font-bold text-slate-800 block leading-tight group-hover:text-blue-600 transition-colors">
+                {username}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium block leading-tight max-w-[140px] truncate">
+                {email}
+              </span>
+            </div>
+            <div className="relative">
+              <img
+                src={avatarUrl}
+                alt={`${username} Avatar`}
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/20 group-hover:ring-blue-600 transition duration-200"
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+            </div>
+          </Link>
+
+          {/* Logout Button */}
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+            aria-label="Log Out"
+            title="Đăng xuất"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      <div className="flex flex-1 relative">
+        {/* Mobile Sidebar Backdrop */}
+        {mobileSidebarOpen && (
+          <div
+            onClick={() => setMobileSidebarOpen(false)}
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-30 lg:hidden"
+          />
+        )}
+
+        {/* Centralized Reusable Sidebar */}
+        <Sidebar isOpen={mobileSidebarOpen || true} onClose={() => setMobileSidebarOpen(false)} />
+
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden">
+          {/* Header Row: Welcome + Gamification Badges */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Welcome back, {username}!</span>
+                <span className="text-xl">👋</span>
+              </h1>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Theo dõi tiến độ học tập và rèn luyện kỹ năng mỗi ngày.</p>
+            </div>
 
             {/* Streak & Rank Badges */}
             <div className="flex items-center gap-3">
@@ -533,6 +607,8 @@ const Home = () => {
               </div>
             </div>
           </div>
+        </main>
+      </div>
 
       {/* Floating Action Button (FAB) */}
       <button
@@ -548,8 +624,7 @@ const Home = () => {
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
       />
-      </div>
-    </AppLayout>
+    </div>
   )
 }
 

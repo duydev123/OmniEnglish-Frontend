@@ -10,6 +10,16 @@ import {
   Bell,
   BookOpen,
 
+import { Link, useNavigate } from "react-router-dom"
+import { useUserStore, initialUser } from "../stores/user/useUserStore"
+import { userApi } from "../services/userApi"
+import { useToast } from "../components/common/Toast"
+import { LogoutModal } from "../components/common/LogoutModal"
+import Sidebar from "../components/common/Sidebar"
+import {
+  Bell,
+  BookOpen,
+  GraduationCap,
   ChevronRight,
   Flame,
   Zap,
@@ -27,6 +37,7 @@ import {
 } from "lucide-react"
 
 const ProfilePage = () => {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [weekendMastery, setWeekendMastery] = useState(true)
   const [selectedGoal, setSelectedGoal] = useState<"fluency" | "steady">("fluency")
   const [showLogoutModal, setShowLogoutModal] = useState(false)
@@ -152,13 +163,67 @@ const ProfilePage = () => {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'PROFILE' }]}>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden flex flex-col justify-between">
-        <div className="space-y-7">
-          {/* Header Title & Description */}
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              My Profile
+    <div className="min-h-screen bg-[#f8fafd] flex flex-col text-slate-800 font-sans antialiased">
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-40 bg-white border-b border-slate-100/80 h-16 px-4 lg:px-8 flex items-center justify-between shadow-xs backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          {/* Logo (Hero style) */}
+          <Link to="/" className="flex items-center gap-2.5 cursor-pointer select-none hover:opacity-90 transition">
+            <div className="bg-[#1e50e6] rounded-lg p-1.5 flex items-center justify-center shadow-xs">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
+          </Link>
+        </div>
+
+        {/* Top Right Actions */}
+        <div className="flex items-center gap-4">
+          <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+          </button>
+
+          {/* User Profile Avatar */}
+          <div className="flex items-center gap-3 cursor-pointer group">
+            <div className="text-right hidden sm:block">
+              <span className="text-xs font-bold text-slate-800 block leading-tight group-hover:text-blue-600 transition-colors">
+                {username}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium block leading-tight max-w-[140px] truncate">
+                {email}
+              </span>
+            </div>
+            <div className="relative">
+              <img
+                src={avatarUrl}
+                alt={`${username} Avatar`}
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/20 group-hover:ring-blue-600 transition duration-200"
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex flex-1 relative">
+        {/* Mobile Backdrop */}
+        {mobileSidebarOpen && (
+          <div
+            onClick={() => setMobileSidebarOpen(false)}
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-30 lg:hidden"
+          />
+        )}
+
+        {/* Centralized Reusable Sidebar */}
+        <Sidebar isOpen={mobileSidebarOpen || true} onClose={() => setMobileSidebarOpen(false)} />
+
+        {/* Main Profile Content Area */}
+        <main className="flex-1 min-w-0 w-full p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden flex flex-col justify-between">
+          <div className="space-y-7">
+            {/* Header Title & Description */}
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                My Profile
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 max-w-2xl mt-1.5 leading-relaxed font-normal">
                 Quản lý thông tin cá nhân, theo dõi lộ trình học tiếng Anh và thiết lập mục tiêu cá nhân hóa.
@@ -570,6 +635,8 @@ const ProfilePage = () => {
               </a>
             </div>
           </footer>
+        </main>
+      </div>
 
       {/* Logout Confirmation Modal */}
       <LogoutModal
@@ -730,6 +797,7 @@ const ProfilePage = () => {
       )}
         </div>
     </AppLayout>
+    </div>
   )
 }
 

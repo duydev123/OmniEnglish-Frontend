@@ -1,6 +1,5 @@
 import axiosClient from "../configs/axios";
 import type { User } from "../stores/user/useUserStore";
-import { clearLocalVocabCache } from "./vocabularyApi";
 
 export interface LoginPayload {
   email: string;
@@ -10,6 +9,7 @@ export interface LoginPayload {
 export interface RegisterPayload {
   username: string;
   email: string;
+  password?: string;
 }
 
 export interface SocialLoginPayload {
@@ -77,7 +77,6 @@ export const userApi = {
     const token = response.data?.token || (response.data as any)?.access_token;
     if (token) {
       localStorage.setItem("token", token);
-      clearLocalVocabCache();
     }
     return response.data;
   },
@@ -90,7 +89,6 @@ export const userApi = {
     const token = response.data?.token || (response.data as any)?.access_token;
     if (token) {
       localStorage.setItem("token", token);
-      clearLocalVocabCache();
     }
     return response.data;
   },
@@ -104,14 +102,12 @@ export const userApi = {
       const token = response.data?.token || (response.data as any)?.access_token;
       if (token) {
         localStorage.setItem("token", token);
-        clearLocalVocabCache();
       }
       return response.data;
     } catch (error) {
       console.warn("Backend google-login unavailable, using fallback user profile:", error);
       const token = "demo_google_token_" + Date.now();
       localStorage.setItem("token", token);
-      clearLocalVocabCache();
       return {
         ...fallbackUserData,
         username: payload.name || "Google User",
@@ -131,14 +127,12 @@ export const userApi = {
       const token = response.data?.token || (response.data as any)?.access_token;
       if (token) {
         localStorage.setItem("token", token);
-        clearLocalVocabCache();
       }
       return response.data;
     } catch (error) {
       console.warn("Backend facebook-login unavailable, using fallback user profile:", error);
       const token = "demo_facebook_token_" + Date.now();
       localStorage.setItem("token", token);
-      clearLocalVocabCache();
       return {
         ...fallbackUserData,
         username: payload.name || "Facebook User",

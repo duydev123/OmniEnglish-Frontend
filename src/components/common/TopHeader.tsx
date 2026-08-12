@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, Menu } from 'lucide-react'
 import { useUserStore } from '../../stores/user/useUserStore'
+import { Bell, GraduationCap } from 'lucide-react'
 
 export interface BreadcrumbItem {
   label: string
@@ -20,9 +21,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs, onMenuClick }
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1D4ED8&color=fff&size=128`
   const avatarUrl = user?.avatar || user?.avarta || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' || defaultAvatar
 
+export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
   return (
     <header className="h-14 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between px-2.5 sm:px-6 font-['Be_Vietnam_Pro'] select-none w-full">
-      {/* Left: Hamburger + omniEnglish Logo + (Optional Breadcrumbs) */}
+      {/* Left: omniEnglish Logo (Hero style) */}
       <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
         <button
           onClick={onMenuClick}
@@ -37,48 +39,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs, onMenuClick }
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#1D4ED8] flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
             <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white" />
           </div>
-          <span className="font-black text-sm sm:text-lg text-slate-900 tracking-tight whitespace-nowrap">
-            omni<span className="text-[#1D4ED8]">English</span>
-          </span>
+          <span className="text-lg font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
         </Link>
-
-        {/* Optional Breadcrumbs Trail */}
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <div className="hidden md:flex items-center gap-2 text-xs font-bold text-slate-400 overflow-x-auto py-1 ml-4 pl-4 border-l border-slate-200">
-            {breadcrumbs.map((crumb, idx) => {
-              const isLast = idx === breadcrumbs.length - 1
-              const href = crumb.href || (idx < breadcrumbs.length - 1 ? '/vocabulary' : undefined)
-
-              return (
-                <React.Fragment key={idx}>
-                  {idx > 0 && <span className="text-slate-300 font-normal">›</span>}
-                  {!isLast && href ? (
-                    <Link
-                      to={href}
-                      className="text-slate-400 hover:text-[#1D4ED8] transition-colors uppercase tracking-wider text-[11px] font-extrabold hover:underline"
-                    >
-                      {crumb.label}
-                    </Link>
-                  ) : crumb.onClick ? (
-                    <button
-                      onClick={crumb.onClick}
-                      className="text-slate-400 hover:text-[#1D4ED8] transition-colors uppercase tracking-wider text-[11px] font-extrabold hover:underline"
-                    >
-                      {crumb.label}
-                    </button>
-                  ) : (
-                    <span
-                      className={`uppercase tracking-wider text-[11px] ${
-                        isLast ? 'text-slate-700 font-black' : 'text-slate-400'
-                      }`}
-                    >
-                      {crumb.label}
-                    </span>
-                  )}
-                </React.Fragment>
-              )
-            })}
-          </div>
+          <nav className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 font-medium ml-2 border-l border-slate-200 pl-3">
+            {breadcrumbs.map((b, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span>/</span>}
+                {b.href ? (
+                  <Link to={b.href} className="hover:text-blue-600 font-bold transition">
+                    {b.label}
+                  </Link>
+                ) : (
+                  <span className="text-slate-600 font-bold">{b.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
         )}
       </div>
 
