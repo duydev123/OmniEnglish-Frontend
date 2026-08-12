@@ -92,9 +92,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         {/* Practice Module */}
         <button
           onClick={() => { navigate('/practice-modules'); onClose?.() }}
-          className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all cursor-pointer ${
-            isPracticeActive
-              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+            location.pathname.startsWith('/practice') ||
+            location.pathname.startsWith('/listening') ||
+            location.pathname.startsWith('/reading')
+              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
