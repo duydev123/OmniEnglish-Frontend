@@ -32,7 +32,15 @@ export default function VocabularyPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
 
-  const [activeTab, setActiveTab] = useState<TabType>('default')
+  const [activeTab, setActiveTabState] = useState<TabType>(() => {
+    const saved = sessionStorage.getItem('vocab_active_tab')
+    return (saved === 'mine' || saved === 'default') ? saved : 'default'
+  })
+
+  const setActiveTab = (tab: TabType) => {
+    setActiveTabState(tab)
+    sessionStorage.setItem('vocab_active_tab', tab)
+  }
   const [myCollections, setMyCollections] = useState<VocabularyCollection[]>(() => getCachedCollections())
   const [officialCollections, setOfficialCollections] = useState<VocabularyCollection[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -85,6 +93,19 @@ export default function VocabularyPage() {
     }
   }
 
+  const handleStartPractice = useCallback(async (col: VocabularyCollection) => {
+    if (!col.words_list || col.words_list.length === 0) {
+      try {
+        const fullCol = await getCollection(col.id)
+        setFlashcardTarget(fullCol)
+      } catch {
+        showToast('Không thể tải danh sách từ vựng để luyện tập', 'error')
+      }
+    } else {
+      setFlashcardTarget(col)
+    }
+  }, [showToast])
+
   const handleDeleteCollection = useCallback(async () => {
     if (!deleteTarget) return
     try {
@@ -132,15 +153,18 @@ export default function VocabularyPage() {
 
   const filtered = currentList
     .filter(c => {
-      const q = searchQuery.toLowerCase()
-      return c.title.toLowerCase().includes(q) ||
-        (c.description ?? '').toLowerCase().includes(q) ||
-        (c.topic ?? '').toLowerCase().includes(q)
+      if (!c) return false
+      const q = (searchQuery || '').toLowerCase()
+      return (c.title || '').toLowerCase().includes(q) ||
+        (c.description || '').toLowerCase().includes(q) ||
+        (c.topic || '').toLowerCase().includes(q)
     })
     .sort((a, b) => {
-      if (sortOrder === 'az') return a.title.localeCompare(b.title)
-      if (sortOrder === 'oldest') return a.title.localeCompare(b.title)
-      return b.title.localeCompare(a.title)
+      const titleA = a?.title || ''
+      const titleB = b?.title || ''
+      if (sortOrder === 'az') return titleA.localeCompare(titleB)
+      if (sortOrder === 'oldest') return titleA.localeCompare(titleB)
+      return titleB.localeCompare(titleA)
     })
 
   const sortLabels: Record<SortOrder, string> = {
@@ -315,7 +339,7 @@ export default function VocabularyPage() {
                   listView={displayMode === 'list'}
                   onDelete={() => setDeleteTarget(col)}
                   onAddWord={() => { setAddWordTargetId(col.id); setShowAddWordModal(true) }}
-                  onPractice={() => setFlashcardTarget(col)}
+                  onPractice={() => handleStartPractice(col)}
                   onBulkAdd={() => navigate(`/vocabulary/${col.id}/bulk-add`)}
                 />
               </div>

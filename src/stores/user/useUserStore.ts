@@ -28,12 +28,14 @@ export interface User {
   email: string;
   role: string;
   id: string;
+  avatar?: string;
   avarta?: string;
   proficiency_level: string;
   status: string;
   settings: UserSettings;
   stats: UserStats;
   token?: string;
+  created_at?: string;
 }
 
 export interface UserStore {

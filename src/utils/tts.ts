@@ -5,7 +5,7 @@ import React from 'react'
  * to standard BCP 47 language code for Web Speech API.
  */
 export const getLangCode = (languageName?: string): string => {
-  if (!languageName) return 'en-US'
+  if (!languageName || typeof languageName !== 'string') return 'en-US'
   const lang = languageName.trim().toLowerCase()
 
   if (lang.includes('anh-anh') || lang.includes('en-gb') || lang.includes('british') || lang.includes('uk')) {
@@ -37,13 +37,13 @@ export const speakText = (text: string, languageName?: string, rate: number = 1.
   const playUtterance = () => {
     const voices = window.speechSynthesis.getVoices()
     if (voices.length > 0) {
-      const targetLower = targetLang.toLowerCase()
+      const targetLower = (targetLang || '').toLowerCase()
       const langPrefix = targetLower.slice(0, 2)
 
       const matchingVoice =
-        voices.find(v => v.lang.toLowerCase() === targetLower) ||
-        voices.find(v => v.lang.toLowerCase().startsWith(targetLower)) ||
-        voices.find(v => v.lang.toLowerCase().startsWith(langPrefix))
+        voices.find(v => (v.lang || '').toLowerCase() === targetLower) ||
+        voices.find(v => (v.lang || '').toLowerCase().startsWith(targetLower)) ||
+        voices.find(v => (v.lang || '').toLowerCase().startsWith(langPrefix))
 
       if (matchingVoice) {
         utterance.voice = matchingVoice

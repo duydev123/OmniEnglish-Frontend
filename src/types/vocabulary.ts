@@ -17,6 +17,7 @@ export interface VocabularyCollection {
   language: string;
   is_official: boolean;
   total_learners: number;
+  total_words?: number;
   accuracy_percentage: number;
   study_time_seconds: number;
   words_list: WordDetail[];

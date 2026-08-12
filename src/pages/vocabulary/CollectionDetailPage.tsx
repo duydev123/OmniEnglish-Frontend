@@ -63,6 +63,9 @@ export default function CollectionDetailPage() {
     try {
       const data = await getCollection(colId)
       setCollection(data)
+      if (data) {
+        sessionStorage.setItem('vocab_active_tab', data.is_official ? 'default' : 'mine')
+      }
     } catch {
       showToast('Không tìm thấy bộ từ vựng', 'error')
       navigate('/vocabulary')
@@ -179,7 +182,7 @@ export default function CollectionDetailPage() {
     <VocabLayout breadcrumbs={[
       { label: 'BASIC', href: '/vocabulary' },
       { label: 'VOCABULARY', href: '/vocabulary' },
-      { label: 'BỘ TỪ VỰNG CỦA TÔI', href: '/vocabulary' },
+      { label: collection.is_official ? 'BỘ TỪ VỰNG MẶC ĐỊNH' : 'BỘ TỪ VỰNG CỦA TÔI', href: '/vocabulary' },
       { label: collection.title.toUpperCase() },
     ]}>
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
@@ -225,11 +228,10 @@ export default function CollectionDetailPage() {
                     ? 'Đang sắp xếp Z→A (bấm để về Mặc định)'
                     : 'Sắp xếp theo bảng chữ cái (bấm để xếp A→Z)'
               }
-              className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all shadow-xs cursor-pointer text-center whitespace-nowrap ${
-                sortOrder !== 'none'
+              className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all shadow-xs cursor-pointer text-center whitespace-nowrap ${sortOrder !== 'none'
                   ? 'bg-blue-50 border border-blue-300 text-blue-700'
                   : 'bg-[#F1F5F9] border border-slate-200/60 text-slate-700 hover:bg-slate-200'
-              }`}
+                }`}
             >
               {sortOrder === 'desc' ? <ArrowDownAZ size={14} className="shrink-0" /> : <ArrowUpAZ size={14} className="shrink-0" />}
               <span>{sortOrder === 'desc' ? 'Z → A' : sortOrder === 'asc' ? 'A → Z' : 'Sắp xếp'}</span>
@@ -427,16 +429,14 @@ export default function CollectionDetailPage() {
                               setVisibleCount(WORDS_PER_PAGE)
                               setShowFilterDropdown(false)
                             }}
-                            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              isSelected
+                            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
                                 ? 'bg-[#1D4ED8] text-white shadow-sm'
                                 : 'text-slate-700 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <span>{item.label}</span>
-                            <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${
-                              isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                            }`}>
+                            <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                              }`}>
                               {item.count}
                             </span>
                           </button>
@@ -451,8 +451,8 @@ export default function CollectionDetailPage() {
               <button
                 onClick={toggleSort}
                 className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-extrabold text-xs transition-all cursor-pointer ${sortOrder !== 'none'
-                    ? 'bg-blue-50 border border-blue-300 text-blue-700'
-                    : 'bg-slate-50 border border-slate-200/80 text-slate-600 hover:bg-slate-100'
+                  ? 'bg-blue-50 border border-blue-300 text-blue-700'
+                  : 'bg-slate-50 border border-slate-200/80 text-slate-600 hover:bg-slate-100'
                   }`}
               >
                 {sortOrder === 'desc'

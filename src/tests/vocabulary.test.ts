@@ -4,6 +4,7 @@ import {
   getCachedCollections,
   saveCachedCollections,
   updateSingleCachedCollection,
+  clearLocalVocabCache,
   sanitizeCollection,
   cleanWordType,
   fetchIPA,
@@ -12,6 +13,7 @@ import {
   removeId,
   vocabAxios,
   getCollection,
+  getMyCollections,
 } from '../services/vocabularyApi'
 import { speakText, getLangCode } from '../utils/tts'
 import type { VocabularyCollection } from '../types/vocabulary'
@@ -320,6 +322,83 @@ describe('Vocabulary Frontend Services & Utils', () => {
       const sanitized = sanitizeCollection(colWithEnumTypes)
       expect(sanitized.words_list[0].word_type).toBe('noun')
       expect(sanitized.words_list[1].word_type).toBe('verb')
+    })
+  })
+
+  describe('Authentication & User Cache Isolation', () => {
+    it('clearLocalVocabCache should remove all cached collections and stored IDs from localStorage', () => {
+      storeId('id_to_clear')
+      saveCachedCollections([
+        {
+          id: 'col_cache',
+          title: 'Cached Col',
+          description: '',
+          topic: 'General',
+          language: 'Anh-Mỹ',
+          is_official: false,
+          total_learners: 1,
+          accuracy_percentage: 0,
+          study_time_seconds: 0,
+          words_list: [],
+        },
+      ])
+
+      expect(getCachedCollections()).toHaveLength(1)
+      clearLocalVocabCache()
+      expect(getCachedCollections()).toEqual([])
+      expect(getStoredIds()).toEqual([])
+    })
+
+    it('getMyCollections should overwrite cached collections when backend returns empty array []', async () => {
+      // Setup old cached collection from User A
+      saveCachedCollections([
+        {
+          id: 'user_a_col',
+          title: 'User A Collection',
+          description: '',
+          topic: 'General',
+          language: 'Anh-Mỹ',
+          is_official: false,
+          total_learners: 1,
+          accuracy_percentage: 0,
+          study_time_seconds: 0,
+          words_list: [],
+        },
+      ])
+
+      // User B logs in, API returns [] for User B
+      vi.spyOn(vocabAxios, 'request').mockResolvedValue({
+        data: [],
+        status: 200,
+      } as any)
+
+      const collections = await getMyCollections()
+      expect(collections).toEqual([])
+      // Cache must now be [] instead of User A's stale collection
+      expect(getCachedCollections()).toEqual([])
+    })
+
+    it('getMyCollections should fall back to getCachedCollections on API network error', async () => {
+      saveCachedCollections([
+        {
+          id: 'offline_col',
+          title: 'Offline Saved',
+          description: '',
+          topic: 'General',
+          language: 'Anh-Mỹ',
+          is_official: false,
+          total_learners: 1,
+          accuracy_percentage: 0,
+          study_time_seconds: 0,
+          words_list: [],
+        },
+      ])
+
+      vi.spyOn(vocabAxios, 'request').mockRejectedValue(new Error('Network Error'))
+
+      const collections = await getMyCollections()
+      expect(collections).toHaveLength(1)
+      expect(collections[0].title).toBe('Offline Saved')
     })
   })
 })

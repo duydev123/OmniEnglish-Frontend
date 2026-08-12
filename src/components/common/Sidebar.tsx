@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useUserStore } from '../../stores/user/useUserStore'
 import {
   House, BookOpen, FileText, Clock, Monitor, User,
   ChevronDown, Zap
@@ -14,11 +15,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const [basicOpen, setBasicOpen] = useState(true)
+  const { user } = useUserStore()
 
   const isVocabActive = location.pathname.startsWith('/vocabulary')
   const isPracticeActive = location.pathname.startsWith('/practice')
+  const isProfileActive = location.pathname.startsWith('/profile')
   const isHomeActive = location.pathname === '/'
 
+  // Dynamic Weekly Goal progress
+  const learningMode = user?.settings?.learning_mode || "Fluency Push"
+  const dailyMinsTarget = learningMode === "Steady Growth" ? 15 : 45
+  const weeklyGoalTarget = dailyMinsTarget * 7
+  const weeklyXp = user?.stats?.weekly_xp ?? 420
+  const weeklyXpPercent = Math.min(100, Math.round((weeklyXp / weeklyGoalTarget) * 100))
 
   const navContent = (
     <div className="flex flex-col h-full select-none justify-between">
@@ -80,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
         {/* Practice Module */}
         <button
-          onClick={() => { navigate('/practice'); onClose?.() }}
+          onClick={() => { navigate('/practice-modules'); onClose?.() }}
           className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
             isPracticeActive
               ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
@@ -102,8 +111,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
         {/* Profile */}
         <button
-          onClick={() => onClose?.()}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all cursor-pointer"
+          onClick={() => { navigate('/profile'); onClose?.() }}
+          className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+            isProfileActive
+              ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
         >
           <User size={16} />
           <span>Profile</span>
@@ -115,12 +128,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         <div className="bg-blue-50/70 border border-blue-100/80 rounded-2xl p-3">
           <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 mb-1">
             <span className="text-blue-600">Weekly Goal</span>
-            <span className="font-extrabold text-blue-700">85%</span>
+            <span className="font-extrabold text-blue-700">{weeklyXpPercent}%</span>
           </div>
           <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1.5">
-            <div className="h-full bg-[#1D4ED8] rounded-full w-[85%]" />
+            <div
+              className="h-full bg-[#1D4ED8] rounded-full transition-all duration-300"
+              style={{ width: `${weeklyXpPercent}%` }}
+            />
           </div>
-          <p className="text-[10px] font-bold text-slate-400 text-right">420/500 XP</p>
+          <p className="text-[10px] font-bold text-slate-400 text-right">{weeklyXp}/{weeklyGoalTarget} XP</p>
         </div>
 
         <button
@@ -136,6 +152,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
   return (
     <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="lg:hidden fixed inset-0 top-14 z-20 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+        />
+      )}
 
       {/* Sidebar Container */}
       <aside
@@ -151,4 +174,3 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 }
 
 export default Sidebar
-

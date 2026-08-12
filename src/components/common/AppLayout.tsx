@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopHeader } from './TopHeader';
+import type { BreadcrumbItem } from './TopHeader';
 
 interface AppLayoutProps {
-  breadcrumbs?: { label: string; href?: string }[];
+  breadcrumbs?: BreadcrumbItem[];
   children: React.ReactNode;
 }
 

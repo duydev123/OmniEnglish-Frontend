@@ -19,6 +19,14 @@ export const vocabAxios = axios.create({
   },
 })
 
+vocabAxios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 
 export function getStoredIds(): string[] {
   try {
@@ -95,6 +103,15 @@ export function getCachedCollections(): VocabularyCollection[] {
   }
 }
 
+export function clearLocalVocabCache(): void {
+  try {
+    localStorage.removeItem(LOCAL_COLLECTIONS_KEY)
+    localStorage.removeItem(LOCAL_STORAGE_KEY)
+  } catch (e) {
+    console.warn('LocalStorage clear error:', e)
+  }
+}
+
 export function saveCachedCollections(collections: VocabularyCollection[]): void {
   try {
     const onlyPersonal = collections.filter(c => !c.is_official)
@@ -143,7 +160,7 @@ async function apiFetch<T>(path: string, options?: { method?: string; body?: any
 export async function getMyCollections(): Promise<VocabularyCollection[]> {
   try {
     const apiData = await apiFetch<VocabularyCollection[]>('/collections/my-collections')
-    if (apiData && apiData.length > 0) {
+    if (Array.isArray(apiData)) {
       const personalOnly = apiData.filter(c => !c.is_official)
       const sanitized = personalOnly.map(sanitizeCollection)
       saveCachedCollections(sanitized)
@@ -151,8 +168,9 @@ export async function getMyCollections(): Promise<VocabularyCollection[]> {
     }
   } catch (err) {
     console.warn('Backend API fetch error, falling back to local cache:', err)
+    return getCachedCollections()
   }
-  return getCachedCollections()
+  return []
 }
 
 export async function getOfficialCollections(): Promise<VocabularyCollection[]> {
