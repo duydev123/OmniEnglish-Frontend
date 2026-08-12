@@ -4,6 +4,9 @@ import { useUserStore, initialUser } from "../stores/user/useUserStore"
 import { userApi } from "../services/userApi"
 import { useToast } from "../components/common/Toast"
 import { LogoutModal } from "../components/common/LogoutModal"
+import { AppLayout } from "../components/common/AppLayout"
+import {
+  BookOpen,
 import Sidebar from "../components/common/Sidebar"
 import {
   Bell,

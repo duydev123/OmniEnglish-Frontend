@@ -1,5 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { Bell, Menu } from 'lucide-react'
+import { useUserStore } from '../../stores/user/useUserStore'
 import { Bell, GraduationCap } from 'lucide-react'
 
 export interface BreadcrumbItem {
@@ -13,14 +15,29 @@ interface TopHeaderProps {
   onMenuClick?: () => void
 }
 
+export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs, onMenuClick }) => {
+  const { user } = useUserStore()
+  const username = user?.username || 'User'
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1D4ED8&color=fff&size=128`
+  const avatarUrl = user?.avatar || user?.avarta || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80' || defaultAvatar
+
 export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
   return (
     <header className="h-14 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between px-2.5 sm:px-6 font-['Be_Vietnam_Pro'] select-none w-full">
       {/* Left: omniEnglish Logo (Hero style) */}
       <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
-        <Link to="/" className="flex items-center gap-2 cursor-pointer select-none hover:opacity-90 transition">
-          <div className="bg-[#1e50e6] rounded-lg p-1.5 flex items-center justify-center shadow-xs">
-            <GraduationCap className="w-4 h-4 text-white" />
+        <button
+          onClick={onMenuClick}
+          className="p-1 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0 cursor-pointer"
+          title="Toggle menu"
+        >
+          <Menu size={20} />
+        </button>
+
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 hover:opacity-90 transition-opacity">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#1D4ED8] flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
+            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white" />
           </div>
           <span className="text-lg font-bold text-[#1e50e6] tracking-tight">OmniEnglish</span>
         </Link>
@@ -45,24 +62,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs }) => {
       {/* Right: Notifications Bell & User Avatar */}
       <div className="flex items-center gap-3 shrink-0">
         <button
-          className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+          className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
           title="Thông báo"
         >
           <Bell size={19} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
         </button>
 
-        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-extrabold shadow-xs overflow-hidden cursor-pointer ring-2 ring-blue-500/20" title="Hồ sơ cá nhân">
+        <Link
+          to="/profile"
+          className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-extrabold shadow-xs overflow-hidden cursor-pointer ring-2 ring-blue-500/20"
+          title="Hồ sơ cá nhân"
+        >
           <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-            alt="User Avatar"
+            src={avatarUrl}
+            alt={`${username} Avatar`}
             className="w-full h-full object-cover"
           />
-        </div>
+        </Link>
       </div>
     </header>
   )
 }
 
 export default TopHeader
-

@@ -6,6 +6,8 @@ import PracticeModulesPage from "./pages/PracticeModulesPage"
 import VocabularyPage from "./pages/vocabulary/VocabularyPage"
 import CollectionDetailPage from "./pages/vocabulary/CollectionDetailPage"
 import BulkAddPage from "./pages/vocabulary/BulkAddPage"
+import WritingEditorPage from "./pages/writing/WritingEditorPage"
+import WritingReviewPage from "./pages/writing/WritingReviewPage"
 import ReadingPracticePage from "./pages/reading/ReadingPracticePage"
 import ReadingResultPage from "./pages/reading/ReadingResultPage"
 import PracticeModulesPage from "./pages/practice/PracticeModulesPage"
@@ -35,6 +37,8 @@ const App = () => {
           <Route path="/vocabulary" element={<VocabularyPage />} />
           <Route path="/vocabulary/:id" element={<CollectionDetailPage />} />
           <Route path="/vocabulary/:id/bulk-add" element={<BulkAddPage />} />
+          <Route path="/writing/editor/:promptId" element={<WritingEditorPage />} />
+          <Route path="/writing/review/:sessionId" element={<WritingReviewPage />} />
            
           <Route path="/reading" element={<ReadingPracticePage />} />
           <Route path="/reading/practice" element={<ReadingPracticePage />} />
