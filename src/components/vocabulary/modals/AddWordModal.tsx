@@ -224,7 +224,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
                 Loại từ
               </label>
               <CustomSelect
-                value={wordType.toLowerCase()}
+                value={(wordType || '').toLowerCase()}
                 onChange={setWordType}
                 options={WORD_TYPES}
                 placeholder="Chọn loại từ..."
