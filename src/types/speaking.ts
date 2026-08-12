@@ -138,4 +138,5 @@ export interface ShadowingEvaluateResponse {
   fluency_score: number
   user_transcript: string
   words_detail: WordDetail[]
+  user_audio_url?: string
 }
