@@ -330,10 +330,10 @@ export const SpeakingPracticePage: React.FC = () => {
             </div>
             <div className="space-y-1">
               <h2 className="text-xl font-black text-slate-900">
-                Đang chờ Backend AI chấm điểm bài làm...
+                AI is analyzing...
               </h2>
               <p className="text-xs font-semibold text-slate-500 max-w-md mx-auto leading-relaxed">
-                Đang gửi file âm thanh lên server FastAPI (`/sessions/segments`). Hệ thống đang phân tích chi tiết phát âm, từ vựng, ngữ pháp và độ lưu loát.
+                 Hệ thống đang phân tích chi tiết phát âm, từ vựng, ngữ pháp và độ lưu loát.
               </p>
             </div>
           </div>
