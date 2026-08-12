@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import { Volume2, Edit3 } from 'lucide-react';
 import type { WordDetail } from '../../../types/vocabulary';
 import EditWordModal from '../modals/EditWordModal';
+import { speakText } from '../../../utils/tts';
 
 interface WordCardProps {
   word?: WordDetail;
   showIPA: boolean;
   onWordUpdated?: (updatedWord: WordDetail) => void;
+  language?: string;
+  isOfficial?: boolean;
 }
 
-export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated }) => {
+export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated, language, isOfficial }) => {
   const [editingWord, setEditingWord] = useState<WordDetail | null>(null);
 
   if (!word) {
@@ -26,13 +29,9 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
     );
   }
 
-  const speakWord = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word.word);
-      utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
+  const handleSpeak = (e: React.MouseEvent) => {
+    if (word) {
+      speakText(word.word, language, 1.0, e);
     }
   };
 
@@ -66,13 +65,15 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
           <div className="flex justify-between items-start mb-1">
             <div className="flex items-center gap-2">
               <h3 className="font-extrabold text-xl text-slate-900 tracking-tight">{word.word}</h3>
-              <button
-                onClick={handleEditClick}
-                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#1D4ED8] hover:bg-blue-50 rounded-lg transition-all"
-                title="Chỉnh sửa từ vựng"
-              >
-                <Edit3 size={14} />
-              </button>
+              {!isOfficial && (
+                <button
+                  onClick={handleEditClick}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#1D4ED8] hover:bg-blue-50 rounded-lg transition-all"
+                  title="Chỉnh sửa từ vựng"
+                >
+                  <Edit3 size={14} />
+                </button>
+              )}
             </div>
             <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black tracking-wider ${statusBadge.bg} ${statusBadge.text}`}>
               {statusBadge.label}
@@ -84,7 +85,7 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
             <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mb-3">
               <span>/{word.ipa.replace(/\//g, '')}/</span>
               <button
-                onClick={speakWord}
+                onClick={handleSpeak}
                 className="p-0.5 hover:text-blue-600 transition-colors"
                 title="Nghe âm"
               >

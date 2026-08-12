@@ -12,21 +12,22 @@ const Forgot = ({
   setStage: React.Dispatch<React.SetStateAction<string>>;
 }) => {
   return (
-    <div className="w-[40vw] h-full flex flex-col items-center justify-center bg-white">
-        <div className="w-[28vw] mb-4"> 
+    <div className="w-full max-w-lg mx-auto py-8 px-6 flex flex-col items-center justify-center bg-white">
+      <div className="w-full max-w-xs mb-6 flex justify-center"> 
         <Hero />
       </div>
-      <form className="flex max-w-[30vw]  flex-col gap-2 border-2 px-8 py-12 rounded-lg border-gray-200 mb-12 shadow-2xl">
-        <h1 className="font-bold text-2xl">Quên mật khẩu?</h1>
-        <p className="mb-8 text-gray-500">
+      <form className="w-full flex flex-col gap-3 border border-slate-200/90 px-8 sm:px-10 py-9 rounded-3xl bg-white shadow-xl shadow-slate-200/50 font-sans">
+        <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight">Quên mật khẩu?</h1>
+        <p className="mb-4 text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
           Nhập email liên kết với tài khoản của bạn và chúng tôi sẽ gửi cho bạn
-          hướng dẫn để đặt lại mật khẩu
+          hướng dẫn để đặt lại mật khẩu.
         </p>
-        <label htmlFor="email">Email</label>
-        <div className="flex gap-4 border border-gray-300 py-2 px-4">
-          <Mail color="black" />
+
+        <label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-600 mt-1">Email</label>
+        <div className="flex items-center gap-3 border border-slate-200 rounded-xl py-2.5 px-4 bg-slate-50/50 focus-within:bg-white focus-within:border-blue-600 focus-within:ring-3 focus-within:ring-blue-500/15 transition-all duration-200 group">
+          <Mail className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors duration-200 shrink-0" />
           <input
-            className="focus:outline-0"
+            className="w-full bg-transparent focus:outline-none text-slate-800 text-sm font-medium placeholder:text-slate-400"
             id="email"
             type="text"
             placeholder="example@gmail.com"
@@ -36,16 +37,21 @@ const Forgot = ({
             value={data.email}
           />
         </div>
+
         <button
-          className="bg-blue-700 text-white py-3 rounded-lg my-4 hover:bg-blue-500 hover:cursor-pointer duration-200 transition-all  "
+          className="bg-gradient-to-r from-[#1e50e6] to-[#1442c7] hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl my-3 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] duration-200 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
           type="submit"
         >
           Đặt lại mật khẩu
         </button>
-        <span className="border border-gray-200"></span>
-        <div className="flex gap-2 items-center justify-center my-4">
-          <ArrowLeft color="blue" />
-          <button type="button" className=" text-blue-700 hover:underline hover:cursor-pointer" onClick={() => setStage("signin")} >Quay lại đăng nhập</button>
+
+        <div className="border-t border-slate-200 my-1"></div>
+
+        <div className="flex gap-2 items-center justify-center my-2">
+          <ArrowLeft className="w-4 h-4 text-blue-600" />
+          <button type="button" className="text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer transition-colors" onClick={() => setStage("signin")}>
+            Quay lại đăng nhập
+          </button>
         </div>
       </form>
     </div>

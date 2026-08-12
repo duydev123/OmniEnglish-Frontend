@@ -1,3 +1,4 @@
+import axios from 'axios'
 import type {
   VocabularyCollection,
   CreateCollectionPayload,
@@ -10,6 +11,14 @@ import type {
 const API_BASE = 'http://localhost:8000/api/v1/vocabulary'
 export const LOCAL_STORAGE_KEY = 'omni_vocab_ids'
 export const LOCAL_COLLECTIONS_KEY = 'omni_my_collections_data'
+
+export const vocabAxios = axios.create({
+  baseURL: API_BASE,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
 
 export function getStoredIds(): string[] {
   try {
@@ -45,11 +54,42 @@ export function removeId(id: string): void {
   }
 }
 
+export function cleanWordType(wt?: string): string {
+  if (!wt) return 'noun'
+  let cleaned = String(wt).trim()
+  if (cleaned.toLowerCase().startsWith('wordtype.')) {
+    cleaned = cleaned.substring(9)
+  }
+  return cleaned.toLowerCase()
+}
+
+export function sanitizeCollection(collection: VocabularyCollection): VocabularyCollection {
+  if (!collection) return collection
+  if (collection.words_list && Array.isArray(collection.words_list)) {
+    const cleaned = collection.words_list.map(w => {
+      let item = { ...w }
+      if (item && item.image_url && typeof item.image_url === 'string' && item.image_url.startsWith('blob:')) {
+        item.image_url = ''
+      }
+      if (item && item.word_type) {
+        item.word_type = cleanWordType(item.word_type)
+      }
+      return item
+    })
+    return { ...collection, words_list: cleaned }
+  }
+  return collection
+}
+
 // Local Storage Cache Helpers for instant reload persistence
 export function getCachedCollections(): VocabularyCollection[] {
   try {
     const data = localStorage.getItem(LOCAL_COLLECTIONS_KEY)
-    return data ? JSON.parse(data) : []
+    if (!data) return []
+    const parsed: VocabularyCollection[] = JSON.parse(data)
+    const sanitized = parsed.map(sanitizeCollection).filter(c => !c.is_official)
+    localStorage.setItem(LOCAL_COLLECTIONS_KEY, JSON.stringify(sanitized))
+    return sanitized
   } catch {
     return []
   }
@@ -57,55 +97,57 @@ export function getCachedCollections(): VocabularyCollection[] {
 
 export function saveCachedCollections(collections: VocabularyCollection[]): void {
   try {
-    localStorage.setItem(LOCAL_COLLECTIONS_KEY, JSON.stringify(collections))
+    const onlyPersonal = collections.filter(c => !c.is_official)
+    const sanitized = onlyPersonal.map(sanitizeCollection)
+    localStorage.setItem(LOCAL_COLLECTIONS_KEY, JSON.stringify(sanitized))
   } catch (e) {
     console.warn('LocalStorage save error:', e)
   }
 }
 
 export function updateSingleCachedCollection(collection: VocabularyCollection): void {
+  if (collection.is_official) return
   try {
+    const sanitized = sanitizeCollection(collection)
     const cached = getCachedCollections()
-    const index = cached.findIndex(c => c.id === collection.id)
+    const index = cached.findIndex(c => c.id === sanitized.id)
     if (index >= 0) {
-      cached[index] = collection
+      cached[index] = sanitized
     } else {
-      cached.unshift(collection)
+      cached.unshift(sanitized)
     }
     saveCachedCollections(cached)
-    storeId(collection.id)
+    storeId(sanitized.id)
   } catch (e) {
     console.warn('Cache update error:', e)
   }
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    ...options,
-  })
-
-  if (!res.ok) {
-    let errMessage = `HTTP error ${res.status}`
-    try {
-      const errData = await res.json()
-      if (errData.detail) errMessage = errData.detail
-    } catch {
-      // ignore json parse error
-    }
-    throw new Error(errMessage)
+async function apiFetch<T>(path: string, options?: { method?: string; body?: any; headers?: any }): Promise<T> {
+  const method = options?.method?.toUpperCase() || 'GET'
+  let dataPayload = undefined
+  if (options?.body) {
+    dataPayload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
   }
 
-  return res.json()
+  const response = await vocabAxios.request<T>({
+    url: path,
+    method,
+    data: dataPayload,
+    headers: options?.headers,
+  })
+
+  return response.data
 }
 
 export async function getMyCollections(): Promise<VocabularyCollection[]> {
   try {
     const apiData = await apiFetch<VocabularyCollection[]>('/collections/my-collections')
     if (apiData && apiData.length > 0) {
-      // Sync with cache
-      saveCachedCollections(apiData)
-      return apiData
+      const personalOnly = apiData.filter(c => !c.is_official)
+      const sanitized = personalOnly.map(sanitizeCollection)
+      saveCachedCollections(sanitized)
+      return sanitized
     }
   } catch (err) {
     console.warn('Backend API fetch error, falling back to local cache:', err)
@@ -116,7 +158,9 @@ export async function getMyCollections(): Promise<VocabularyCollection[]> {
 export async function getOfficialCollections(): Promise<VocabularyCollection[]> {
   try {
     const apiData = await apiFetch<VocabularyCollection[]>('/collections/official')
-    if (apiData && apiData.length > 0) return apiData
+    if (apiData && apiData.length > 0) {
+      return apiData.map(sanitizeCollection)
+    }
   } catch {
     // ignore
   }
@@ -131,7 +175,7 @@ export async function createCollection(payload: CreateCollectionPayload): Promis
     })
     updateSingleCachedCollection(created)
     return created
-  } catch (err) {
+  } catch {
     // If backend is offline, generate local fallback collection
     const fallback: VocabularyCollection = {
       id: `col_${Date.now()}`,
@@ -183,19 +227,27 @@ export async function updateCollection(
 }
 
 export async function getCollection(id: string): Promise<VocabularyCollection> {
-  try {
-    const col = await apiFetch<VocabularyCollection>(`/collections/${id}`)
-    if (col) {
-      updateSingleCachedCollection(col)
-      return col
+  // Local fallback collections (created while backend was offline) only exist in cache
+  const isLocalFallback = id.startsWith('col_')
+
+  if (!isLocalFallback) {
+    try {
+      const col = await apiFetch<VocabularyCollection>(`/collections/${id}`)
+      if (col) {
+        const sanitized = sanitizeCollection(col)
+        updateSingleCachedCollection(sanitized)
+        return sanitized
+      }
+    } catch (err) {
+      console.warn(`Could not fetch collection ${id} from API, checking cache:`, err)
     }
-  } catch (err) {
-    console.warn(`Could not fetch collection ${id} from API, checking cache:`, err)
   }
+
   const cached = getCachedCollections().find(c => c.id === id)
   if (cached) return cached
   throw new Error('Vocabulary collection not found')
 }
+
 
 export async function deleteCollection(id: string): Promise<{ status: string; message: string }> {
   try {
@@ -219,8 +271,13 @@ export async function addWord(
       body: JSON.stringify(payload),
     })
     return res
-  } catch {
-    // Add locally to cache
+  } catch (err: any) {
+    // Nếu backend trả về lỗi có response (4xx/5xx), re-throw để caller xử lý
+    // Ví dụ: 409 Conflict → từ đã tồn tại → hiện toast warning ở modal
+    if (err?.response) {
+      throw err
+    }
+    // Chỉ fallback local khi mất kết nối hoàn toàn (backend offline)
     const cached = getCachedCollections()
     const target = cached.find(c => c.id === collectionId)
     if (target) {
@@ -239,6 +296,7 @@ export async function addWord(
     return { status: 'success', message: 'Word added locally' }
   }
 }
+
 
 export async function updateWord(
   wordId: string,
@@ -294,7 +352,7 @@ export async function pasteText(
   highlighted_text: string
   extracted_words: string[]
 }> {
-  return apiFetch('/collections/{collection_id}/words/paste-text'.replace('{collection_id}', collectionId), {
+  return apiFetch(`/collections/${collectionId}/words/paste-text`, {
     method: 'POST',
     body: JSON.stringify({ raw_text: rawText }),
   })
@@ -336,24 +394,71 @@ export async function updateCollectionProgress(payload: UpdateProgressPayload): 
   }
 }
 
-export async function fetchIPA(word: string): Promise<string> {
-  if (!word || !word.trim()) return ''
+export interface WordDetailsResult {
+  ipa: string
+  word_type?: string
+  meaning?: string
+  example_sentence?: string
+}
+
+export async function fetchWordDetails(word: string): Promise<WordDetailsResult> {
+  if (!word || !word.trim()) return { ipa: '', word_type: 'noun', meaning: '', example_sentence: '' }
+  const cleanWord = word.trim()
+
+  // 1. Query backend endpoint via Axios (Backend returns ipa, word_type, meaning, example_sentence)
   try {
-    const cleanWord = word.trim().toLowerCase()
-    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`)
-    if (!res.ok) return ''
-    const data = await res.json()
-    if (Array.isArray(data) && data[0]) {
-      if (data[0].phonetic) return data[0].phonetic
-      if (data[0].phonetics && Array.isArray(data[0].phonetics)) {
-        for (const p of data[0].phonetics) {
-          if (p.text) return p.text
-        }
+    const res = await vocabAxios.get<{ ipa?: string; word_type?: string; meaning?: string; example_sentence?: string }>(`/fetch-ipa`, {
+      params: { word: cleanWord },
+    })
+    if (res.data) {
+      return {
+        ipa: res.data.ipa || '',
+        word_type: res.data.word_type || 'noun',
+        meaning: res.data.meaning || '',
+        example_sentence: res.data.example_sentence || '',
       }
     }
-  } catch (err) {
-    console.warn('Could not fetch IPA for word:', word, err)
+  } catch {
+    // Backend API offline/unreachable - proceed to fallback
   }
-  return ''
+
+  // 2. Client-side fallback via Axios through CORS proxy
+  try {
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord.toLowerCase())}`)}`
+    const res = await axios.get(proxyUrl, { validateStatus: status => status === 200 })
+    if (res.status === 200 && Array.isArray(res.data) && res.data[0]) {
+      let foundIpa = ''
+      let foundType = 'noun'
+      let foundMeaning = ''
+      let foundExample = ''
+      if (res.data[0].meanings && res.data[0].meanings[0]) {
+        foundType = res.data[0].meanings[0].partOfSpeech || 'noun'
+        if (res.data[0].meanings[0].definitions && res.data[0].meanings[0].definitions[0]) {
+          foundMeaning = res.data[0].meanings[0].definitions[0].definition || ''
+          foundExample = res.data[0].meanings[0].definitions[0].example || ''
+        }
+      }
+      if (res.data[0].phonetic) foundIpa = res.data[0].phonetic
+      else if (res.data[0].phonetics && Array.isArray(res.data[0].phonetics)) {
+        for (const p of res.data[0].phonetics) {
+          if (p.text) {
+            foundIpa = p.text
+            break
+          }
+        }
+      }
+      return { ipa: foundIpa, word_type: foundType, meaning: foundMeaning, example_sentence: foundExample }
+    }
+  } catch {
+    // Word not found or proxy error
+  }
+  return { ipa: '', word_type: 'noun', meaning: '', example_sentence: '' }
 }
+
+
+export async function fetchIPA(word: string): Promise<string> {
+  const details = await fetchWordDetails(word)
+  return details.ipa
+}
+
 

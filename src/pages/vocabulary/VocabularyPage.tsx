@@ -15,12 +15,12 @@ import { useToast } from '../../components/common/Toast'
 import {
   getCollection,
   deleteCollection,
-  getStoredIds,
   storeId,
   removeId,
   updateCollectionProgress,
   getMyCollections,
   getOfficialCollections,
+  getCachedCollections,
 } from '../../services/vocabularyApi'
 import type { VocabularyCollection, WordStatus } from '../../types/vocabulary'
 
@@ -32,10 +32,10 @@ export default function VocabularyPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
 
-  const [activeTab, setActiveTab] = useState<TabType>('mine')
-  const [myCollections, setMyCollections] = useState<VocabularyCollection[]>([])
+  const [activeTab, setActiveTab] = useState<TabType>('default')
+  const [myCollections, setMyCollections] = useState<VocabularyCollection[]>(() => getCachedCollections())
   const [officialCollections, setOfficialCollections] = useState<VocabularyCollection[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState<boolean>(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [displayMode, setDisplayMode] = useState<DisplayMode>('grid')
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest')
@@ -65,38 +65,21 @@ export default function VocabularyPage() {
   }, [])
 
   async function loadAllCollections() {
-    setLoading(true)
     try {
-      try {
-        const official = await getOfficialCollections()
-        setOfficialCollections(official || [])
-      } catch (err) {
-        console.warn('Could not fetch official collections:', err)
-        setOfficialCollections([])
+      const [officialResult, mineResult] = await Promise.allSettled([
+        getOfficialCollections(),
+        getMyCollections()
+      ])
+
+      if (officialResult.status === 'fulfilled') {
+        setOfficialCollections(officialResult.value || [])
       }
 
-      try {
-        const mine = await getMyCollections()
-        const storedIds = getStoredIds()
-        
-        let loaded: VocabularyCollection[] = mine || []
-
-        if (storedIds.length > 0) {
-          const storedResults = await Promise.allSettled(storedIds.map(id => getCollection(id)))
-          const extraLoaded = storedResults
-            .filter((r): r is PromiseFulfilledResult<VocabularyCollection> => r.status === 'fulfilled')
-            .map(r => r.value)
-          
-          const existingMap = new Map(loaded.map(c => [c.id, c]))
-          extraLoaded.forEach(col => existingMap.set(col.id, col))
-          loaded = Array.from(existingMap.values())
-        }
-
-        setMyCollections(loaded)
-      } catch (err) {
-        console.warn('Could not fetch personal collections:', err)
-        setMyCollections([])
+      if (mineResult.status === 'fulfilled') {
+        setMyCollections(mineResult.value || [])
       }
+    } catch (err) {
+      console.warn('Could not refresh collections from server:', err)
     } finally {
       setLoading(false)
     }
@@ -143,7 +126,9 @@ export default function VocabularyPage() {
   }, [flashcardTarget, showToast])
 
   // Select list based on active tab
-  const currentList = activeTab === 'default' ? officialCollections : myCollections
+  const currentList = activeTab === 'default'
+    ? officialCollections
+    : myCollections.filter(c => !c.is_official)
 
   const filtered = currentList
     .filter(c => {
@@ -178,10 +163,10 @@ export default function VocabularyPage() {
 
         {/* Tab switch bar + Action buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 min-h-[42px]">
-          <div className="flex bg-slate-200/60 p-1 rounded-2xl border border-slate-200/60 self-start">
+          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-200/60 rounded-2xl border border-slate-200/60 w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('default')}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all
+              className={`px-2 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all text-center flex items-center justify-center min-h-[36px] whitespace-nowrap
                 ${activeTab === 'default'
                   ? 'bg-white text-[#1D4ED8] shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'}`}
@@ -190,7 +175,7 @@ export default function VocabularyPage() {
             </button>
             <button
               onClick={() => setActiveTab('mine')}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all
+              className={`px-2 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all text-center flex items-center justify-center min-h-[36px] whitespace-nowrap
                 ${activeTab === 'mine'
                   ? 'bg-white text-[#1D4ED8] shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'}`}
@@ -201,20 +186,20 @@ export default function VocabularyPage() {
 
           {/* Action buttons on top right */}
           {activeTab === 'mine' && (
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="w-full sm:w-auto">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white
-                  bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 text-xs font-extrabold text-white
+                  bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer"
               >
-                <Plus size={14} /> Tạo bộ từ mới
+                <Plus size={15} /> <span>Tạo bộ từ mới</span>
               </button>
             </div>
           )}
         </div>
 
         {/* Outer White Box for Search & Filter Bar */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 shadow-xs">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 shadow-xs">
           <div className="relative flex-1 w-full max-w-md">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
@@ -227,24 +212,24 @@ export default function VocabularyPage() {
             />
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
             <div className="relative" ref={sortMenuRef}>
               <button
                 onClick={() => setShowSortMenu(v => !v)}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-600 bg-slate-100/80 hover:bg-slate-200/80
-                  rounded-xl transition-all whitespace-nowrap"
+                className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200
+                  rounded-xl transition-all whitespace-nowrap cursor-pointer"
               >
-                {sortLabels[sortOrder]}
+                <span>{sortLabels[sortOrder]}</span>
                 <SlidersHorizontal size={13} />
               </button>
               {showSortMenu && (
-                <div className="absolute right-0 mt-1 w-36 bg-white border border-slate-200 rounded-xl
+                <div className="absolute left-0 sm:left-auto sm:right-0 mt-1 w-36 bg-white border border-slate-200 rounded-xl
                   shadow-lg z-20 overflow-hidden py-1">
                   {(['newest', 'oldest', 'az'] as SortOrder[]).map(o => (
                     <button
                       key={o}
                       onClick={() => { setSortOrder(o); setShowSortMenu(false) }}
-                      className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors
+                      className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors cursor-pointer
                         ${sortOrder === o ? 'bg-blue-50 text-blue-600 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
                     >
                       {sortLabels[o]}
@@ -254,20 +239,20 @@ export default function VocabularyPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
-              <span>Display:</span>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 shrink-0">
+              <span className="text-[11px] sm:text-xs">Hiển thị:</span>
               <div className="flex bg-slate-100 p-1 rounded-xl">
                 <button
                   onClick={() => setDisplayMode('grid')}
                   title="Grid view"
-                  className={`p-1.5 rounded-lg transition-all ${displayMode === 'grid' ? 'bg-[#1D4ED8] text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${displayMode === 'grid' ? 'bg-[#1D4ED8] text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   <LayoutGrid size={15} />
                 </button>
                 <button
                   onClick={() => setDisplayMode('list')}
                   title="List view"
-                  className={`p-1.5 rounded-lg transition-all ${displayMode === 'list' ? 'bg-[#1D4ED8] text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${displayMode === 'list' ? 'bg-[#1D4ED8] text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   <List size={15} />
                 </button>
@@ -278,19 +263,24 @@ export default function VocabularyPage() {
 
         {/* Collections List Grid */}
         {loading ? (
-          <div className={`grid gap-5 mb-8 ${displayMode === 'grid'
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
-            : 'grid-cols-1'
-          }`}>
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-5 animate-pulse">
-                <div className="h-5 bg-slate-200 rounded w-3/4 mb-3" />
-                <div className="h-3 bg-slate-100 rounded w-full mb-1" />
-                <div className="h-3 bg-slate-100 rounded w-2/3 mb-4" />
-                <div className="h-2 bg-slate-100 rounded-full mb-4" />
-                <div className="h-8 bg-slate-200 rounded-lg" />
-              </div>
-            ))}
+          <div className="flex flex-col gap-6 mb-8">
+            <div className="flex flex-col items-center justify-center py-10 bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
+              <div className="w-10 h-10 mb-3 border-3 border-blue-100 border-t-[#1D4ED8] rounded-full animate-spin" />
+              <p className="text-xs font-extrabold text-slate-600 animate-pulse">
+                {activeTab === 'default' ? 'Đang tải bộ từ vựng mặc định...' : 'Đang tải bộ từ vựng của bạn...'}
+              </p>
+            </div>
+            <div className={`grid gap-5 ${displayMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1'}`}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-2xl border border-slate-200 p-5 animate-pulse">
+                  <div className="h-5 bg-slate-200 rounded w-3/4 mb-3" />
+                  <div className="h-3 bg-slate-100 rounded w-full mb-1" />
+                  <div className="h-3 bg-slate-100 rounded w-2/3 mb-4" />
+                  <div className="h-2 bg-slate-100 rounded-full mb-4" />
+                  <div className="h-8 bg-slate-200 rounded-lg" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white/60 border border-slate-200/80 rounded-2xl min-h-[280px] flex flex-col items-center justify-center text-center p-8 text-slate-400 mb-8">
@@ -313,7 +303,7 @@ export default function VocabularyPage() {
           <div className={`grid gap-5 mb-8 ${displayMode === 'grid'
             ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
             : 'grid-cols-1'
-          }`}>
+            }`}>
             {filtered.map((col, i) => (
               <div
                 key={col.id}
@@ -352,7 +342,7 @@ export default function VocabularyPage() {
           storeId(col.id)
           setMyCollections(prev => [col, ...prev])
           setShowCreateModal(false)
-          showToast(`✅ Đã tạo bộ từ "${col.title}"!`, 'success')
+          showToast(`Đã tạo bộ từ "${col.title}"!`, 'success')
         }}
       />
 
@@ -363,7 +353,7 @@ export default function VocabularyPage() {
         preselectedCollectionId={addWordTargetId}
         onWordAdded={async (collectionId) => {
           setShowAddWordModal(false)
-          showToast('✅ Đã thêm từ vựng!', 'success')
+          showToast('Đã thêm từ vựng!', 'success')
           try {
             const updated = await getCollection(collectionId)
             setMyCollections(prev => prev.map(c => c.id === collectionId ? updated : c))

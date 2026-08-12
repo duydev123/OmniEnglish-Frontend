@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Loader2 } from 'lucide-react';
+import CustomSelect from '../../common/CustomSelect';
 import type { VocabularyCollection } from '../../../types/vocabulary';
 import { updateCollection } from '../../../services/vocabularyApi';
 
@@ -51,10 +52,11 @@ export const EditCollectionModal: React.FC<EditCollectionModalProps> = ({
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm font-['Be_Vietnam_Pro'] select-none">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl scale-100 animate-in zoom-in-95 duration-200 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
-          <h2 className="text-xl font-extrabold text-slate-900">Chỉnh sửa bộ từ vựng</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">Chỉnh sửa bộ từ vựng</h2>
           <button
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
@@ -63,10 +65,11 @@ export const EditCollectionModal: React.FC<EditCollectionModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 space-y-1.5">
-              <label htmlFor="editTitle" className="block text-sm font-bold text-slate-700">
+              <label htmlFor="editTitle" className="block text-xs sm:text-sm font-bold text-slate-700">
                 Tên bộ từ vựng <span className="text-red-500">*</span>
               </label>
               <input
@@ -75,28 +78,27 @@ export const EditCollectionModal: React.FC<EditCollectionModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-sm"
+                className="w-full px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium"
               />
             </div>
-            <div className="sm:w-44 space-y-1.5">
-              <label htmlFor="editLanguage" className="block text-sm font-bold text-slate-700">
+            <div className="sm:w-44 space-y-1.5 shrink-0">
+              <label htmlFor="editLanguage" className="block text-xs sm:text-sm font-bold text-slate-700">
                 Ngôn ngữ
               </label>
-              <select
+              <CustomSelect
                 id="editLanguage"
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all font-medium text-sm"
-              >
-                <option value="Anh-Mỹ">Anh - Mỹ</option>
-                <option value="Anh-Anh">Anh - Anh</option>
-                <option value="Anh-Úc">Anh - Úc</option>
-              </select>
+                onChange={setLanguage}
+                options={[
+                  { value: 'Anh-Mỹ', label: 'Anh - Mỹ' },
+                  { value: 'Anh-Anh', label: 'Anh - Anh' },
+                ]}
+              />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="editDescription" className="block text-sm font-bold text-slate-700">
+            <label htmlFor="editDescription" className="block text-xs sm:text-sm font-bold text-slate-700">
               Mô tả
             </label>
             <textarea
@@ -104,17 +106,18 @@ export const EditCollectionModal: React.FC<EditCollectionModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-all font-medium text-sm"
+              className="w-full px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-all font-medium"
             />
           </div>
         </form>
 
-        <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-end gap-3 shrink-0">
+        {/* Responsive Footer - Grid 2 columns on mobile */}
+        <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:justify-end sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-extrabold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors text-center whitespace-nowrap cursor-pointer"
           >
             Hủy bỏ
           </button>
@@ -122,15 +125,15 @@ export const EditCollectionModal: React.FC<EditCollectionModalProps> = ({
             type="submit"
             onClick={handleSubmit}
             disabled={isSubmitting || !title.trim()}
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-bold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 min-w-[140px] shadow-md shadow-blue-500/20"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-extrabold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 shadow-md shadow-blue-500/20 text-center whitespace-nowrap cursor-pointer"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Đang lưu...
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin shrink-0" />
+                <span>Đang lưu...</span>
               </>
             ) : (
-              'Lưu thay đổi'
+              <span>Lưu thay đổi</span>
             )}
           </button>
         </div>

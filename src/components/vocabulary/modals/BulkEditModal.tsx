@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Loader2, Save, Trash2, Sparkles } from 'lucide-react'
+import CustomSelect from '../../common/CustomSelect'
 import type { VocabularyCollection, WordDetail } from '../../../types/vocabulary'
 import { bulkUpdateWords, fetchIPA } from '../../../services/vocabularyApi'
 
@@ -77,7 +78,6 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
     try {
       setIsSubmitting(true)
 
-      // Auto fill empty IPAs
       const finalWords = await Promise.all(
         words.map(async w => {
           if (w.word.trim() && (!w.ipa || !w.ipa.trim())) {
@@ -88,7 +88,6 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
         })
       )
 
-      // Call Backend bulkUpdateWords API if real MongoDB collection ID
       if (collection.id && !collection.id.startsWith('650000000000')) {
         await bulkUpdateWords(
           collection.id,
@@ -114,24 +113,24 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
   }
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/50 backdrop-blur-sm font-['Be_Vietnam_Pro'] select-none">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
       <div className="bg-white rounded-3xl w-full max-w-5xl shadow-2xl scale-100 animate-in zoom-in-95 duration-200 border border-slate-100 overflow-hidden flex flex-col h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900">Sửa từ vựng hàng loạt</h2>
-            <p className="text-xs text-slate-400 font-medium">Chỉnh sửa tất cả {words.length} từ trong bộ "{collection.title}"</p>
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">Sửa từ vựng hàng loạt</h2>
+            <p className="text-xs text-slate-400 font-medium truncate">Chỉnh sửa tất cả {words.length} từ trong bộ "{collection.title}"</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors shrink-0"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Table Body */}
-        <div className="flex-1 overflow-y-auto overflow-x-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto overflow-x-auto p-3 sm:p-6">
           <table className="w-full min-w-[700px] border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-500 text-xs font-bold uppercase tracking-wider">
@@ -158,15 +157,12 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
                     />
                   </td>
                   <td className="py-2.5 px-3">
-                    <select
+                    <CustomSelect
                       value={(w.word_type || 'noun').toLowerCase()}
-                      onChange={e => updateRow(index, 'word_type', e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-                    >
-                      {WORD_TYPES.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
+                      onChange={v => updateRow(index, 'word_type', v)}
+                      options={WORD_TYPES}
+                      placeholder="Chọn loại từ..."
+                    />
                   </td>
                   <td className="py-2.5 px-3">
                     <input
@@ -190,7 +186,7 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
                   <td className="py-2.5 px-3 text-center">
                     <button
                       onClick={() => deleteRow(index)}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                       title="Xóa dòng này"
                     >
                       <Trash2 size={15} />
@@ -203,9 +199,9 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-100 bg-white flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="px-4 py-3 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
           {/* Left: count + auto IPA */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap">
             <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
               Tổng cộng: {words.length} từ vựng
             </span>
@@ -213,7 +209,7 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
               type="button"
               onClick={handleAutoFillIPA}
               disabled={isFetchingIPA}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all disabled:opacity-50 whitespace-nowrap"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all disabled:opacity-50 whitespace-nowrap cursor-pointer"
               title="Tự động tra cứu và điền IPA cho các từ chưa có"
             >
               <Sparkles size={12} className={isFetchingIPA ? 'animate-spin' : ''} />
@@ -222,12 +218,12 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
           </div>
 
           {/* Right: Cancel + Save */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
+              className="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-extrabold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap text-center justify-center cursor-pointer"
             >
               Hủy bỏ
             </button>
@@ -235,17 +231,17 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
               type="button"
               onClick={handleSave}
               disabled={isSubmitting || words.length === 0}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 shadow-md shadow-blue-500/20 gap-1.5 whitespace-nowrap"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-extrabold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 shadow-md shadow-blue-500/20 gap-1.5 whitespace-nowrap text-center cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Đang lưu...
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <span>Đang lưu...</span>
                 </>
               ) : (
                 <>
                   <Save size={15} />
-                  Lưu tất cả thay đổi
+                  <span>Lưu tất cả thay đổi</span>
                 </>
               )}
             </button>
