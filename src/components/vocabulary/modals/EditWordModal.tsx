@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Loader2, Image as ImageIcon, Sparkles } from 'lucide-react'
+import CustomSelect from '../../common/CustomSelect'
 import type { WordDetail } from '../../../types/vocabulary'
-import { updateWord, fetchIPA } from '../../../services/vocabularyApi'
+import { updateWord, fetchWordDetails } from '../../../services/vocabularyApi'
+import { useToast } from '../../common/Toast'
 
 interface EditWordModalProps {
   open: boolean
@@ -29,7 +31,9 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
   onClose,
   onUpdated,
 }) => {
+  const { showToast } = useToast()
   const [wordText, setWordText] = useState('')
+
   const [wordType, setWordType] = useState('')
   const [ipa, setIpa] = useState('')
   const [meaning, setMeaning] = useState('')
@@ -53,27 +57,64 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
   if (!open || !word) return null
 
   const handleAutoFetchIPA = async () => {
-    if (!wordText.trim()) return
+    const cleanWord = wordText.trim()
+    if (!cleanWord) {
+      showToast('Vui lòng nhập từ vựng trước khi lấy phiên âm!', 'warning')
+      return
+    }
+    if (!/[a-zA-Z]/.test(cleanWord)) {
+      showToast(`"${cleanWord}" không phải là từ tiếng Anh hợp lệ. Vui lòng nhập từ có chứa chữ cái!`, 'warning')
+      return
+    }
     setIsFetchingIPA(true)
     try {
-      const fetched = await fetchIPA(wordText)
-      if (fetched) setIpa(fetched)
+      const details = await fetchWordDetails(cleanWord)
+      if (details.ipa && details.ipa.trim() && details.ipa !== '/No IPA available/') {
+        setIpa(details.ipa)
+        if (details.word_type) setWordType(details.word_type)
+        showToast(`✨ Đã tự động điền IPA và loại từ cho "${cleanWord}"!`, 'success')
+      } else if (details.word_type && details.word_type !== 'noun') {
+        setIpa('')
+        setWordType(details.word_type)
+        showToast(`✨ Đã nhận diện loại từ cho "${cleanWord}"!`, 'info')
+      } else {
+        setIpa('')
+        showToast(`⚠️ Không tìm thấy từ "${cleanWord}" trong từ điển tiếng Anh!`, 'warning')
+      }
+    } catch {
+      showToast('Vui lòng nhập từ tiếng Anh hợp lệ!', 'warning')
     } finally {
       setIsFetchingIPA(false)
     }
+
   }
+
+
+
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const fakeUrl = URL.createObjectURL(file)
-      setImageUrl(fakeUrl)
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        if (evt.target?.result) {
+          setImageUrl(evt.target.result as string)
+        }
+      }
+      reader.readAsDataURL(file)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!wordText.trim() || !meaning.trim()) return
+
+    // Validate word: must contain at least 2 letters
+    const letters = wordText.trim().match(/[a-zA-Z]/g) || []
+    if (letters.length < 2) {
+      showToast('Từ vựng phải chứa ít nhất 2 chữ cái tiếng Anh!', 'warning')
+      return
+    }
 
     try {
       setIsSubmitting(true)
@@ -108,11 +149,11 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
   }
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm font-['Be_Vietnam_Pro'] select-none">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
       <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl scale-100 animate-in zoom-in-95 duration-200 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
-          <h2 className="text-xl font-extrabold text-slate-900">Chỉnh sửa từ vựng</h2>
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">Chỉnh sửa từ vựng</h2>
           <button
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
@@ -122,10 +163,10 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form id="edit-word-form-modal" onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+        <form id="edit-word-form-modal" onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {/* Từ mới * */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-slate-700">
+            <label className="block text-xs sm:text-sm font-bold text-slate-700">
               Từ mới <span className="text-red-500">*</span>
             </label>
             <input
@@ -134,37 +175,33 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
               onChange={(e) => setWordText(e.target.value)}
               required
               placeholder="Vd: Resilience"
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all"
+              className="w-full px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all"
             />
           </div>
 
           {/* Grid: Loại từ (Select Dropdown) & Phiên âm */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="block text-sm font-bold text-slate-700">
+              <label className="block text-xs sm:text-sm font-bold text-slate-700">
                 Loại từ
               </label>
-              <select
+              <CustomSelect
                 value={wordType.toLowerCase()}
-                onChange={(e) => setWordType(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white font-medium transition-all cursor-pointer text-slate-800"
-              >
-                <option value="">Chọn loại từ...</option>
-                {WORD_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
+                onChange={setWordType}
+                options={WORD_TYPES}
+                placeholder="Chọn loại từ..."
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-bold text-slate-700">
+                <label className="block text-xs sm:text-sm font-bold text-slate-700">
                   Phiên âm
                 </label>
                 <button
                   type="button"
                   onClick={handleAutoFetchIPA}
                   disabled={isFetchingIPA || !wordText.trim()}
-                  className="text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1 disabled:opacity-40"
+                  className="text-[11px] sm:text-xs text-purple-600 hover:text-purple-700 font-bold flex items-center gap-1 disabled:opacity-40"
                   title="Tra cứu tự động IPA từ từ điển"
                 >
                   <Sparkles size={12} className={isFetchingIPA ? 'animate-spin' : ''} />
@@ -176,14 +213,14 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
                 value={ipa}
                 onChange={(e) => setIpa(e.target.value)}
                 placeholder="Vd: /rɪˈzɪl.jəns/"
-                className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all"
+                className="w-full px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all"
               />
             </div>
           </div>
 
           {/* Định nghĩa * */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-slate-700">
+            <label className="block text-xs sm:text-sm font-bold text-slate-700">
               Định nghĩa <span className="text-red-500">*</span>
             </label>
             <input
@@ -192,13 +229,13 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
               onChange={(e) => setMeaning(e.target.value)}
               required
               placeholder="Vd: Khả năng phục hồi nhanh chóng sau khó khăn"
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all"
+              className="w-full px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all"
             />
           </div>
 
           {/* Ví dụ */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-slate-700">
+            <label className="block text-xs sm:text-sm font-bold text-slate-700">
               Ví dụ
             </label>
             <textarea
@@ -206,13 +243,13 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
               onChange={(e) => setExample(e.target.value)}
               rows={2}
               placeholder="Vd: Trauma research has highlighted the remarkable resilience of the human psyche."
-              className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-medium transition-all"
+              className="w-full px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-medium transition-all"
             />
           </div>
 
           {/* Hình ảnh minh họa */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-bold text-slate-700">
+            <label className="block text-xs sm:text-sm font-bold text-slate-700">
               Hình ảnh minh họa
             </label>
 
@@ -226,11 +263,11 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-2xl p-6
+              className="border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-2xl p-4 sm:p-6
                 bg-blue-50/20 hover:bg-blue-50/50 transition-all cursor-pointer flex flex-col items-center justify-center text-center group"
             >
               {imageUrl ? (
-                <div className="relative w-full h-32 rounded-xl overflow-hidden group/img">
+                <div className="relative w-full h-28 sm:h-32 rounded-xl overflow-hidden group/img">
                   <img src={imageUrl} alt="Uploaded" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
                     Bấm để thay đổi ảnh
@@ -238,13 +275,13 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
                 </div>
               ) : (
                 <>
-                  <div className="w-12 h-12 rounded-full bg-blue-100 text-[#1D4ED8] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <ImageIcon size={22} />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 text-[#1D4ED8] flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                    <ImageIcon size={20} className="sm:w-5 sm:h-5" />
                   </div>
-                  <p className="text-sm font-bold text-slate-800 mb-0.5">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 mb-0.5">
                     Kéo thả ảnh hoặc nhấp để tải lên
                   </p>
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-[10px] sm:text-xs text-slate-400 font-medium">
                     JPG, PNG, GIF (Tối đa 5MB)
                   </p>
                 </>
@@ -254,12 +291,12 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-end gap-3 shrink-0">
+        <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:justify-end sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-extrabold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors text-center whitespace-nowrap cursor-pointer"
           >
             Hủy bỏ
           </button>
@@ -267,15 +304,15 @@ export const EditWordModal: React.FC<EditWordModalProps> = ({
             type="submit"
             form="edit-word-form-modal"
             disabled={isSubmitting || !wordText.trim() || !meaning.trim()}
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-bold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 min-w-[130px] shadow-md shadow-blue-500/20"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-extrabold text-white bg-[#1D4ED8] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-50 shadow-md shadow-blue-500/20 text-center whitespace-nowrap cursor-pointer"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Đang lưu...
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin shrink-0" />
+                <span>Đang lưu...</span>
               </>
             ) : (
-              'Lưu thay đổi'
+              <span>Lưu thay đổi</span>
             )}
           </button>
         </div>

@@ -31,23 +31,23 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 text-center animate-in zoom-in-95 duration-200">
-        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Trash2 className="w-8 h-8" />
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-5 sm:p-6 text-center animate-in zoom-in-95 duration-200 border border-slate-100">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+          <Trash2 className="w-7 h-7 sm:w-8 sm:h-8" />
         </div>
         
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Xóa bộ từ vựng?</h3>
-        <p className="text-gray-600 mb-6">
-          Bạn có chắc chắn muốn xóa bộ từ vựng <span className="font-bold text-gray-900">"{collectionTitle}"</span> không? Hành động này không thể hoàn tác.
+        <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5">Xóa bộ từ vựng?</h3>
+        <p className="text-xs sm:text-sm text-slate-500 mb-5 leading-relaxed">
+          Bạn có chắc chắn muốn xóa bộ từ vựng <span className="font-extrabold text-slate-900">"{collectionTitle}"</span> không? Hành động này không thể hoàn tác.
         </p>
 
-        <div className="flex items-center gap-3 w-full">
+        <div className="grid grid-cols-2 gap-2.5 w-full">
           <button
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-50 transition-colors"
+            className="w-full py-2.5 px-3 text-xs sm:text-sm font-extrabold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap text-center justify-center cursor-pointer"
           >
             Hủy bỏ
           </button>
@@ -55,15 +55,15 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({
             type="button"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="flex-1 inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 transition-colors"
+            className="w-full inline-flex items-center justify-center py-2.5 px-3 text-xs sm:text-sm font-extrabold text-white bg-red-600 border border-transparent rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors shadow-md shadow-red-500/20 whitespace-nowrap text-center cursor-pointer"
           >
             {isDeleting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Đang xóa...
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin shrink-0" />
+                <span>Đang xóa...</span>
               </>
             ) : (
-              'Xóa bộ từ'
+              <span>Xóa bộ từ</span>
             )}
           </button>
         </div>
