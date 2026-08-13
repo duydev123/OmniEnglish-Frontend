@@ -310,11 +310,10 @@ export default function ReadingPracticePage() {
             </div>
           </div>
 
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm shrink-0 border ${
-            secondsRemaining < 60
-              ? 'bg-red-50 border-red-200 text-red-700'
-              : 'bg-slate-50 border-slate-200/80 text-slate-700'
-          }`}>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm shrink-0 border ${secondsRemaining < 60
+            ? 'bg-red-50 border-red-200 text-red-700'
+            : 'bg-slate-50 border-slate-200/80 text-slate-700'
+            }`}>
             <Clock size={16} className={secondsRemaining < 60 ? 'text-red-500' : 'text-slate-500'} />
             <span>{formatTimer(secondsRemaining)} remaining</span>
           </div>
@@ -323,13 +322,13 @@ export default function ReadingPracticePage() {
         {/* Main Content: Passage + Tasks */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Left: Reading Passage */}
-          <div className="lg:sticky lg:top-20">
+          <div className="lg:sticky lg:top-20 max-h-[100vh] overflow-y-auto space-y-6">
             <ReadingPassageCard passage={passageData} />
             {session.learning_tip && <LearningTipCard tip={session.learning_tip} />}
           </div>
 
           {/* Right: Tasks */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[100vh] overflow-y-auto pr-2">
             {tasks.map((task) => {
               if (task.type === 'multiple_choice') {
                 const questionKey = task.id.replace('mc-', '')

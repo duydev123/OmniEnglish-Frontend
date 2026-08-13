@@ -149,12 +149,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
   return (
     <aside
-      className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] w-64 shrink-0 bg-white border-r border-slate-200/80
-        transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] bg-white border-r border-slate-200/80
+        transition-all duration-300 ${
+          isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full lg:w-0 lg:border-r-0 overflow-hidden'
         }`}
     >
-      {navContent}
+      <div className="w-64 h-full shrink-0">
+        {navContent}
+      </div>
     </aside>
   )
 }

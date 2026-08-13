@@ -1,8 +1,9 @@
-import { Route, Routes } from "react-router-dom"
+import { Route, Routes, Navigate } from "react-router-dom"
 import Home from "./pages/Home"
 import Login from "./pages/Login"
 import ProfilePage from "./pages/ProfilePage"
-import PracticeModulesPage from "./pages/PracticeModulesPage"
+// import PracticeModulesPage from "./pages/PracticeModulesPage"
+import PracticeModulesPage from "./pages/practice/PracticeModulesPage"
 import VocabularyPage from "./pages/vocabulary/VocabularyPage"
 import CollectionDetailPage from "./pages/vocabulary/CollectionDetailPage"
 import BulkAddPage from "./pages/vocabulary/BulkAddPage"
@@ -32,13 +33,14 @@ const App = () => {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/practice-modules" element={<PracticeModulesPage />} />
+          <Route path="/practice-modules" element={<Navigate to="/practice-modules/listening" replace />} />
+          <Route path="/practice-modules/:category" element={<PracticeModulesPage />} />
           <Route path="/vocabulary" element={<VocabularyPage />} />
           <Route path="/vocabulary/:id" element={<CollectionDetailPage />} />
           <Route path="/vocabulary/:id/bulk-add" element={<BulkAddPage />} />
           <Route path="/writing/editor/:promptId" element={<WritingEditorPage />} />
           <Route path="/writing/review/:sessionId" element={<WritingReviewPage />} />
-           
+
           <Route path="/reading" element={<ReadingPracticePage />} />
           <Route path="/reading/practice" element={<ReadingPracticePage />} />
           <Route path="/reading/result" element={<ReadingResultPage />} />
@@ -47,7 +49,7 @@ const App = () => {
           <Route path="/listening/dictation" element={<ListeningDictationPage />} />
           <Route path="/listening/result" element={<ListeningResultPage />} />
           <Route path="/listening/dictation-result" element={<ListeningResultPage />} />
-          
+
           {/* Speaking Module Routes */}
           <Route path="/speaking/practice/topic/:topicId" element={<SpeakingPracticePage />} />
           <Route path="/speaking/practice/prompt/:promptId" element={<SpeakingPracticePage />} />

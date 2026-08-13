@@ -194,9 +194,6 @@ export async function getListeningSession(sessionId: string): Promise<ListeningS
   return data
 }
 
-/**
- * Lấy các session đang làm dở (IN_PROGRESS) của user - dùng để check draft status cho Listening
- */
 export async function getInProgressListeningSessions(
   userId: string
 ): Promise<any[]> {
@@ -205,4 +202,12 @@ export async function getInProgressListeningSessions(
     { params: { status: 'IN_PROGRESS', limit: 100 } }
   )
   return data.items
+}
+
+export async function getListeningHistory(
+  userId: string,
+  params: { page?: number; limit?: number; status?: string } = {}
+): Promise<any> {
+  const { data } = await axiosClient.get(`/listening/users/${userId}/history`, { params })
+  return data
 }
