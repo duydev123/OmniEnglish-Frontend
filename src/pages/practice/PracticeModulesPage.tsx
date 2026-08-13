@@ -1,47 +1,106 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   Headphones, BookOpen, Mic, PenTool, SlidersHorizontal,
   ArrowRight, RotateCcw, Check, ChevronDown, ChevronLeft, ChevronRight,
-  FileEdit
+  FileEdit, Clock, HelpCircle, Zap, Loader2, Filter, FileText
 } from 'lucide-react'
 import AppLayout from '../../components/common/AppLayout'
-import type { ListeningPracticeCardData } from '../../types/listening'
-import { getPassages, getInProgressSessions, type PassageSummary, type UserHistoryItem } from '../../services/readingApi'
-import { getListeningPassages, getInProgressListeningSessions, type ListeningPassageSummary } from '../../services/listeningApi'
+import { useUserStore, initialUser } from '../../stores/user/useUserStore'
+import { userApi } from '../../services/userApi'
+import { useToast } from '../../components/common/Toast'
+import { LogoutModal } from '../../components/common/LogoutModal'
+import { getPassages, getInProgressSessions, getUserHistory, type PassageSummary, type UserHistoryItem } from '../../services/readingApi'
+import { getListeningPassages, getInProgressListeningSessions, getListeningHistory, type ListeningPassageSummary } from '../../services/listeningApi'
+import { speakingApi } from '../../services/speakingApi'
+import { writingApi } from '../../services/writingApi'
+import type { SpeakingTopic, ShadowingSentence } from '../../types/speaking'
+import type { WritingPrompt } from '../../types/writing'
 
 type ModuleCategory = 'listening' | 'reading' | 'speaking' | 'writing'
 
 const PAGE_SIZE_OPTIONS = [6, 10, 20, 50, 100]
 const DEFAULT_PAGE_SIZE = 6
-const READING_USER_ID = 'test_user_001'
 
 export default function PracticeModulesPage() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<ModuleCategory>('listening')
+  const { category } = useParams<{ category: string }>()
+  const activeTab = (category as ModuleCategory) || 'listening'
+  const { showToast } = useToast()
+  const { user, setUser } = useUserStore()
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [showPageSizeDropdown, setShowPageSizeDropdown] = useState(false)
   const pageSizeDropdownRef = useRef<HTMLDivElement>(null)
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  // History states for highest score checking
+  const [readingHistoryMap, setReadingHistoryMap] = useState<Record<string, UserHistoryItem>>({})
+  const [listeningHistoryMap, setListeningHistoryMap] = useState<Record<string, any>>({})
+
+  // Reading state
   const [readingPassages, setReadingPassages] = useState<PassageSummary[]>([])
   const [readingLoading, setReadingLoading] = useState(false)
   const [readingError, setReadingError] = useState<string | null>(null)
   const [readingMeta, setReadingMeta] = useState({ page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, total_pages: 1 })
-
-  // Draft map: passageId → UserHistoryItem (IN_PROGRESS session)
   const [draftMap, setDraftMap] = useState<Record<string, UserHistoryItem>>({})
-  const [listeningDraftMap, setListeningDraftMap] = useState<Record<string, any>>({})
   const [draftLoading, setDraftLoading] = useState(false)
 
+  // Listening state
   const [listeningPassages, setListeningPassages] = useState<ListeningPassageSummary[]>([])
   const [listeningLoading, setListeningLoading] = useState(false)
   const [listeningError, setListeningError] = useState<string | null>(null)
   const [listeningMeta, setListeningMeta] = useState({ page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, total_pages: 1 })
+  const [listeningDraftMap, setListeningDraftMap] = useState<Record<string, any>>({})
+
+  // Writing state
+  const [writingItems, setWritingItems] = useState<WritingPrompt[]>([])
+  const [writingLoading, setWritingLoading] = useState(false)
+  const [writingError, setWritingError] = useState<string | null>(null)
+  const [writingMeta, setWritingMeta] = useState({ page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, total_pages: 1 })
+
+  // Speaking state
+  const [speakingSubTab, setSpeakingSubTab] = useState<'ielts' | 'shadowing'>('ielts')
+  const [speakingTopics, setSpeakingTopics] = useState<SpeakingTopic[]>([])
+  const [shadowingSentences, setShadowingSentences] = useState<ShadowingSentence[]>([])
+  const [speakingLoading, setSpeakingLoading] = useState(false)
+  const [speakingError, setSpeakingError] = useState<string | null>(null)
+  const [speakingMeta, setSpeakingMeta] = useState({ page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, total_pages: 1 })
 
   const [selectedQuestionType, setSelectedQuestionType] = useState<string>('All')
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
   const typeDropdownRef = useRef<HTMLDivElement>(null)
+
+  const username = user?.username || "User"
+  const userId = user?.id
+
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    setUser(initialUser)
+    showToast("Đã đăng xuất tài khoản!", "info")
+    navigate("/login")
+  }
+
+  // Load user profile
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        navigate("/login")
+        return
+      }
+      const data = await userApi.getUserProfile()
+      if (data) {
+        setUser(data)
+      } else {
+        localStorage.removeItem("token")
+        setUser(initialUser)
+        navigate("/login")
+      }
+    }
+    fetchUserData()
+  }, [navigate, setUser])
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -60,9 +119,9 @@ export default function PracticeModulesPage() {
   // Reset page on tab / filter / pageSize change
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeTab, selectedQuestionType, pageSize])
+  }, [activeTab, selectedQuestionType, pageSize, speakingSubTab])
 
-  // Fetch reading passages
+  // Fetch Reading Passages
   useEffect(() => {
     if (activeTab !== 'reading') return
     let cancelled = false
@@ -88,13 +147,13 @@ export default function PracticeModulesPage() {
     return () => { cancelled = true }
   }, [activeTab, currentPage, pageSize, selectedQuestionType])
 
-  // Fetch in-progress sessions for reading to build draftMap
+  // Fetch Reading In-progress drafts and completed history
   useEffect(() => {
-    if (activeTab !== 'reading') return
+    if (activeTab !== 'reading' || !userId) return
     let cancelled = false
     setDraftLoading(true)
 
-    getInProgressSessions(READING_USER_ID)
+    getInProgressSessions(userId)
       .then((sessions) => {
         if (cancelled) return
         const map: Record<string, UserHistoryItem> = {}
@@ -104,32 +163,24 @@ export default function PracticeModulesPage() {
       .catch(() => { /* silent - draft info is optional */ })
       .finally(() => { if (!cancelled) setDraftLoading(false) })
 
-    return () => { cancelled = true }
-  }, [activeTab])
-
-  // Fetch in-progress sessions for listening
-  useEffect(() => {
-    if (activeTab !== 'listening') return
-    let cancelled = false
-    setDraftLoading(true)
-
-    getInProgressListeningSessions(READING_USER_ID)
-      .then((sessions) => {
+    getUserHistory(userId, { status: 'COMPLETED', limit: 100 })
+      .then((res) => {
         if (cancelled) return
-        const map: Record<string, any> = {}
-        sessions.forEach((s) => {
-          const key = `${s.passage_id}-${s.session_type.toLowerCase()}`
-          map[key] = s
+        const map: Record<string, UserHistoryItem> = {}
+        res.items.forEach((s: UserHistoryItem) => {
+          const existing = map[s.passage_id]
+          if (!existing || s.score > existing.score) {
+            map[s.passage_id] = s
+          }
         })
-        setListeningDraftMap(map)
+        setReadingHistoryMap(map)
       })
-      .catch(() => { /* silent */ })
-      .finally(() => { if (!cancelled) setDraftLoading(false) })
+      .catch(() => {})
 
     return () => { cancelled = true }
-  }, [activeTab])
+  }, [activeTab, userId])
 
-  // Fetch listening passages
+  // Fetch Listening Passages
   useEffect(() => {
     if (activeTab !== 'listening') return
     let cancelled = false
@@ -164,78 +215,197 @@ export default function PracticeModulesPage() {
     return () => { cancelled = true }
   }, [activeTab, currentPage, pageSize, selectedQuestionType])
 
-  // Build cards với draft info (Listening tạo 2 thẻ song song cho mỗi passage: Comprehension & Dictation)
-  let cards: (ListeningPracticeCardData & { draftSession?: any })[] = []
-  
+  // Fetch Listening In-progress drafts and completed history
+  useEffect(() => {
+    if (activeTab !== 'listening' || !userId) return
+    let cancelled = false
+    setDraftLoading(true)
+
+    getInProgressListeningSessions(userId)
+      .then((sessions) => {
+        if (cancelled) return
+        const map: Record<string, any> = {}
+        sessions.forEach((s) => {
+          const key = `${s.passage_id}-${s.session_type.toLowerCase()}`
+          map[key] = s
+        })
+        setListeningDraftMap(map)
+      })
+      .catch(() => { /* silent */ })
+      .finally(() => { if (!cancelled) setDraftLoading(false) })
+
+    getListeningHistory(userId, { status: 'COMPLETED', limit: 100 })
+      .then((res) => {
+        if (cancelled) return
+        const map: Record<string, any> = {}
+        res.items.forEach((s: any) => {
+          const key = `${s.passage_id}-${s.session_type.toLowerCase()}`
+          const existing = map[key]
+          const scoreVal = s.score || s.accuracy_rate || 0
+          const existingScore = existing ? (existing.score || existing.accuracy_rate || 0) : 0
+          if (!existing || scoreVal > existingScore) {
+            map[key] = s
+          }
+        })
+        setListeningHistoryMap(map)
+      })
+      .catch(() => {})
+
+    return () => { cancelled = true }
+  }, [activeTab, userId])
+
+  // Fetch Writing Prompts
+  useEffect(() => {
+    if (activeTab !== 'writing') return
+    let cancelled = false
+    setWritingLoading(true)
+    setWritingError(null)
+
+    writingApi.getPrompts()
+      .then((res) => {
+        if (cancelled) return
+        // writingApi doesn't support backend pagination metadata currently, mock it locally
+        const startIndex = (currentPage - 1) * pageSize
+        const sliced = res.slice(startIndex, startIndex + pageSize)
+        setWritingItems(sliced)
+        setWritingMeta({
+          page: currentPage,
+          limit: pageSize,
+          total: res.length,
+          total_pages: Math.max(1, Math.ceil(res.length / pageSize))
+        })
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setWritingError(err?.message || 'Không thể tải danh sách bài viết')
+      })
+      .finally(() => { if (!cancelled) setWritingLoading(false) })
+
+    return () => { cancelled = true }
+  }, [activeTab, currentPage, pageSize])
+
+  // Fetch Speaking Topics & Shadowing
+  useEffect(() => {
+    if (activeTab !== 'speaking') return
+    let cancelled = false
+    setSpeakingLoading(true)
+    setSpeakingError(null)
+
+    if (speakingSubTab === 'ielts') {
+      speakingApi.getTopics(currentPage, pageSize)
+        .then((res) => {
+          if (cancelled) return
+          setSpeakingTopics(res)
+          // Mock pagination since speakingApi returns items directly
+          const hasMore = res.length === pageSize
+          setSpeakingMeta({
+            page: currentPage,
+            limit: pageSize,
+            total: currentPage * pageSize + (hasMore ? pageSize : 0),
+            total_pages: hasMore ? currentPage + 1 : currentPage
+          })
+        })
+        .catch((err) => {
+          if (cancelled) return
+          setSpeakingError(err?.message || 'Không thể tải danh sách IELTS Speaking Topics')
+        })
+        .finally(() => { if (!cancelled) setSpeakingLoading(false) })
+    } else {
+      speakingApi.getShadowingSentences(currentPage, pageSize)
+        .then((res) => {
+          if (cancelled) return
+          setShadowingSentences(res)
+          const hasMore = res.length === pageSize
+          setSpeakingMeta({
+            page: currentPage,
+            limit: pageSize,
+            total: currentPage * pageSize + (hasMore ? pageSize : 0),
+            total_pages: hasMore ? currentPage + 1 : currentPage
+          })
+        })
+        .catch((err) => {
+          if (cancelled) return
+          setSpeakingError(err?.message || 'Không thể tải danh sách Shadowing sentences')
+        })
+        .finally(() => { if (!cancelled) setSpeakingLoading(false) })
+    }
+
+    return () => { cancelled = true }
+  }, [activeTab, speakingSubTab, currentPage, pageSize])
+
+  // Process Listening Cards
+  let listeningCards: any[] = []
   if (activeTab === 'listening') {
-    const list: any[] = []
     listeningPassages.forEach((item) => {
       // 1. Thẻ Comprehension (Luyện nghe hiểu)
-      const compDraft = listeningDraftMap[`${item.id}-comprehension`]
-      const compProgress = compDraft && item.total_questions > 0
+      const compKey = `${item.id}-comprehension`
+      const compCompleted = listeningHistoryMap[compKey]
+      const compIsCompleted = !!compCompleted
+
+      const compDraft = listeningDraftMap[compKey]
+      const compIsDraft = !compIsCompleted && !!compDraft
+      const compProgress = compIsCompleted ? 100 : (compDraft && item.total_questions > 0
         ? Math.min(100, Math.round((compDraft.completed_questions ?? 0) / item.total_questions * 100))
-        : 0
+        : 0)
       
-      list.push({
+      listeningCards.push({
         id: `${item.id}-comp`,
         title: `${item.title} (Comprehension)`,
         subtitle: `${item.unit_code ?? 'UNIT'} • ${item.total_questions} câu hỏi • ${item.time_limit_minutes} phút`,
         category: 'listening' as const,
         progressPercentage: compProgress,
-        isCompleted: false,
+        isCompleted: compIsCompleted,
+        completedSession: compCompleted,
         href: `/listening/practice?id=${item.id}`,
         question_types: item.question_types ? item.question_types.filter(t => t !== 'Dictation') : [],
         draftSession: compDraft,
+        isDraft: compIsDraft,
         total_questions: item.total_questions,
       })
 
       // 2. Thẻ Dictation (Chép chính tả)
-      const dictDraft = listeningDraftMap[`${item.id}-dictation`]
-      const dictProgress = dictDraft && dictDraft.words_typed > 0 ? 50 : 0 // Show 50% if there is typed content
+      const dictKey = `${item.id}-dictation`
+      const dictCompleted = listeningHistoryMap[dictKey]
+      const dictIsCompleted = !!dictCompleted
 
-      list.push({
+      const dictDraft = listeningDraftMap[dictKey]
+      const dictIsDraft = !dictIsCompleted && !!dictDraft
+      const dictProgress = dictIsCompleted ? 100 : (dictDraft && dictDraft.words_typed > 0 ? 50 : 0)
+
+      listeningCards.push({
         id: `${item.id}-dict`,
         title: `${item.title} (Dictation)`,
         subtitle: `${item.unit_code ?? 'UNIT'} • Chép chính tả • ${item.time_limit_minutes} phút`,
         category: 'listening' as const,
         progressPercentage: dictProgress,
-        isCompleted: false,
+        isCompleted: dictIsCompleted,
+        completedSession: dictCompleted,
         href: `/listening/dictation?id=${item.id}`,
         question_types: ['Dictation'],
         draftSession: dictDraft,
-        total_questions: 1, // Dictation can be considered 1 task
+        isDraft: dictIsDraft,
+        total_questions: 1,
       })
     })
 
-    // Lọc lại các card listening dựa trên selectedQuestionType được chọn ở dropdown filter
     if (selectedQuestionType && selectedQuestionType !== 'All') {
-      cards = list.filter((c) => c.question_types.includes(selectedQuestionType))
-    } else {
-      cards = list
+      listeningCards = listeningCards.filter((c) => c.question_types.includes(selectedQuestionType))
     }
-  } else {
-    cards = readingPassages.map((item) => {
-      const draft = draftMap[item.id]
-      const progressPct = draft && item.total_questions > 0
-        ? Math.min(100, Math.round((draft.completed_questions ?? 0) / item.total_questions * 100))
-        : 0
-      return {
-        id: item.id,
-        title: item.title,
-        subtitle: `${item.topic} • ${item.total_questions} câu hỏi • ${item.time_limit_minutes} phút`,
-        category: 'reading' as const,
-        progressPercentage: progressPct,
-        isCompleted: false,
-        href: `/reading/practice?id=${item.id}`,
-        question_types: item.question_types,
-        draftSession: draft,
-      }
-    })
   }
 
-  const activeMeta = activeTab === 'listening' ? listeningMeta : readingMeta
-  const activeLoading = (activeTab === 'listening' ? listeningLoading : readingLoading) || (activeTab === 'reading' && draftLoading)
-  const activeError = activeTab === 'listening' ? listeningError : readingError
+  // Active meta and pagination values helper
+  const getActiveMeta = () => {
+    switch (activeTab) {
+      case 'reading': return readingMeta
+      case 'listening': return listeningMeta
+      case 'writing': return writingMeta
+      case 'speaking': return speakingMeta
+      default: return { page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, total_pages: 1 }
+    }
+  }
+
+  const activeMeta = getActiveMeta()
+  const activeLoading = readingLoading || listeningLoading || writingLoading || speakingLoading || draftLoading
 
   const pageNumbers = Array.from({ length: Math.max(1, Math.min(5, activeMeta.total_pages)) }, (_, index) => {
     const startPage = Math.max(1, Math.min(currentPage - 2, Math.max(1, activeMeta.total_pages - 4)))
@@ -243,7 +413,7 @@ export default function PracticeModulesPage() {
   }).filter((page) => page <= activeMeta.total_pages)
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice' }]}>
+    <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice-modules' }]}>
       <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
@@ -267,10 +437,10 @@ export default function PracticeModulesPage() {
             ).map(({ key, label, Icon }) => (
               <button
                 key={key}
-                onClick={() => setActiveTab(key)}
+                onClick={() => { navigate(`/practice-modules/${key}`); setSelectedQuestionType('All') }}
                 className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shrink-0 ${activeTab === key
-                    ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
-                    : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
+                  ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-extrabold'
+                  : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
                   }`}
               >
                 <Icon size={16} />
@@ -279,184 +449,600 @@ export default function PracticeModulesPage() {
             ))}
           </div>
 
-          {/* Filter Dropdown */}
-          <div className="relative shrink-0" ref={typeDropdownRef}>
-            <div
-              onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-              className="bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-6 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs cursor-pointer hover:border-slate-300"
-            >
-              <div className="flex items-center gap-2 text-slate-500">
-                <SlidersHorizontal size={16} />
-                <span>{selectedQuestionType === 'All' ? 'Filter by question type' : `Type: ${selectedQuestionType}`}</span>
+          {/* Filter Dropdown (Only for listening & reading) */}
+          {(activeTab === 'reading' || activeTab === 'listening') && (
+            <div className="relative shrink-0" ref={typeDropdownRef}>
+              <div
+                onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                className="bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-6 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs cursor-pointer hover:border-slate-300"
+              >
+                <div className="flex items-center gap-2 text-slate-500">
+                  <SlidersHorizontal size={16} />
+                  <span>{selectedQuestionType === 'All' ? 'Filter by question type' : `Type: ${selectedQuestionType}`}</span>
+                </div>
+                <ChevronDown size={16} className="text-slate-400 transition-transform duration-200" style={{ transform: showTypeDropdown ? 'rotate(180deg)' : 'none' }} />
               </div>
-              <ChevronDown size={16} className="text-slate-400 transition-transform duration-200" style={{ transform: showTypeDropdown ? 'rotate(180deg)' : 'none' }} />
+              {showTypeDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-lg z-50 py-1.5 overflow-hidden">
+                  {(activeTab === 'reading'
+                    ? ['All', 'Multiple Choice', 'Heading Matching', 'Fill Blank', 'T/F/NG']
+                    : ['All', 'Multiple Choice', 'Fill Blank', 'Dictation']
+                  ).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => { setSelectedQuestionType(type); setShowTypeDropdown(false) }}
+                      className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between ${selectedQuestionType === type ? 'bg-blue-50 text-[#1D4ED8]' : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                    >
+                      <span>{type}</span>
+                      {selectedQuestionType === type && <Check size={14} className="text-[#1D4ED8] stroke-[2.5]" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            {showTypeDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-lg z-50 py-1.5 overflow-hidden">
-                {(activeTab === 'reading'
-                  ? ['All', 'Multiple Choice', 'Heading Matching', 'Fill Blank', 'T/F/NG']
-                  : ['All', 'Multiple Choice', 'Fill Blank', 'Dictation']
-                ).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => { setSelectedQuestionType(type); setShowTypeDropdown(false) }}
-                    className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between ${selectedQuestionType === type ? 'bg-blue-50 text-[#1D4ED8]' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                  >
-                    <span>{type}</span>
-                    {selectedQuestionType === type && <Check size={14} className="text-[#1D4ED8] stroke-[2.5]" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Loading */}
+        {/* Loading Indicator */}
         {activeLoading && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm font-medium text-slate-600">
-            {activeTab === 'listening' ? 'Đang tải danh sách bài nghe từ backend...' : 'Đang tải danh sách passage từ backend...'}
+          <div className="flex flex-col items-center justify-center py-16 space-y-3">
+            <Loader2 className="w-8 h-8 text-[#1D4ED8] animate-spin" />
+            <span className="text-xs font-semibold text-slate-500">
+              Đang tải danh sách bài tập từ hệ thống...
+            </span>
           </div>
         )}
 
-        {/* Error */}
-        {activeError && (
+        {/* Error Notification */}
+        {readingError && activeTab === 'reading' && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
-            {activeError}
+            {readingError}
+          </div>
+        )}
+        {listeningError && activeTab === 'listening' && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
+            {listeningError}
+          </div>
+        )}
+        {writingError && activeTab === 'writing' && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
+            {writingError}
+          </div>
+        )}
+        {speakingError && activeTab === 'speaking' && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
+            {speakingError}
           </div>
         )}
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {cards.map((card) => {
-            const Icon = card.category === 'reading' ? BookOpen : Headphones
-            const draft = 'draftSession' in card ? card.draftSession : undefined
-            const isDraft = !!draft
-            const completedAnswers = isDraft ? (draft!.completed_questions ?? 0) : 0
-            const totalQ = isDraft ? (('total_questions' in card ? card.total_questions : 0) || draft!.total_questions || 0) : 0
-            const draftPct = card.progressPercentage
+        {!activeLoading && (
+          <>
+            {activeTab === 'reading' && (
+              readingPassages.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {readingPassages.map((item) => {
+                    const completedSession = readingHistoryMap[item.id]
+                    const isCompleted = !!completedSession
+                    const draft = draftMap[item.id]
+                    const isDraft = !isCompleted && !!draft
+                    const completedAnswers = isDraft ? (draft.completed_questions ?? 0) : 0
+                    const totalQ = isDraft ? (item.total_questions || draft.total_questions || 0) : 0
+                    const progressPct = isCompleted ? 100 : (draft && item.total_questions > 0
+                      ? Math.min(100, Math.round((draft.completed_questions ?? 0) / item.total_questions * 100))
+                      : 0)
 
-            return (
-              <div
-                key={card.id}
-                onClick={() => navigate(card.href)}
-                className={`bg-white border rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 relative overflow-hidden group ${isDraft
-                    ? 'border-amber-200 hover:border-amber-400'
-                    : 'border-slate-200/90 hover:border-blue-300'
-                  }`}
-              >
-                {/* Draft ribbon */}
-                {isDraft && (
-                  <div className="absolute top-0 right-0">
-                    <div className="bg-amber-400 text-amber-900 text-[9px] font-black tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl flex items-center gap-1">
-                      <FileEdit size={10} />
-                      DRAFT
-                    </div>
-                  </div>
-                )}
-
-                {/* Top Row */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3.5">
-                    {/* Icon */}
-                    <div
-                      className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${isDraft
-                          ? 'bg-amber-50 text-amber-600'
-                          : card.isCompleted
-                            ? 'bg-emerald-100/70 text-emerald-700'
-                            : 'bg-blue-50 text-[#1D4ED8]'
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => navigate(`/reading/practice?id=${item.id}`)}
+                        className={`bg-white border rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 relative overflow-hidden group ${
+                          isCompleted
+                            ? 'border-emerald-200 hover:border-emerald-400'
+                            : isDraft
+                            ? 'border-amber-200 hover:border-amber-400'
+                            : 'border-slate-200/90 hover:border-blue-300'
                         }`}
-                    >
-                      {card.isCompleted ? (
-                        <Check size={20} className="stroke-[3]" />
-                      ) : isDraft ? (
-                        <FileEdit size={20} />
-                      ) : (
-                        <Icon size={20} />
-                      )}
-                    </div>
+                      >
+                        {isCompleted ? (
+                          <div className="absolute top-0 right-0">
+                            <div className="bg-emerald-500 text-white text-[9px] font-black tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl flex items-center gap-1">
+                              <Check size={10} className="stroke-[3]" />
+                              COMPLETED
+                            </div>
+                          </div>
+                        ) : isDraft ? (
+                          <div className="absolute top-0 right-0">
+                            <div className="bg-amber-400 text-amber-900 text-[9px] font-black tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl flex items-center gap-1">
+                              <FileEdit size={10} />
+                              DRAFT
+                            </div>
+                          </div>
+                        ) : null}
 
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                        {card.category}
-                      </span>
-                      <h3 className={`font-bold text-slate-900 text-base leading-snug transition-colors ${isDraft ? 'group-hover:text-amber-600' : 'group-hover:text-[#1D4ED8]'
-                        }`}>
-                        {card.title}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-normal">{card.subtitle}</p>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3.5">
+                            <div
+                              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                                isCompleted
+                                  ? 'bg-emerald-50 text-emerald-600'
+                                  : isDraft
+                                  ? 'bg-amber-50 text-amber-600'
+                                  : 'bg-blue-50 text-[#1D4ED8]'
+                              }`}
+                            >
+                              {isCompleted ? <Check size={20} className="stroke-[3]" /> : <BookOpen size={20} />}
+                            </div>
 
-                      {'question_types' in card && card.question_types && card.question_types.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {card.question_types.map((type) => (
-                            <span key={type} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-black tracking-wider uppercase">
-                              {type}
-                            </span>
-                          ))}
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                                READING PASSAGE
+                              </span>
+                              <h3 className={`font-bold text-slate-900 text-base leading-snug transition-colors ${
+                                isCompleted
+                                  ? 'group-hover:text-emerald-600'
+                                  : isDraft
+                                  ? 'group-hover:text-amber-600'
+                                  : 'group-hover:text-[#1D4ED8]'
+                              }`}>
+                                {item.title}
+                              </h3>
+                              <p className="text-xs text-slate-500 font-normal">
+                                {item.topic} • {item.total_questions} câu hỏi • {item.time_limit_minutes} phút
+                              </p>
+
+                              {item.question_types && item.question_types.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {item.question_types.map((type) => (
+                                    <span key={type} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-black tracking-wider uppercase">
+                                      {type}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {isCompleted && completedSession && (
+                                <p className="text-[10px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
+                                  <Check size={9} className="stroke-[3]" />
+                                  Highest Score: {completedSession.score}/{completedSession.total_questions || item.total_questions} ({completedSession.accuracy_rate}%)
+                                </p>
+                              )}
+
+                              {isDraft && (
+                                <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1">
+                                  <FileEdit size={9} />
+                                  Tiếp tục từ câu đã làm dở
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="shrink-0">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                              isCompleted
+                                ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                : isDraft
+                                ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                : 'bg-blue-50 text-[#1D4ED8] hover:bg-blue-100'
+                            }`}>
+                              <ArrowRight size={16} />
+                            </div>
+                          </div>
                         </div>
-                      )}
 
-                      {/* Draft progress hint */}
-                      {isDraft && (
-                        <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1">
-                          <FileEdit size={9} />
-                          Tiếp tục từ câu đã làm dở
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                        <div className="space-y-2 pt-2">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            {isCompleted ? (
+                              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md tracking-wider">
+                                COMPLETED
+                              </span>
+                            ) : isDraft ? (
+                              <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-md tracking-wider flex items-center gap-1">
+                                <FileEdit size={9} />
+                                DRAFT — {completedAnswers}/{totalQ} câu
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-xs font-semibold">Progress</span>
+                            )}
 
-                  {/* Action button */}
-                  <div className="shrink-0">
-                    {card.isCompleted ? (
-                      <div className="w-9 h-9 rounded-full bg-blue-50 text-[#1D4ED8] flex items-center justify-center hover:bg-blue-100 transition-colors">
-                        <RotateCcw size={16} />
+                            <span className={isCompleted ? 'text-emerald-600 font-bold' : isDraft ? 'text-amber-600 font-bold' : 'text-[#1D4ED8] font-bold'}>
+                              {progressPct}%
+                            </span>
+                          </div>
+
+                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                isCompleted ? 'bg-emerald-500' : isDraft ? 'bg-amber-400' : 'bg-[#1D4ED8]'
+                              }`}
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    ) : isDraft ? (
-                      <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 transition-colors">
-                        <ArrowRight size={16} />
-                      </div>
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-blue-50 text-[#1D4ED8] flex items-center justify-center hover:bg-blue-100 transition-colors">
-                        <ArrowRight size={16} />
-                      </div>
-                    )}
-                  </div>
+                    )
+                  })}
                 </div>
+              ) : (
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                  <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h3 className="text-sm font-bold text-slate-700">Chưa có bài đọc nào</h3>
+                  <p className="text-xs text-slate-400">Hệ thống chưa tìm thấy dữ liệu bài Reading trong cơ sở dữ liệu.</p>
+                </div>
+              )
+            )}
 
-                {/* Bottom: Status + Progress Bar */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between text-xs font-bold">
-                    {card.isCompleted ? (
-                      <span className="px-2.5 py-0.5 bg-emerald-100/70 text-emerald-800 text-[10px] font-black rounded-md tracking-wider">
-                        COMPLETED
-                      </span>
-                    ) : isDraft ? (
-                      <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-md tracking-wider flex items-center gap-1">
-                        <FileEdit size={9} />
-                        {draft?.session_type === 'DICTATION' ? 'DRAFT — Dictation' : `DRAFT — ${completedAnswers}/${totalQ} câu`}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-xs font-semibold">Progress</span>
-                    )}
+            {activeTab === 'listening' && (
+              listeningCards.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {listeningCards.map((card) => {
+                    const draft = card.draftSession
+                    const isDraft = card.isDraft
+                    const isCompleted = card.isCompleted
+                    const completedSession = card.completedSession
+                    const completedAnswers = isDraft ? (draft.completed_questions ?? 0) : 0
+                    const totalQ = isDraft ? (card.total_questions || draft.total_questions || 0) : 0
+                    const draftPct = card.progressPercentage
 
-                    <span className={card.isCompleted ? 'text-emerald-700 font-bold' : isDraft ? 'text-amber-600 font-bold' : 'text-[#1D4ED8] font-bold'}>
-                      {card.isCompleted ? '100%' : isDraft ? `${draftPct}%` : `${card.progressPercentage}%`}
-                    </span>
-                  </div>
-
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${card.isCompleted ? 'bg-emerald-600' : isDraft ? 'bg-amber-400' : 'bg-[#1D4ED8]'
+                    return (
+                      <div
+                        key={card.id}
+                        onClick={() => navigate(card.href)}
+                        className={`bg-white border rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 relative overflow-hidden group ${
+                          isCompleted
+                            ? 'border-emerald-200 hover:border-emerald-400'
+                            : isDraft
+                            ? 'border-amber-200 hover:border-amber-400'
+                            : 'border-slate-200/90 hover:border-blue-300'
                         }`}
-                      style={{ width: `${card.isCompleted ? 100 : isDraft ? draftPct : card.progressPercentage}%` }}
-                    />
-                  </div>
+                      >
+                        {isCompleted ? (
+                          <div className="absolute top-0 right-0">
+                            <div className="bg-emerald-500 text-white text-[9px] font-black tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl flex items-center gap-1">
+                              <Check size={10} className="stroke-[3]" />
+                              COMPLETED
+                            </div>
+                          </div>
+                        ) : isDraft ? (
+                          <div className="absolute top-0 right-0">
+                            <div className="bg-amber-400 text-amber-900 text-[9px] font-black tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl flex items-center gap-1">
+                              <FileEdit size={10} />
+                              DRAFT
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3.5">
+                            <div
+                              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                                isCompleted
+                                  ? 'bg-emerald-50 text-emerald-600'
+                                  : isDraft
+                                  ? 'bg-amber-50 text-amber-600'
+                                  : 'bg-blue-50 text-[#1D4ED8]'
+                              }`}
+                            >
+                              {isCompleted ? <Check size={20} className="stroke-[3]" /> : <Headphones size={20} />}
+                            </div>
+
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                                LISTENING PASSAGE
+                              </span>
+                              <h3 className={`font-bold text-slate-900 text-base leading-snug transition-colors ${
+                                isCompleted
+                                  ? 'group-hover:text-emerald-600'
+                                  : isDraft
+                                  ? 'group-hover:text-amber-600'
+                                  : 'group-hover:text-[#1D4ED8]'
+                              }`}>
+                                {card.title}
+                              </h3>
+                              <p className="text-xs text-slate-500 font-normal">{card.subtitle}</p>
+
+                              {card.question_types && card.question_types.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {card.question_types.map((type: string) => (
+                                    <span key={type} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-black tracking-wider uppercase">
+                                      {type}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {isCompleted && completedSession && (
+                                <p className="text-[10px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
+                                  <Check size={9} className="stroke-[3]" />
+                                  Highest Score: {completedSession.session_type === 'DICTATION' ? 'Dictation completed' : `${completedSession.score || completedSession.accuracy_rate || 0}%`}
+                                </p>
+                              )}
+
+                              {isDraft && (
+                                <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1">
+                                  <FileEdit size={9} />
+                                  Tiếp tục từ câu đã làm dở
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="shrink-0">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                              isCompleted
+                                ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                : isDraft
+                                ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                : 'bg-blue-50 text-[#1D4ED8] hover:bg-blue-100'
+                            }`}>
+                              <ArrowRight size={16} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 pt-2">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            {isCompleted ? (
+                              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md tracking-wider">
+                                COMPLETED
+                              </span>
+                            ) : isDraft ? (
+                              <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-md tracking-wider flex items-center gap-1">
+                                <FileEdit size={9} />
+                                {draft?.session_type === 'DICTATION' ? 'DRAFT — Dictation' : `DRAFT — ${completedAnswers}/${totalQ} câu`}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-xs font-semibold">Progress</span>
+                            )}
+
+                            <span className={isCompleted ? 'text-emerald-600 font-bold' : isDraft ? 'text-amber-600 font-bold' : 'text-[#1D4ED8] font-bold'}>
+                              {draftPct}%
+                            </span>
+                          </div>
+
+                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                isCompleted ? 'bg-emerald-500' : isDraft ? 'bg-amber-400' : 'bg-[#1D4ED8]'
+                              }`}
+                              style={{ width: `${draftPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
+              ) : (
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                  <Headphones className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h3 className="text-sm font-bold text-slate-700">Chưa có bài nghe nào</h3>
+                  <p className="text-xs text-slate-400">Hệ thống chưa tìm thấy dữ liệu bài Listening trong cơ sở dữ liệu.</p>
+                </div>
+              )
+            )}
+
+            {activeTab === 'writing' && (
+              writingItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {writingItems.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => navigate(`/writing/editor/${item.id}`)}
+                      className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-purple-100/80 text-purple-700 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 block">
+                                {item.task_type === 'WITH_GRAPH' ? 'TASK 1 • CHART' : 'TASK 2 • ESSAY'}
+                              </span>
+                              {item.user_status === 'DRAFT' && (
+                                <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-extrabold rounded-md uppercase tracking-wider">
+                                  Draft
+                                </span>
+                              )}
+                              {item.user_status === 'REVIEWED' && (
+                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-extrabold rounded-md uppercase tracking-wider">
+                                  Reviewed
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-semibold text-slate-400">
+                              {item.ref_id || 'Academic'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          aria-label="Start Writing"
+                          className="w-9 h-9 rounded-full bg-purple-50 text-purple-700 group-hover:bg-[#1e50e6] group-hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-xs"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <h3 className="text-base font-extrabold text-slate-900 group-hover:text-purple-700 transition-colors leading-snug line-clamp-2">
+                        {item.title}
+                      </h3>
+
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
+                        {item.task_description}
+                      </p>
+
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{item.word_count_target}+ Words</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{item.time_limit_minutes} Mins</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                  <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h3 className="text-sm font-bold text-slate-700">Chưa có bài viết nào</h3>
+                  <p className="text-xs text-slate-400">Hệ thống chưa tìm thấy dữ liệu bài Writing.</p>
+                </div>
+              )
+            )}
+
+            {activeTab === 'speaking' && (
+              <div className="space-y-4">
+                {/* Sub-tab selection for Speaking: IELTS Tests vs Shadowing */}
+                <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+                  <button
+                    onClick={() => setSpeakingSubTab("ielts")}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${speakingSubTab === "ielts"
+                        ? "bg-[#1e50e6] text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                  >
+                    IELTS Speaking Tests
+                  </button>
+                  <button
+                    onClick={() => setSpeakingSubTab("shadowing")}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${speakingSubTab === "shadowing"
+                        ? "bg-[#1e50e6] text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                  >
+                    Shadowing Practice
+                  </button>
+                </div>
+
+                {speakingSubTab === 'ielts' ? (
+                  speakingTopics.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                      {speakingTopics.map((topic, idx) => (
+                        <div
+                          key={topic.id}
+                          onClick={() => navigate(`/speaking/practice/topic/${topic.id}`)}
+                          className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-blue-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-blue-100/80 text-[#1e50e6] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                <Mic className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#1e50e6] block">
+                                  SPEAKING
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-400">
+                                  {topic.is_full_test ? "Full Mock Test" : "Topic Practice"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              aria-label="Start Speaking Test"
+                              className="w-9 h-9 rounded-full bg-blue-50 text-[#1e50e6] group-hover:bg-[#1e50e6] group-hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-xs"
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#1e50e6] transition-colors leading-snug line-clamp-2">
+                            {topic.title || `Speaking Authentic Test Practice ${idx + 1}`}
+                          </h3>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+                              <span>{topic.tags?.join(" • ") || "Part 1, 2, 3"}</span>
+                              <span className="font-bold text-blue-600">{topic.prompt_count || 3} Prompts</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-[#1e50e6] rounded-full w-0 group-hover:w-full transition-all duration-500" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                      <Mic className="w-10 h-10 text-slate-300 mx-auto" />
+                      <h3 className="text-sm font-bold text-slate-700">No speaking topics found</h3>
+                      <p className="text-xs text-slate-400">Click below to start a quick sample practice.</p>
+                      <button
+                        onClick={() => navigate("/speaking/practice/topic/sample")}
+                        className="mt-2 px-5 py-2.5 bg-[#1e50e6] text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 hover:bg-blue-700 transition"
+                      >
+                        Start Speaking Practice
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  shadowingSentences.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                      {shadowingSentences.map((sentence) => (
+                        <div
+                          key={sentence.id}
+                          onClick={() => navigate(`/speaking/shadowing/${sentence.id}`, { state: { sentence } })}
+                          className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-indigo-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                <Zap className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">
+                                  SHADOWING
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-400">
+                                  {sentence.target_skill || "Intonation & Accent"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              aria-label="Start Shadowing"
+                              className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-xs"
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <p className="text-sm font-bold text-slate-800 line-clamp-2 leading-relaxed italic">
+                            "{sentence.english_text}"
+                          </p>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+                            <span>{sentence.ipa_text}</span>
+                            <span className="font-sans font-bold text-indigo-600">Practice Now →</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
+                      <Zap className="w-10 h-10 text-indigo-300 mx-auto" />
+                      <h3 className="text-sm font-bold text-slate-700">No Shadowing sentences available</h3>
+                      <button
+                        onClick={() => navigate("/speaking/shadowing")}
+                        className="mt-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition"
+                      >
+                        Open Shadowing Tool
+                      </button>
+                    </div>
+                  )
+                )}
               </div>
-            )
-          })}
-        </div>
+            )}
+          </>
+        )}
 
         {/* Pagination Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
@@ -502,6 +1088,16 @@ export default function PracticeModulesPage() {
                 • Page {listeningMeta.page}/{listeningMeta.total_pages} • {listeningMeta.total} items
               </span>
             )}
+            {activeTab === 'writing' && (
+              <span className="text-slate-400">
+                • Page {writingMeta.page}/{writingMeta.total_pages} • {writingMeta.total} prompts
+              </span>
+            )}
+            {activeTab === 'speaking' && (
+              <span className="text-slate-400">
+                • Page {speakingMeta.page} • {speakingSubTab === 'ielts' ? 'IELTS Topics' : 'Shadowing'}
+              </span>
+            )}
           </div>
 
           {/* Page number buttons */}
@@ -519,8 +1115,8 @@ export default function PracticeModulesPage() {
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${currentPage === page
-                    ? 'bg-[#1D4ED8] text-white shadow-xs font-black'
-                    : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-[#1D4ED8] text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:bg-slate-100'
                   }`}
               >
                 {page}
@@ -538,6 +1134,12 @@ export default function PracticeModulesPage() {
         </div>
 
       </div>
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+      />
     </AppLayout>
   )
 }

@@ -8,7 +8,8 @@ import type {
   ProgressResponse,
 } from '../types/vocabulary'
 
-const API_BASE = 'http://localhost:8000/api/v1/vocabulary'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE = `${BASE_URL}/vocabulary`;
 export const LOCAL_STORAGE_KEY = 'omni_vocab_ids'
 export const LOCAL_COLLECTIONS_KEY = 'omni_my_collections_data'
 

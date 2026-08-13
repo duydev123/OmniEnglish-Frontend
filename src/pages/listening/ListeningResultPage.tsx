@@ -237,29 +237,6 @@ export default function ListeningResultPage() {
                   <p className="text-xs text-slate-500 font-semibold">{result?.score_summary ?? 'Session completed'}</p>
                 </div>
               </div>
-
-              <div className="lg:col-span-2 bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between gap-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">Competency Matrix</h3>
-                    <p className="text-xs text-slate-500 font-normal">Breakdown by linguistic sub-skill</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {Object.entries(competencyMatrix).map(([label, value]) => (
-                    <div key={label} className="space-y-1.5">
-                      <div className="flex justify-between text-xs font-bold">
-                        <span className="text-slate-800">{label}</span>
-                        <span className="text-blue-600">{value}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#1D4ED8] rounded-full" style={{ width: `${value}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -327,7 +304,7 @@ export default function ListeningResultPage() {
                                 ) : (
                                   <>
                                     <Play size={14} fill="currentColor" />
-                                    <span>REPLAY CLIP {r.startTimeMs !== undefined && r.endTimeMs !== undefined ? `(${Math.round(r.startTimeMs/1000)}s - ${Math.round(r.endTimeMs/1000)}s)` : `(${r.clipTime})`}</span>
+                                    <span>REPLAY CLIP {r.startTimeMs !== undefined && r.endTimeMs !== undefined ? `(${Math.round(r.startTimeMs / 1000)}s - ${Math.round(r.endTimeMs / 1000)}s)` : `(${r.clipTime})`}</span>
                                   </>
                                 )}
                               </button>
@@ -464,8 +441,8 @@ export default function ListeningResultPage() {
                     <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 shadow-2xs">
                       <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 mb-2">
                         <span>
-                          {selectedTranscriptQuestion.startTimeMs !== undefined && selectedTranscriptQuestion.endTimeMs !== undefined 
-                            ? `Clip: ${formatTime(selectedTranscriptQuestion.startTimeMs/1000)} - ${formatTime(selectedTranscriptQuestion.endTimeMs/1000)}`
+                          {selectedTranscriptQuestion.startTimeMs !== undefined && selectedTranscriptQuestion.endTimeMs !== undefined
+                            ? `Clip: ${formatTime(selectedTranscriptQuestion.startTimeMs / 1000)} - ${formatTime(selectedTranscriptQuestion.endTimeMs / 1000)}`
                             : 'Segment Clip'}
                         </span>
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md text-[9px] font-black uppercase">
@@ -479,7 +456,7 @@ export default function ListeningResultPage() {
                       const segStart = parseTimeToSeconds(seg.start_time)
                       const segEnd = parseTimeToSeconds(seg.end_time)
                       const clipStart = parseTimeToSeconds(selectedTranscriptQuestion.clipTime)
-                      
+
                       // Highlight if the clip starts within or near this segment
                       const isHighlighted = clipStart >= segStart && clipStart <= segEnd || (Math.abs(segStart - clipStart) < 5)
 
