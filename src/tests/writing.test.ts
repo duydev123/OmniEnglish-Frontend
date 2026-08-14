@@ -26,7 +26,7 @@ describe('Writing Module Services & Utils', () => {
   });
 
   it('should filter prompts by task_type WITH_GRAPH', async () => {
-    vi.spyOn(writingApi, 'getPrompts').mockImplementation(async (type?: string) => [
+    vi.spyOn(writingApi, 'getPrompts').mockImplementation(async () => [
       {
         id: 'urban-dynamics-2026',
         title: 'Urban Dynamics',
@@ -57,7 +57,7 @@ describe('Writing Module Services & Utils', () => {
     vi.spyOn(writingApi, 'getAiAssistance').mockResolvedValue({
       status: 'success',
       prompt_id: 'urban-dynamics-2026',
-      suggestions: [{ category: 'Topic Vocabulary', items: ['Urban'] }],
+      suggestions: [{ category: 'Topic Vocabulary', items: [{ word: 'Urban', meaning_en: '', meaning_vi: '', example: '' }] }],
     });
     const res = await writingApi.getAiAssistance('urban-dynamics-2026', 'COLLOCATIONS');
     expect(res.status).toBe('success');

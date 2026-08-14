@@ -1,18 +1,16 @@
 // ProfilePage.tsx - Đã sửa
 
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useUserStore, initialUser } from "../stores/user/useUserStore";
 import { userApi } from "../services/userApi";
 import { clearLocalVocabCache } from "../services/vocabularyApi";
 import { useToast } from "../components/common/Toast";
 import { LogoutModal } from "../components/common/LogoutModal";
 import { AppLayout } from "../components/common/AppLayout";
-import Sidebar from "../components/common/Sidebar";
 import {
   Bell,
   BookOpen,
-  GraduationCap,
   ChevronRight,
   Flame,
   Zap,
@@ -30,7 +28,6 @@ import {
 } from "lucide-react";
 
 const ProfilePage = () => {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [weekendMastery, setWeekendMastery] = useState(true);
   const [selectedGoal, setSelectedGoal] = useState<"fluency" | "steady">("fluency");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -58,8 +55,16 @@ const ProfilePage = () => {
         return;
       }
       const data = await userApi.getUserProfile();
-      if (data) {
+      if (data && data.username) {
         setUser(data);
+        if (data.settings?.learning_mode === "Fluency Push") {
+          setSelectedGoal("fluency");
+        } else if (data.settings?.learning_mode === "Steady Growth") {
+          setSelectedGoal("steady");
+        }
+        if (typeof data.settings?.weekend_mastery === "boolean") {
+          setWeekendMastery(data.settings.weekend_mastery);
+        }
       } else {
         localStorage.removeItem("token");
         setUser(initialUser);
@@ -68,6 +73,30 @@ const ProfilePage = () => {
     };
     fetchUserData();
   }, [navigate, setUser]);
+
+  const handleSelectGoal = async (mode: "Fluency Push" | "Steady Growth") => {
+    const goalKey = mode === "Fluency Push" ? "fluency" : "steady";
+    setSelectedGoal(goalKey);
+    try {
+      const updatedUser = await userApi.updateProfile({ learning_mode: mode });
+      setUser(updatedUser);
+      showToast(`Đã đổi mục tiêu học tập thành ${mode}!`, "success");
+    } catch {
+      showToast("Không thể lưu mục tiêu học tập!", "error");
+    }
+  };
+
+  const handleToggleWeekendMastery = async () => {
+    const nextVal = !weekendMastery;
+    setWeekendMastery(nextVal);
+    try {
+      const updatedUser = await userApi.updateProfile({ weekend_mastery: nextVal });
+      setUser(updatedUser);
+      showToast(`Đã ${nextVal ? "bật" : "tắt"} Weekend Mastery!`, "info");
+    } catch {
+      showToast("Không thể lưu cài đặt!", "error");
+    }
+  };
 
   const username = user?.username || "User";
   const email = user?.email || "";
@@ -224,13 +253,22 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              <div className="w-full pt-4 mt-4 border-t border-slate-100">
+              <div className="w-full pt-4 mt-4 border-t border-slate-100 flex items-center gap-2">
                 <button
                   onClick={() => setShowPasswordModal(true)}
-                  className="w-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
+                  className="flex-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
                   <span>Đổi Mật Khẩu</span>
+                </button>
+
+                <button
+                  onClick={() => setShowLogoutModal(true)}
+                  className="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer"
+                  title="Đăng xuất"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Đăng Xuất</span>
                 </button>
               </div>
             </div>
@@ -394,18 +432,7 @@ const ProfilePage = () => {
 
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <div
-                    onClick={() => {
-                      setSelectedGoal("fluency");
-                      if (user) {
-                        setUser({
-                          ...user,
-                          settings: {
-                            ...user.settings,
-                            learning_mode: "Fluency Push"
-                          }
-                        });
-                      }
-                    }}
+                    onClick={() => handleSelectGoal("Fluency Push")}
                     className={`rounded-2xl p-4 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center text-center ${selectedGoal === "fluency"
                       ? "border-[#1e50e6] bg-blue-50/40 shadow-xs scale-[1.02]"
                       : "border-slate-200/70 bg-white hover:border-slate-300"
@@ -421,18 +448,7 @@ const ProfilePage = () => {
                   </div>
 
                   <div
-                    onClick={() => {
-                      setSelectedGoal("steady");
-                      if (user) {
-                        setUser({
-                          ...user,
-                          settings: {
-                            ...user.settings,
-                            learning_mode: "Steady Growth"
-                          }
-                        });
-                      }
-                    }}
+                    onClick={() => handleSelectGoal("Steady Growth")}
                     className={`rounded-2xl p-4 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center text-center ${selectedGoal === "steady"
                       ? "border-[#1e50e6] bg-blue-50/40 shadow-xs scale-[1.02]"
                       : "border-slate-200/70 bg-white hover:border-slate-300"
@@ -459,7 +475,7 @@ const ProfilePage = () => {
                   </div>
 
                   <button
-                    onClick={() => setWeekendMastery(!weekendMastery)}
+                    onClick={handleToggleWeekendMastery}
                     className={`w-12 h-6 rounded-full transition-colors p-1 relative shrink-0 cursor-pointer ${weekendMastery ? "bg-[#1e50e6]" : "bg-slate-200"
                     }`}
                   >
