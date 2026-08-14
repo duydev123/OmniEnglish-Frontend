@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Lightbulb, Loader2, AlertCircle, ArrowLeft, Save, LogOut, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Check, Trash2, Eye } from 'lucide-react'
+import { Lightbulb, Loader2, AlertCircle, ArrowLeft, Save, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Check, Trash2, Eye } from 'lucide-react'
 import AppLayout from '../../components/common/AppLayout'
 import DictationAudioPlayer, { type DictationAudioPlayerRef } from '../../components/listening/DictationAudioPlayer'
 import { useToast } from '../../components/common/Toast'
