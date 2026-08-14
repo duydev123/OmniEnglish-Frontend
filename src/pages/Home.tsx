@@ -5,14 +5,10 @@ import { userApi } from "../services/userApi";
 import { useToast } from "../components/common/Toast";
 import { LogoutModal } from "../components/common/LogoutModal";
 import { AppLayout } from "../components/common/AppLayout";
-import Sidebar from "../components/common/Sidebar";  // ← Import riêng, KHÔNG lồng vào import khác
 
 // 6. Import từ lucide-react - TẤT CẢ trong 1 import
 import {
-  Bell,
   BookOpen,
-  GraduationCap,
-  ChevronDown,
   Flame,
   Award,
   Mic,
@@ -21,14 +17,11 @@ import {
   FileText,
   Play,
   Plus,
-  LogOut,
   ArrowRight
 } from "lucide-react";
 
 
 const Home = () => {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [timeRange, setTimeRange] = useState("Last 30 Days")
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const { user, setUser } = useUserStore()
@@ -50,7 +43,7 @@ const Home = () => {
         return
       }
       const data = await userApi.getUserProfile()
-      if (data) {
+      if (data && data.username) {
         setUser(data)
       } else {
         localStorage.removeItem("token")
@@ -62,11 +55,49 @@ const Home = () => {
   }, [navigate, setUser])
 
   const username = user?.username || "User"
-  const email = user?.email || ""
-  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=128`
-  const avatarUrl = user?.avatar || user?.avarta || defaultAvatar
   const streakDays = user?.stats?.current_streak_days ?? 0
   const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "B1"
+
+  // Generate 3 months of activity heatmap data for Recent Activity
+  const currentDate = new Date()
+  const todayDayNum = currentDate.getDate()
+
+  const recentMonthsData = Array.from({ length: 3 }).map((_, i) => {
+    // i = 0 -> current month, i = 1 -> next month, i = 2 -> 2 months later
+    const monthOffset = i
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() + monthOffset, 1)
+    const monthNum = d.getMonth() + 1
+    const daysCount = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+
+    const days = Array.from({ length: daysCount }).map((_, dayIdx) => {
+      const dayNum = dayIdx + 1
+      const isCurrentMonth = monthOffset === 0
+      const isPastOrToday = !isCurrentMonth || dayNum <= todayDayNum
+
+      let intensity: 0 | 1 | 2 | 3 = 0
+      if (isPastOrToday) {
+        const seed = (d.getMonth() * 31 + dayNum * 7) % 10
+        if (isCurrentMonth && dayNum > todayDayNum - streakDays && dayNum <= todayDayNum) {
+          intensity = 3
+        } else if (seed > 6) {
+          intensity = 3
+        } else if (seed > 3) {
+          intensity = 2
+        } else if (seed > 1) {
+          intensity = 1
+        } else {
+          intensity = 0
+        }
+      }
+
+      return { dayNum, intensity, dateStr: `Ngày ${dayNum}/${monthNum}` }
+    })
+
+    return {
+      label: `Tháng ${monthNum}`,
+      days
+    }
+  })
 
   const rawReading = user?.stats?.avg_reading_score ?? 0
   const rawListening = user?.stats?.avg_listening_score ?? 0
@@ -137,9 +168,9 @@ const Home = () => {
 
           {/* Section: Continue Practice & Performance Trends */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left: Continue Practice (col-span-5) */}
-            <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-              <div className="flex items-center justify-between">
+            {/* Left: Continue Practice (col-span-6) */}
+            <div className="lg:col-span-6 flex flex-col space-y-3">
+              <div className="flex items-center justify-between h-7">
                 <h2 className="text-base font-bold text-slate-900">
                   Continue Practice
                 </h2>
@@ -155,7 +186,10 @@ const Home = () => {
               {/* 2x2 Grid */}
               <div className="grid grid-cols-2 gap-3.5 flex-1">
                 {/* Reading Test Card */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-amber-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
+                <div
+                  onClick={() => navigate('/practice-modules/reading')}
+                  className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-amber-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+                >
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="w-9 h-9 rounded-xl bg-amber-100/80 flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform duration-300">
@@ -184,7 +218,10 @@ const Home = () => {
                 </div>
 
                 {/* Speaking Test Card */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-indigo-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
+                <div
+                  onClick={() => navigate('/practice-modules/speaking')}
+                  className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-indigo-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+                >
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="w-9 h-9 rounded-xl bg-indigo-100/80 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-300">
@@ -213,7 +250,10 @@ const Home = () => {
                 </div>
 
                 {/* Listening Test Card */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-blue-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
+                <div
+                  onClick={() => navigate('/practice-modules/listening')}
+                  className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-blue-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+                >
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="w-9 h-9 rounded-xl bg-blue-100/80 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform duration-300">
@@ -242,7 +282,10 @@ const Home = () => {
                 </div>
 
                 {/* Writing Test Card */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-emerald-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer">
+                <div
+                  onClick={() => navigate('/practice-modules/writing')}
+                  className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-lg hover:border-emerald-300/60 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+                >
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="w-9 h-9 rounded-xl bg-emerald-100/80 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform duration-300">
@@ -272,74 +315,46 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Right: Performance Trends Chart (col-span-7) */}
-            <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
+            {/* Right: Recent Activity Heatmap (col-span-6) */}
+            <div className="lg:col-span-6 flex flex-col space-y-3">
+              <div className="flex items-center justify-between h-7">
                 <h2 className="text-base font-bold text-slate-900">
-                  Performance Trends
+                  Hoạt động gần đây
                 </h2>
-
-                <div className="relative">
-                  <select
-                    value={timeRange}
-                    onChange={(e) => setTimeRange(e.target.value)}
-                    className="appearance-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold rounded-xl px-3 py-1.5 pr-7 cursor-pointer hover:bg-slate-100 focus:outline-none transition-colors"
-                  >
-                    <option>Last 30 Days</option>
-                    <option>Last 7 Days</option>
-                    <option>Last 3 Months</option>
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
-                </div>
               </div>
 
-              {/* Chart SVG */}
-              <div className="relative h-44 w-full my-2">
-                <svg
-                  className="w-full h-full overflow-visible"
-                  viewBox="0 0 500 160"
-                  preserveAspectRatio="none"
-                >
-                  <defs>
-                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#1e50e6" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#1e50e6" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
+              {/* Card Container aligned to match left grid height */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex-1 flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
 
-                  {/* Horizontal Grid lines */}
-                  <line x1="0" y1="40" x2="500" y2="40" stroke="#f1f5f9" strokeDasharray="4 4" strokeWidth="1" />
-                  <line x1="0" y1="90" x2="500" y2="90" stroke="#f1f5f9" strokeDasharray="4 4" strokeWidth="1" />
-                  <line x1="0" y1="140" x2="500" y2="140" stroke="#e2e8f0" strokeWidth="1" />
+              {/* Heatmap Container - 3 rows grid flowing horizontally across months */}
+              <div className="my-auto py-2">
+                <div className="flex items-start gap-6 sm:gap-8 overflow-x-auto pb-2 scrollbar-none">
+                  {recentMonthsData.map((m, mIdx) => (
+                    <div key={mIdx} className="flex flex-col gap-3 shrink-0">
+                      {/* 3 rows grid flowing horizontally into columns */}
+                      <div className="grid grid-rows-3 grid-flow-col gap-1.5 sm:gap-2">
+                        {m.days.map((day) => {
+                          let colorClass = "bg-slate-100 border border-slate-200/40"
+                          if (day.intensity === 1) colorClass = "bg-blue-200 border border-blue-300/40"
+                          if (day.intensity === 2) colorClass = "bg-blue-400 border border-blue-500/40"
+                          if (day.intensity === 3) colorClass = "bg-[#1e50e6] border border-blue-700/40"
 
-                  {/* Gradient Area under curve */}
-                  <path
-                    d="M 10,140 Q 150,110 320,30 T 490,120 L 490,160 L 10,160 Z"
-                    fill="url(#chartGrad)"
-                  />
+                          return (
+                            <div
+                              key={day.dayNum}
+                              title={day.dateStr}
+                              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] transition-all hover:scale-125 cursor-pointer ${colorClass}`}
+                            />
+                          )
+                        })}
+                      </div>
 
-                  {/* Smooth Blue Line */}
-                  <path
-                    d="M 10,140 Q 150,110 320,30 T 490,120"
-                    fill="none"
-                    stroke="#1e50e6"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    style={{ filter: "drop-shadow(0px 4px 6px rgba(30, 80, 230, 0.3))" }}
-                  />
-
-                  {/* End Dot Glow */}
-                  <circle cx="490" cy="120" r="7" fill="#1e50e6" fillOpacity="0.2" className="animate-ping" />
-                  <circle cx="490" cy="120" r="4" fill="#1e50e6" />
-                </svg>
-
-                {/* X Axis Labels */}
-                <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-2 px-1">
-                  <span>OCT 01</span>
-                  <span>OCT 10</span>
-                  <span>OCT 20</span>
-                  <span>TODAY</span>
+                      {/* Month Label below month grid */}
+                      <span className="text-xs font-semibold text-slate-500 pl-0.5">
+                        {m.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -370,6 +385,7 @@ const Home = () => {
               </div>
             </div>
           </div>
+        </div>
 
           {/* Section: 4 Skills Overview Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

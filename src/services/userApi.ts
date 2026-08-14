@@ -56,16 +56,16 @@ export const userApi = {
   /**
    * Fetch current authenticated user profile & stats from backend GET /users/auth
    */
-  async getUserProfile(): Promise<User> {
+  async getUserProfile(): Promise<User | null> {
     try {
       const response = await axiosClient.get<User>("/users/auth");
       if (response.data && response.data.username) {
         return response.data;
       }
-      return fallbackUserData;
+      return null;
     } catch (error) {
-      console.warn("Backend API unavailable, using local profile fallback:", error);
-      return fallbackUserData;
+      console.warn("Backend API auth error:", error);
+      return null;
     }
   },
 
@@ -157,8 +157,48 @@ export const userApi = {
   /**
    * Update Profile PATCH /users/profile
    */
-  async updateProfile(payload: { avatar?: string }): Promise<User> {
+  async updateProfile(payload: {
+    avatar?: string;
+    username?: string;
+    proficiency_level?: string;
+    daily_word_target?: number;
+    learning_mode?: string;
+    weekend_mastery?: boolean;
+    base_language?: string;
+    notifications_enabled?: boolean;
+  }): Promise<User> {
     const response = await axiosClient.patch<User>("/users/profile", payload);
+    return response.data;
+  },
+
+  /**
+   * Send Forgot Password OTP POST /users/forgot-password/send-otp
+   */
+  async sendForgotOTP(email: string): Promise<{ message: string }> {
+    const response = await axiosClient.post<{ message: string }>("/users/forgot-password/send-otp", { email });
+    return response.data;
+  },
+
+  /**
+   * Verify Forgot Password OTP POST /users/forgot-password/verify-otp
+   */
+  async verifyForgotOTP(email: string, otpCode: string): Promise<{ message: string }> {
+    const response = await axiosClient.post<{ message: string }>("/users/forgot-password/verify-otp", {
+      email,
+      otp_code: otpCode,
+    });
+    return response.data;
+  },
+
+  /**
+   * Reset Password with OTP POST /users/forgot-password/reset-password
+   */
+  async resetPasswordWithOTP(email: string, otpCode: string, newPassword: string): Promise<{ message: string }> {
+    const response = await axiosClient.post<{ message: string }>("/users/forgot-password/reset-password", {
+      email,
+      otp_code: otpCode,
+      new_password: newPassword,
+    });
     return response.data;
   },
 };
