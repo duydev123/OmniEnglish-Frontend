@@ -25,7 +25,6 @@ import {
   BookOpen,
   FileText,
   Loader2,
-  ChevronRight,
   Trash2,
   Pencil,
   Plus,
@@ -64,9 +63,9 @@ export const WritingEditorPage: React.FC = () => {
   // Assistant & Modals State
   const [aiModalType, setAiModalType] = useState<'OUTLINE' | 'COLLOCATIONS' | 'SAMPLE' | null>(null);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
-  const [aiOutline, setAiOutline] = useState<AIOutlineResponse | null>(null);
-  const [aiCollocations, setAiCollocations] = useState<AICollocationsResponse | null>(null);
-  const [aiSample, setAiSample] = useState<AISampleEssayResponse | null>(null);
+  const [aiOutline] = useState<AIOutlineResponse | null>(null);
+  const [aiCollocations] = useState<AICollocationsResponse | null>(null);
+  const [aiSample] = useState<AISampleEssayResponse | null>(null);
 
   const [assistantInput, setAssistantInput] = useState<string>('');
   const [imageModalOpen, setImageModalOpen] = useState<boolean>(false);
@@ -325,27 +324,7 @@ export const WritingEditorPage: React.FC = () => {
     }
   };
 
-  // Trigger AI Assistance
-  const handleFetchAiAssistance = async (action: 'OUTLINE' | 'COLLOCATIONS' | 'SAMPLE') => {
-    if (!promptId) return;
-    setAiModalType(action);
-    setAiLoading(true);
-    try {
-      const res = await writingApi.getAiAssistance(
-        promptId,
-        action === 'SAMPLE' ? 'SAMPLE_ESSAY' : action
-      );
-      if (action === 'OUTLINE') setAiOutline(res as AIOutlineResponse);
-      if (action === 'COLLOCATIONS') setAiCollocations(res as AICollocationsResponse);
-      if (action === 'SAMPLE') setAiSample(res as AISampleEssayResponse);
-    } catch {
-      showToast('Lỗi khi tải gợi ý từ AI', 'error');
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
-  // Apply Real WYSIWYG Formatting (Bold, Italic, Underline, Bullet, Numbered)
   const applyFormat = (command: 'bold' | 'italic' | 'underline' | 'insertUnorderedList' | 'insertOrderedList') => {
     if (editorDivRef.current) {
       editorDivRef.current.focus();
@@ -1035,10 +1014,10 @@ export const WritingEditorPage: React.FC = () => {
                             {grp.items.map((item, j) => (
                               <button
                                 key={j}
-                                onClick={() => handleInsertWord(item)}
+                                onClick={() => handleInsertWord(item.word)}
                                 className="px-3 py-1.5 bg-white border border-purple-200 text-slate-800 font-extrabold text-xs rounded-xl hover:bg-purple-100 transition-colors shadow-2xs cursor-pointer"
                               >
-                                {item}
+                                {item.word}
                               </button>
                             ))}
                           </div>

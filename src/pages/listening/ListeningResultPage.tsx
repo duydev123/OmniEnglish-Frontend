@@ -163,7 +163,6 @@ export default function ListeningResultPage() {
 
   const filteredReviews = filterMode === 'mistakes' ? reviews.filter((r) => !r.isCorrect) : reviews
   const accuracyPercent = result?.accuracy_rate ?? 0
-  const competencyMatrix = result?.competency_matrix ?? {}
 
   return (
     <AppLayout

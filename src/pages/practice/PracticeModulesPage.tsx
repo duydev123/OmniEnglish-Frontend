@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Headphones, BookOpen, Mic, PenTool, SlidersHorizontal,
-  ArrowRight, RotateCcw, Check, ChevronDown, ChevronLeft, ChevronRight,
-  FileEdit, Clock, HelpCircle, Zap, Loader2, Filter, FileText
+  ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight,
+  FileEdit, Clock, HelpCircle, Zap, Loader2, FileText
 } from 'lucide-react'
 import AppLayout from '../../components/common/AppLayout'
 import { useUserStore, initialUser } from '../../stores/user/useUserStore'
@@ -72,7 +72,6 @@ export default function PracticeModulesPage() {
   const [showTypeDropdown, setShowTypeDropdown] = useState(false)
   const typeDropdownRef = useRef<HTMLDivElement>(null)
 
-  const username = user?.username || "User"
   const userId = user?.id
 
   const handleLogout = () => {
