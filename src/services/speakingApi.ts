@@ -19,9 +19,9 @@ export const speakingApi = {
       }
       const response = await axiosClient.get(url)
       return response.data?.data || response.data || []
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching speaking topics:", error)
-      return []
+      throw error
     }
   },
 
@@ -29,9 +29,9 @@ export const speakingApi = {
     try {
       const response = await axiosClient.get(`/speaking/topics/${topicId}/prompts`)
       return response.data?.data || response.data || {}
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching topic prompts:", error)
-      return {}
+      throw error
     }
   },
 
@@ -41,9 +41,9 @@ export const speakingApi = {
         timeout: 30000
       })
       return response.data?.data || response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error starting prompt session:", error)
-      return null
+      throw error
     }
   },
 
@@ -60,9 +60,9 @@ export const speakingApi = {
         timeout: 90000 // 90s timeout for AI speech evaluation
       })
       return response.data?.data || response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting speaking segment:", error)
-      return null
+      throw error
     }
   },
 
@@ -72,9 +72,9 @@ export const speakingApi = {
         timeout: 30000
       })
       return response.data?.data || response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching session result:", error)
-      return null
+      throw error
     }
   },
 
@@ -93,9 +93,9 @@ export const speakingApi = {
 
       const response = await axiosClient.get(url)
       return response.data?.data || response.data || []
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching speaking history:", error)
-      return []
+      throw error
     }
   },
 
@@ -103,9 +103,9 @@ export const speakingApi = {
     try {
       const response = await axiosClient.get(`/speaking/shadowing/sentences?page=${page}&limit=${limit}`)
       return response.data?.data || response.data || []
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching shadowing sentences:", error)
-      return []
+      throw error
     }
   },
 
@@ -113,9 +113,9 @@ export const speakingApi = {
     try {
       const response = await axiosClient.get(`/speaking/shadowing/sentences/${sentenceId}`)
       return response.data?.data || response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching shadowing sentence detail:", error)
-      return null
+      throw error
     }
   },
 
@@ -131,9 +131,9 @@ export const speakingApi = {
         timeout: 90000 // 90s timeout for AI shadowing evaluation
       })
       return response.data?.data || response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error evaluating shadowing:", error)
-      return null
+      throw error
     }
   }
 }

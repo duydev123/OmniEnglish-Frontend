@@ -27,49 +27,9 @@ import {
   Bookmark,
   UserCheck,
   Zap,
-  Activity
+  Activity,
+  AlertCircle
 } from "lucide-react"
-
-// Exact real data schema provided by the user as fallback when backend API times out
-const FALLBACK_SEGMENT_RESULT: SpeakingSegmentResult = {
-  session_id: "6a7b5172733d8c8a401081b5",
-  prompt_id: "6a774ec35b4c1309d740a92c",
-  status: "COMPLETED",
-  user_transcript: "Yes, I know I enjoy listening to music, watching movie and shevlin. I also like spending time with my friends in new things.",
-  user_audio_url: "https://res.cloudinary.com/duu2fsajv/video/upload/v1786466728/omni_english/speaking/6a7b5172733d8c8a401081b5/e3w53nanpyokmz6ii872.wav",
-  segment_score: 5.5,
-  pronunciation_score: 6.8,
-  fluency_score: 6.6,
-  lexical_score: 4.5,
-  grammar_score: 5.0,
-  realtime_feedback: "Nhận xét chi tiết:\n\n1. Từ vựng (Lexical Resource - 4.5):\n- Vốn từ vựng còn rất cơ bản và hạn chế (enjoy, listening to music, watching movies, spending time, new things).\n- Có từ không rõ nghĩa/nhận diện sai do phát âm: \"shevlin\" (có thể thí sinh muốn nói \"traveling\").\n- Cách diễn đạt \"in new things\" không tự nhiên, sai sự kết hợp từ (collocation).\n\n2. Ngữ pháp (Grammar Accuracy - 5.0):\n- \"I know I enjoy...\": Dùng từ \"I know\" ở đầu câu không tự nhiên trong ngữ cảnh giao tiếp này.\n- \"watching movie\": Danh từ đếm được \"movie\" cần ở dạng số nhiều \"watching movies\" khi nói về sở thích chung.\n- \"spending time with my friends in new things\": Cấu trúc ngữ pháp bị lỗi ở vế cuối. Đúng hơn nên dùng cấu trúc \"spending time doing something\" hoặc \"trying new things\".\n\n3. Gợi ý câu trả lời cải thiện:\n\"Yes, I really enjoy listening to music, watching movies, and traveling. Besides, I also like spending time with my friends and trying out new things together.\"",
-  words_detail: [
-    { word: "yes", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "j", accuracy_score: 71 }, { phoneme: "ɛ", accuracy_score: 94 }, { phoneme: "s", accuracy_score: 72 }] },
-    { word: "i", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "aɪ", accuracy_score: 97 }] },
-    { word: "know", accuracy_score: 91, error_type: "None", phonemes: [{ phoneme: "n", accuracy_score: 81 }, { phoneme: "oʊ", accuracy_score: 66 }] },
-    { word: "i", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "aɪ", accuracy_score: 97 }] },
-    { word: "enjoy", accuracy_score: 82, error_type: "None", phonemes: [{ phoneme: "ɪ", accuracy_score: 54 }, { phoneme: "n", accuracy_score: 82 }, { phoneme: "dʒ", accuracy_score: 100 }, { phoneme: "ɔɪ", accuracy_score: 100 }] },
-    { word: "listening", accuracy_score: 44, error_type: "Mispronunciation", phonemes: [{ phoneme: "l", accuracy_score: 32 }, { phoneme: "ɪ", accuracy_score: 37 }, { phoneme: "s", accuracy_score: 37 }, { phoneme: "ə", accuracy_score: 32 }, { phoneme: "n", accuracy_score: 41 }, { phoneme: "ɪ", accuracy_score: 100 }, { phoneme: "ŋ", accuracy_score: 43 }] },
-    { word: "to", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "t", accuracy_score: 100 }, { phoneme: "oʊ", accuracy_score: 80 }] },
-    { word: "music", accuracy_score: 47, error_type: "Mispronunciation", phonemes: [{ phoneme: "m", accuracy_score: 44 }, { phoneme: "j", accuracy_score: 37 }, { phoneme: "u", accuracy_score: 48 }, { phoneme: "z", accuracy_score: 66 }, { phoneme: "ɪ", accuracy_score: 62 }, { phoneme: "k", accuracy_score: 19 }] },
-    { word: "watching", accuracy_score: 47, error_type: "Mispronunciation", phonemes: [{ phoneme: "w", accuracy_score: 28 }, { phoneme: "ɑ", accuracy_score: 42 }, { phoneme: "tʃ", accuracy_score: 58 }, { phoneme: "ɪ", accuracy_score: 61 }, { phoneme: "ŋ", accuracy_score: 46 }] },
-    { word: "movie", accuracy_score: 50, error_type: "Mispronunciation", phonemes: [{ phoneme: "m", accuracy_score: 51 }, { phoneme: "u", accuracy_score: 100 }, { phoneme: "v", accuracy_score: 36 }, { phoneme: "i", accuracy_score: 38 }] },
-    { word: "and", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "æ", accuracy_score: 52 }, { phoneme: "n", accuracy_score: 48 }, { phoneme: "d", accuracy_score: 55 }] },
-    { word: "shevlin", accuracy_score: 88, error_type: "None", phonemes: [{ phoneme: "ʃ", accuracy_score: 78 }, { phoneme: "ɛ", accuracy_score: 84 }, { phoneme: "v", accuracy_score: 96 }, { phoneme: "l", accuracy_score: 92 }, { phoneme: "ɪ", accuracy_score: 79 }, { phoneme: "n", accuracy_score: 46 }] },
-    { word: "i", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "aɪ", accuracy_score: 97 }] },
-    { word: "also", accuracy_score: 21, error_type: "Mispronunciation", phonemes: [{ phoneme: "ɔ", accuracy_score: 18 }, { phoneme: "l", accuracy_score: 15 }, { phoneme: "s", accuracy_score: 47 }, { phoneme: "oʊ", accuracy_score: 53 }] },
-    { word: "like", accuracy_score: 82, error_type: "None", phonemes: [{ phoneme: "l", accuracy_score: 52 }, { phoneme: "aɪ", accuracy_score: 79 }, { phoneme: "k", accuracy_score: 47 }] },
-    { word: "spending", accuracy_score: 94, error_type: "None", phonemes: [{ phoneme: "s", accuracy_score: 56 }, { phoneme: "p", accuracy_score: 80 }, { phoneme: "ɛ", accuracy_score: 80 }, { phoneme: "n", accuracy_score: 94 }, { phoneme: "d", accuracy_score: 100 }, { phoneme: "ɪ", accuracy_score: 100 }, { phoneme: "ŋ", accuracy_score: 65 }] },
-    { word: "time", accuracy_score: 94, error_type: "None", phonemes: [{ phoneme: "t", accuracy_score: 18 }, { phoneme: "aɪ", accuracy_score: 96 }, { phoneme: "m", accuracy_score: 50 }] },
-    { word: "with", accuracy_score: 94, error_type: "None", phonemes: [{ phoneme: "w", accuracy_score: 78 }, { phoneme: "ɪ", accuracy_score: 77 }, { phoneme: "ð", accuracy_score: 53 }] },
-    { word: "my", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "m", accuracy_score: 99 }, { phoneme: "aɪ", accuracy_score: 63 }] },
-    { word: "friends", accuracy_score: 73, error_type: "None", phonemes: [{ phoneme: "f", accuracy_score: 26 }, { phoneme: "r", accuracy_score: 55 }, { phoneme: "ɛ", accuracy_score: 56 }, { phoneme: "n", accuracy_score: 72 }, { phoneme: "d", accuracy_score: 76 }, { phoneme: "z", accuracy_score: 53 }] },
-    { word: "in", accuracy_score: 97, error_type: "None", phonemes: [{ phoneme: "ɪ", accuracy_score: 80 }, { phoneme: "n", accuracy_score: 80 }] },
-    { word: "new", accuracy_score: 80, error_type: "None", phonemes: [{ phoneme: "n", accuracy_score: 80 }, { phoneme: "u", accuracy_score: 80 }] },
-    { word: "things", accuracy_score: 70, error_type: "None", phonemes: [{ phoneme: "θ", accuracy_score: 54 }, { phoneme: "ɪ", accuracy_score: 61 }, { phoneme: "ŋ", accuracy_score: 59 }, { phoneme: "z", accuracy_score: 56 }] }
-  ],
-  next_prompt_id: "6a774ec35b4c1309d740a92d"
-}
 
 export const SpeakingPracticePage: React.FC = () => {
   const { topicId, promptId } = useParams<{ topicId?: string; promptId?: string }>()
@@ -77,6 +37,8 @@ export const SpeakingPracticePage: React.FC = () => {
 
   // State
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [promptsMap, setPromptsMap] = useState<Record<string, SpeakingPrompt[]>>({})
   const [currentPrompt, setCurrentPrompt] = useState<SpeakingPrompt | null>(null)
   const [candidateNotes, setCandidateNotes] = useState("")
@@ -113,20 +75,28 @@ export const SpeakingPracticePage: React.FC = () => {
   useEffect(() => {
     const fetchPrompts = async () => {
       setLoading(true)
+      setLoadError(null)
       try {
         if (topicId) {
           const map = await speakingApi.getTopicPrompts(topicId)
-          setPromptsMap(map)
-          setMode("TOPIC_OVERVIEW") // FIRST show questions list in topic
+          if (Object.keys(map).length === 0) {
+            setLoadError("Không thể tải danh sách câu hỏi từ máy chủ hoặc không có dữ liệu.")
+          } else {
+            setPromptsMap(map)
+            setMode("TOPIC_OVERVIEW") // FIRST show questions list in topic
+          }
         } else if (promptId) {
           const startRes = await speakingApi.startPromptSession(promptId)
           if (startRes?.current_prompt) {
             setCurrentPrompt(startRes.current_prompt)
             setMode("PRACTICE")
+          } else {
+            setLoadError("Không thể khởi tạo phiên thực hành câu hỏi từ máy chủ.")
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to load topic prompts:", err)
+        setLoadError(err?.response?.data?.message || err?.message || "Không thể kết nối đến máy chủ để tải bài nói.")
       } finally {
         setLoading(false)
       }
@@ -162,6 +132,7 @@ export const SpeakingPracticePage: React.FC = () => {
 
   // Start Mic Recording
   const startRecording = async () => {
+    setSubmitError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream)
@@ -188,7 +159,7 @@ export const SpeakingPracticePage: React.FC = () => {
       }, 1000)
     } catch (err) {
       console.error("Error accessing microphone:", err)
-      alert("Could not access microphone. Please grant permission.")
+      alert("Không thể truy cập microphone. Vui lòng cấp quyền cho trình duyệt!")
     }
   }
 
@@ -208,24 +179,28 @@ export const SpeakingPracticePage: React.FC = () => {
   const processSequentialSubmission = async (audioBlob: Blob) => {
     if (!currentPrompt?.id) return
     setIsSubmitting(true)
+    setSubmitError(null)
     try {
-      let currentSessionId = "6a7b5172733d8c8a401081b5"
+      let currentSessionId = ""
       const startRes = await speakingApi.startPromptSession(currentPrompt.id)
       if (startRes?.session_id) {
         currentSessionId = startRes.session_id
+      } else {
+        throw new Error("Máy chủ không trả về session_id hợp lệ.")
       }
 
       const segmentRes = await speakingApi.submitSegment(currentSessionId, currentPrompt.id, audioBlob)
-      if (segmentRes && (segmentRes.user_transcript || segmentRes.words_detail)) {
+      if (segmentRes && (segmentRes.user_transcript || segmentRes.words_detail || segmentRes.segment_score !== undefined)) {
         setSegmentResult(segmentRes) // Use real API response directly
+        setMode("RESULT")
       } else {
-        setSegmentResult(FALLBACK_SEGMENT_RESULT) // Seamless fallback to user schema
+        throw new Error("Máy chủ không gửi về dữ liệu phân tích kết quả bài nói.")
       }
-      setMode("RESULT")
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed sequential submission:", err)
-      setSegmentResult(FALLBACK_SEGMENT_RESULT)
-      setMode("RESULT")
+      const errorMsg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || "Đã xảy ra lỗi khi gửi bài nói tới máy chủ. Vui lòng thử lại!"
+      setSubmitError(errorMsg)
+      // DO NOT use mock data fallback! Stay in PRACTICE mode and report the error.
     } finally {
       setIsSubmitting(false)
     }
@@ -271,6 +246,7 @@ export const SpeakingPracticePage: React.FC = () => {
     setPrepTime(60)
     setIsPrepActive(false)
     setSegmentResult(null)
+    setSubmitError(null)
   }
 
   const handlePlayWordAudio = (word: string) => {
@@ -300,11 +276,29 @@ export const SpeakingPracticePage: React.FC = () => {
     )
   }
 
+  if (loadError) {
+    return (
+      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+        <div className="p-8 text-center space-y-4 max-w-xl mx-auto my-12 bg-white border border-rose-200 rounded-3xl shadow-sm">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
+          <h2 className="text-lg font-extrabold text-slate-900">Không thể tải bài tập Speaking</h2>
+          <p className="text-xs text-rose-700 font-medium">{loadError}</p>
+          <button
+            onClick={() => navigate("/practice-modules")}
+            className="px-6 py-2.5 bg-[#1e50e6] text-white font-bold rounded-xl text-xs hover:bg-blue-700 transition"
+          >
+            Quay lại Practice Modules
+          </button>
+        </div>
+      </AppLayout>
+    )
+  }
+
   const part1Prompts = promptsMap["PART_1"] || []
   const part2Prompts = promptsMap["PART_2"] || []
   const part3Prompts = promptsMap["PART_3"] || []
 
-  const activeResult = segmentResult || FALLBACK_SEGMENT_RESULT
+  const activeResult = segmentResult
 
   // Extract mispronounced words safely from real API words_detail
   const mispronouncedWords = (activeResult?.words_detail || []).filter(
@@ -320,6 +314,25 @@ export const SpeakingPracticePage: React.FC = () => {
       ]}
     >
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+
+        {/* ERROR NOTIFICATION BANNER IF SERVER SUBMISSION FAILS */}
+        {submitError && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 flex items-center justify-between gap-4 animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <AlertCircle size={20} className="text-rose-600 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">Không thể đánh giá bài nói</p>
+                <p className="text-xs font-medium text-rose-700">{submitError}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSubmitError(null)}
+              className="px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition shrink-0 cursor-pointer"
+            >
+              Thử lại
+            </button>
+          </div>
+        )}
 
         {/* LOADING OVERLAY WHILE BACKEND API IS EVALUATING */}
         {isSubmitting && (
@@ -815,7 +828,7 @@ export const SpeakingPracticePage: React.FC = () => {
         {/* =====================================================
             MODE 3: REAL API RESULT ANALYSIS VIEW (100% RELIABLE)
            ===================================================== */}
-        {!isSubmitting && mode === "RESULT" && (
+        {!isSubmitting && mode === "RESULT" && activeResult && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Header & Breadcrumbs matching Figma Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
@@ -850,26 +863,26 @@ export const SpeakingPracticePage: React.FC = () => {
                     OVERALL PERFORMANCE
                   </span>
                   <span className="text-3xl font-black text-blue-600 leading-none">
-                    {activeResult.segment_score ?? 5.5}
+                    {activeResult.segment_score ?? 0}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-xs font-extrabold text-slate-700">
                   <div className="text-center">
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">P</span>
-                    <span className="text-blue-600">{activeResult.pronunciation_score ?? 6.8}</span>
+                    <span className="text-blue-600">{activeResult.pronunciation_score ?? 0}</span>
                   </div>
                   <div className="text-center">
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">F</span>
-                    <span className="text-emerald-600">{activeResult.fluency_score ?? 6.6}</span>
+                    <span className="text-emerald-600">{activeResult.fluency_score ?? 0}</span>
                   </div>
                   <div className="text-center">
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">V</span>
-                    <span className="text-slate-800">{activeResult.lexical_score ?? 4.5}</span>
+                    <span className="text-slate-800">{activeResult.lexical_score ?? 0}</span>
                   </div>
                   <div className="text-center">
                     <span className="text-[10px] text-slate-400 font-bold block uppercase">G</span>
-                    <span className="text-amber-600">{activeResult.grammar_score ?? 5.0}</span>
+                    <span className="text-amber-600">{activeResult.grammar_score ?? 0}</span>
                   </div>
                 </div>
               </div>
