@@ -16,23 +16,8 @@ import {
   ArrowRight,
   Loader2,
   CheckCircle2,
-  AlertTriangle,
-  X
+  AlertTriangle
 } from "lucide-react"
-
-interface PhonemeInfo {
-  symbol: string
-  isGood: boolean
-}
-
-interface WordIpaData {
-  word: string
-  cleanWord: string
-  ipa: string
-  status: "GOOD" | "WRONG" | "OMITTED"
-  accuracyScore: number
-  phonemes: PhonemeInfo[]
-}
 
 export const SpeakingResultPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId?: string }>()
@@ -42,10 +27,22 @@ export const SpeakingResultPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<SpeakingSessionDetail | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const currentTime = "0:12"
-  const duration = "0:45"
+  const currentTime = "00:00"
+  const duration = "00:45"
 
-  const [selectedWord, setSelectedWord] = useState<WordIpaData | null>(null)
+  const parseSpeakingFeedback = (raw: string | undefined | null) => {
+    if (!raw) return {}
+    if (typeof raw === "object") return raw as any
+    try {
+      const parsed = JSON.parse(raw)
+      if (typeof parsed === "object" && parsed !== null) {
+        return parsed
+      }
+    } catch (e) {
+      // Not JSON format
+    }
+    return { raw_text: raw }
+  }
 
   useEffect(() => {
     const fetchResult = async () => {
@@ -72,87 +69,6 @@ export const SpeakingResultPage: React.FC = () => {
 
     fetchResult()
   }, [sessionId])
-
-  const handleWordClick = (word: string, status: "GOOD" | "WRONG" | "OMITTED") => {
-    const clean = word.toLowerCase().replace(/[^a-z]/g, "")
-    const ipaMap: Record<string, { ipa: string; score: number; phonemes: PhonemeInfo[] }> = {
-      standardized: {
-        ipa: "/ˈstæn.də.daɪzd/",
-        score: 55,
-        phonemes: [
-          { symbol: "stæn", isGood: true },
-          { symbol: "də", isGood: true },
-          { symbol: "daɪzd", isGood: false }
-        ]
-      },
-      applied: {
-        ipa: "/əˈplaɪd/",
-        score: 60,
-        phonemes: [
-          { symbol: "ə", isGood: true },
-          { symbol: "plaɪd", isGood: false }
-        ]
-      },
-      modern: {
-        ipa: "/ˈmɒd.n/",
-        score: 92,
-        phonemes: [
-          { symbol: "mɒd", isGood: true },
-          { symbol: "n", isGood: true }
-        ]
-      },
-      education: {
-        ipa: "/ˌedʒ.uˈkeɪ.ʃn/",
-        score: 95,
-        phonemes: [
-          { symbol: "edʒ", isGood: true },
-          { symbol: "u", isGood: true },
-          { symbol: "keɪ", isGood: true },
-          { symbol: "ʃn", isGood: true }
-        ]
-      },
-      diverse: {
-        ipa: "/daɪˈvɜːs/",
-        score: 88,
-        phonemes: [
-          { symbol: "daɪ", isGood: true },
-          { symbol: "vɜːs", isGood: true }
-        ]
-      },
-      learners: {
-        ipa: "/ˈlɜː.nəz/",
-        score: 90,
-        phonemes: [
-          { symbol: "lɜː", isGood: true },
-          { symbol: "nəz", isGood: true }
-        ]
-      }
-    }
-
-    const data = ipaMap[clean] || {
-      ipa: `/${clean}/`,
-      score: status === "GOOD" ? 88 : 50,
-      phonemes: [
-        { symbol: clean.slice(0, Math.ceil(clean.length / 2)), isGood: status === "GOOD" },
-        { symbol: clean.slice(Math.ceil(clean.length / 2)), isGood: status === "GOOD" }
-      ]
-    }
-
-    setSelectedWord({
-      word: word,
-      cleanWord: clean || word,
-      ipa: data.ipa,
-      status: status,
-      accuracyScore: data.score,
-      phonemes: data.phonemes
-    })
-  }
-
-  const handlePlayWordAudio = (word: string) => {
-    const utterance = new SpeechSynthesisUtterance(word)
-    utterance.lang = "en-US"
-    window.speechSynthesis.speak(utterance)
-  }
 
   if (loading) {
     return (
@@ -352,7 +268,7 @@ export const SpeakingResultPage: React.FC = () => {
               {/* Questions List */}
               <div className="space-y-6">
                 {result.questions_detail?.map((q, idx) => (
-                  <div key={idx} className="space-y-3">
+                  <div key={idx} className="space-y-3 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-extrabold uppercase text-slate-400">
                         QUESTION {idx + 1}
@@ -363,47 +279,24 @@ export const SpeakingResultPage: React.FC = () => {
                       "{q.question_text}"
                     </p>
 
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-700 leading-relaxed">
-                      {/* Render transcript with clickable highlighted word spans */}
-                      <span className="inline">
-                        I believe that{" "}
-                        <button
-                          onClick={() => handleWordClick("modern education", "GOOD")}
-                          className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold hover:bg-emerald-200 transition cursor-pointer"
-                        >
-                          modern education
-                        </button>{" "}
-                        system is evolving rapidly. However, many schools still focus too much on{" "}
-                        <button
-                          onClick={() => handleWordClick("standardized", "WRONG")}
-                          className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded font-bold line-through hover:bg-rose-200 transition cursor-pointer"
-                        >
-                          standardized
-                        </button>{" "}
-                        testing.{" "}
-                        <button
-                          onClick={() => handleWordClick("... um ...", "OMITTED")}
-                          className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-bold hover:bg-amber-200 transition cursor-pointer"
-                        >
-                          ... um ...
-                        </button>{" "}
-                        This might limit the creativity of{" "}
-                        <button
-                          onClick={() => handleWordClick("diverse learners", "GOOD")}
-                          className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold hover:bg-emerald-200 transition cursor-pointer"
-                        >
-                          diverse learners
-                        </button>{" "}
-                        in the classroom. Students need to learn how to{" "}
-                        <button
-                          onClick={() => handleWordClick("applied", "WRONG")}
-                          className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded font-bold hover:bg-rose-200 transition cursor-pointer"
-                        >
-                          applied
-                        </button>{" "}
-                        their knowledge to real-world problems.
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
+                        CÂU TRẢ LỜI CỦA BẠN (TRANSCRIPT):
                       </span>
+                      {q.user_transcript || "Chưa có dữ liệu bản bóc băng cho câu hỏi này."}
                     </div>
+
+                    {q.sample_response && (
+                      <div className="p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white rounded-2xl space-y-2 border border-indigo-500/30">
+                        <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider block flex items-center gap-1.5">
+                          <BookOpen size={13} />
+                          GỢI Ý CÂU TRẢ LỜI MẪU HOÀN CHỈNH (BAND 8.0+ SAMPLE ANSWER):
+                        </span>
+                        <p className="text-xs text-indigo-100 font-medium leading-relaxed whitespace-pre-wrap">
+                          {q.sample_response}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -412,16 +305,102 @@ export const SpeakingResultPage: React.FC = () => {
 
           {/* Right Main Column */}
           <div className="lg:col-span-4 space-y-6">
-            {/* AI Insights (Blue Card) */}
-            <div className="bg-blue-600 text-white rounded-3xl p-6 shadow-md space-y-3">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
-                <Sparkles size={14} />
-                <span>AI Insights</span>
-              </h3>
-              <p className="text-xs font-medium leading-relaxed text-blue-100">
-                {result.ai_insights_summary || "You tend to omit final consonant sounds (ending sounds). Grammar and vocabulary are high level, but pay attention to verb patterns after 'how to'."}
-              </p>
-            </div>
+            {(() => {
+              const fb = parseSpeakingFeedback(result.ai_insights_summary)
+
+              return (
+                <>
+                  {/* AI Insights Summary (Blue Card) */}
+                  <div className="bg-[#1e50e6] text-white rounded-3xl p-6 shadow-md space-y-3">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles size={14} />
+                      <span>Phân tích tổng quan (AI Insights)</span>
+                    </h3>
+                    <p className="text-xs font-medium leading-relaxed text-blue-100 whitespace-pre-wrap">
+                      {fb.ai_insights || fb.raw_text || "Chưa có nhận xét tổng quan từ máy chủ."}
+                    </p>
+                  </div>
+
+                  {/* Pronunciation Feedback */}
+                  {fb.pronunciation_feedback && typeof fb.pronunciation_feedback === "object" && (
+                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-blue-700 flex items-center gap-2">
+                        <Sparkles size={14} />
+                        <span>1. Phát âm (Pronunciation)</span>
+                      </h3>
+                      <div className="space-y-1 text-xs text-slate-700 font-medium">
+                        {fb.pronunciation_feedback.word && (
+                          <p className="font-extrabold text-blue-900">• Từ chú ý: "{fb.pronunciation_feedback.word}"</p>
+                        )}
+                        {fb.pronunciation_feedback.issue && (
+                          <p>• Lỗi: {fb.pronunciation_feedback.issue}</p>
+                        )}
+                        {fb.pronunciation_feedback.tip && (
+                          <p className="text-blue-800 font-semibold">• Mẹo: {fb.pronunciation_feedback.tip}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grammar Feedback */}
+                  {fb.grammar_feedback && typeof fb.grammar_feedback === "object" && (
+                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber-700 flex items-center gap-2">
+                        <Sparkles size={14} />
+                        <span>2. Ngữ pháp (Grammar)</span>
+                      </h3>
+                      <div className="space-y-1 text-xs text-amber-950 font-medium">
+                        {fb.grammar_feedback.structure && (
+                          <p className="font-bold text-amber-900">• Cấu trúc: {fb.grammar_feedback.structure}</p>
+                        )}
+                        {fb.grammar_feedback.issue && (
+                          <p className="leading-relaxed">• Nhận xét: {fb.grammar_feedback.issue}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fluency Feedback */}
+                  {fb.fluency_feedback && typeof fb.fluency_feedback === "object" && (
+                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-emerald-700 flex items-center gap-2">
+                        <Sparkles size={14} />
+                        <span>3. Độ lưu loát (Fluency)</span>
+                      </h3>
+                      <div className="space-y-1 text-xs text-emerald-950 font-medium">
+                        {fb.fluency_feedback.positive_point && (
+                          <p className="font-bold text-emerald-900">• Ưu điểm: {fb.fluency_feedback.positive_point}</p>
+                        )}
+                        {fb.fluency_feedback.note && (
+                          <p className="leading-relaxed">• Khuyến nghị: {fb.fluency_feedback.note}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Vocabulary Feedback */}
+                  {fb.vocabulary_feedback && typeof fb.vocabulary_feedback === "object" && (
+                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-indigo-700 flex items-center gap-2">
+                        <Sparkles size={14} />
+                        <span>4. Từ vựng (Vocabulary)</span>
+                      </h3>
+                      <div className="space-y-1 text-xs text-indigo-950 font-medium">
+                        {fb.vocabulary_feedback.positive_point && (
+                          <p className="font-bold text-indigo-900">• Ưu điểm: {fb.vocabulary_feedback.positive_point}</p>
+                        )}
+                        {fb.vocabulary_feedback.positive_detail && (
+                          <p className="text-indigo-800 font-medium">• Cụm từ hay: "{fb.vocabulary_feedback.positive_detail}"</p>
+                        )}
+                        {fb.vocabulary_feedback.note && (
+                          <p className="leading-relaxed">• Gợi ý từ nâng cao: {fb.vocabulary_feedback.note}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
 
             {/* Key Strengths */}
             <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
@@ -502,92 +481,6 @@ export const SpeakingResultPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Interactive IPA & Phoneme Breakdown Modal Popover */}
-      {selectedWord && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black text-slate-900 capitalize">
-                  {selectedWord.cleanWord}
-                </h3>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    selectedWord.status === "GOOD"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : selectedWord.status === "WRONG"
-                      ? "bg-rose-100 text-rose-800"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  {selectedWord.accuracyScore}% Accuracy
-                </span>
-              </div>
-
-              <button
-                onClick={() => setSelectedWord(null)}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-full transition"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Target Audio & IPA Bar */}
-            <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase text-slate-400 block">IPA PHONETIC GUIDE</span>
-                <span className="text-lg font-mono font-bold text-blue-600">{selectedWord.ipa}</span>
-              </div>
-
-              <button
-                onClick={() => handlePlayWordAudio(selectedWord.cleanWord)}
-                className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition cursor-pointer"
-                title="Listen to word pronunciation"
-              >
-                <Play size={18} className="ml-0.5" />
-              </button>
-            </div>
-
-            {/* Phonemes Breakdown Section */}
-            <div className="space-y-3">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 block">
-                Phoneme Breakdown (Phân tích âm phát âm)
-              </span>
-              <p className="text-[11px] text-slate-500">
-                Green indicates correct phoneme sounds; Red indicates sounds needing improvement.
-              </p>
-
-              <div className="flex flex-wrap gap-2 pt-1">
-                {selectedWord.phonemes.map((ph, idx) => (
-                  <div
-                    key={idx}
-                    className={`px-4 py-2 rounded-2xl border text-base font-mono font-black flex flex-col items-center shadow-2xs ${
-                      ph.isGood
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                        : "bg-rose-50 text-rose-700 border-rose-300"
-                    }`}
-                  >
-                    <span>/{ph.symbol}/</span>
-                    <span className="text-[9px] font-sans font-bold uppercase mt-0.5">
-                      {ph.isGood ? "Correct" : "Needs Practice"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Close Button */}
-            <button
-              onClick={() => setSelectedWord(null)}
-              className="w-full py-3 bg-[#1e50e6] text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/20 hover:bg-blue-700 transition cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </AppLayout>
   )
 }

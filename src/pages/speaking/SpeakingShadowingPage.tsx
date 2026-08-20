@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
-import { useParams, useNavigate, useLocation } from "react-router-dom"
+import { useParams, useLocation } from "react-router-dom"
 import { AppLayout } from "../../components/common/AppLayout"
 import { speakingApi } from "../../services/speakingApi"
 import type { ShadowingSentence, ShadowingEvaluateResponse, WordDetail } from "../../types/speaking"
@@ -9,7 +9,6 @@ import {
   Mic,
   Square,
   Loader2,
-  History,
   Sparkles,
   X,
   Info,
@@ -25,7 +24,6 @@ import {
 
 export const SpeakingShadowingPage: React.FC = () => {
   const { sentenceId } = useParams<{ sentenceId?: string }>()
-  const navigate = useNavigate()
   const location = useLocation()
 
   const passedSentence: ShadowingSentence | undefined = location.state?.sentence
@@ -42,6 +40,10 @@ export const SpeakingShadowingPage: React.FC = () => {
   })
 
   const [evaluation, setEvaluation] = useState<ShadowingEvaluateResponse | null>(null)
+  const [aiFeedbackText, setAiFeedbackText] = useState<string | null>(null)
+  const [isFetchingFeedback, setIsFetchingFeedback] = useState(false)
+  const [feedbackError, setFeedbackError] = useState<string | null>(null)
+
   const [userAudioUrl, setUserAudioUrl] = useState<string | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [isEvaluating, setIsEvaluating] = useState(false)
@@ -63,11 +65,6 @@ export const SpeakingShadowingPage: React.FC = () => {
   // MediaRecorder refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-
-  // Practice History State
-  const [historyItems, setHistoryItems] = useState([
-    { id: "h1", text: "The meticulous architectural...", score: 85, status: "EXCELLENT", time: "10M AGO" }
-  ])
 
   // Close settings menu on outside click
   useEffect(() => {
@@ -208,17 +205,6 @@ export const SpeakingShadowingPage: React.FC = () => {
         if (res.user_audio_url) {
           setUserAudioUrl(res.user_audio_url)
         }
-
-        setHistoryItems((prev) => [
-          {
-            id: Date.now().toString(),
-            text: `"${sentence.english_text.slice(0, 26)}..."`,
-            score: res.accuracy_score,
-            status: res.accuracy_score >= 70 ? "EXCELLENT" : "NEEDS REVIEW",
-            time: "JUST NOW"
-          },
-          ...prev
-        ])
       } else {
         throw new Error("Máy chủ không trả về dữ liệu kết quả đánh giá shadowing.")
       }
@@ -231,9 +217,35 @@ export const SpeakingShadowingPage: React.FC = () => {
     }
   }
 
+  const handleGetFeedback = async () => {
+    if (!evaluation) return
+    setIsFetchingFeedback(true)
+    setFeedbackError(null)
+    try {
+      const res = await speakingApi.getShadowingFeedback(sentence.id, {
+        user_transcript: evaluation.user_transcript,
+        words_detail: evaluation.words_detail || []
+      })
+      if (res && res.feedback) {
+        setAiFeedbackText(res.feedback)
+      } else {
+        throw new Error("Máy chủ không trả về nội dung feedback.")
+      }
+    } catch (err: any) {
+      console.error("Error getting AI feedback:", err)
+      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || "Không thể lấy feedback từ AI. Vui lòng thử lại sau!"
+      setFeedbackError(msg)
+    } finally {
+      setIsFetchingFeedback(false)
+    }
+  }
+
   // Reset / Try Again Handler
   const handleTryAgain = () => {
     setEvaluation(null)
+    setAiFeedbackText(null)
+    setFeedbackError(null)
+    setIsFetchingFeedback(false)
     if (userAudioUrl && userAudioUrl.startsWith("blob:")) {
       URL.revokeObjectURL(userAudioUrl)
     }
@@ -276,6 +288,140 @@ export const SpeakingShadowingPage: React.FC = () => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins < 10 ? "0" : ""}${mins}:${secs < 10 ? "0" : ""}${secs}`
+  }
+
+  const renderFormattedFeedback = (rawText: string) => {
+    if (!rawText) return null
+
+    const lines = rawText.split("\n")
+    const elements: React.ReactNode[] = []
+    let listBuffer: React.ReactNode[] = []
+
+    const flushList = () => {
+      if (listBuffer.length > 0) {
+        elements.push(
+          <ul key={`ul-${elements.length}`} className="space-y-1.5 my-2 pl-1">
+            {listBuffer}
+          </ul>
+        )
+        listBuffer = []
+      }
+    }
+
+    const parseInline = (str: string) => {
+      const parts: React.ReactNode[] = []
+      let lastIndex = 0
+      const regex = /(\*\*(.*?)\*\*|`(.*?)`|\/([^\/\s]+)\/)/g
+      let match: RegExpExecArray | null
+
+      while ((match = regex.exec(str)) !== null) {
+        if (match.index > lastIndex) {
+          parts.push(str.substring(lastIndex, match.index))
+        }
+
+        if (match[2] !== undefined) {
+          // **bold**
+          parts.push(
+            <strong key={match.index} className="font-extrabold text-slate-900">
+              {match[2]}
+            </strong>
+          )
+        } else if (match[3] !== undefined) {
+          // `code`
+          parts.push(
+            <code key={match.index} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-mono font-bold rounded text-[11px]">
+              {match[3]}
+            </code>
+          )
+        } else if (match[4] !== undefined) {
+          // /IPA/
+          parts.push(
+            <span key={match.index} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-mono font-bold rounded text-xs border border-blue-100/80">
+              /{match[4]}/
+            </span>
+          )
+        }
+
+        lastIndex = regex.lastIndex
+      }
+
+      if (lastIndex < str.length) {
+        parts.push(str.substring(lastIndex))
+      }
+
+      return parts.length > 0 ? parts : str
+    }
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim()
+
+      if (!trimmed) {
+        flushList()
+        return
+      }
+
+      if (trimmed === "---") {
+        flushList()
+        elements.push(<hr key={index} className="my-3.5 border-slate-200" />)
+        return
+      }
+
+      if (trimmed.startsWith("### ")) {
+        flushList()
+        elements.push(
+          <div key={index} className="mt-4 mb-2 pb-1 border-b border-blue-100 flex items-center gap-2">
+            <span className="w-2 h-4 bg-[#1e50e6] rounded-full shrink-0" />
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wide">
+              {parseInline(trimmed.replace(/^###\s+/, ""))}
+            </h3>
+          </div>
+        )
+        return
+      }
+
+      if (trimmed.startsWith("#### ")) {
+        flushList()
+        elements.push(
+          <div key={index} className="mt-3 mb-1.5 p-2.5 bg-blue-50/80 border border-blue-100 rounded-xl font-extrabold text-xs text-blue-900 flex items-center justify-between shadow-2xs">
+            <span>{parseInline(trimmed.replace(/^####\s+/, ""))}</span>
+          </div>
+        )
+        return
+      }
+
+      if (trimmed.startsWith("* ") || trimmed.startsWith("- ") || /^\d+\.\s+/.test(trimmed)) {
+        const content = trimmed.replace(/^(\*|-|\d+\.)\s+/, "")
+        listBuffer.push(
+          <li key={index} className="text-xs text-slate-700 font-medium leading-relaxed flex items-start gap-2">
+            <span className="text-[#1e50e6] font-extrabold shrink-0 mt-0.5">•</span>
+            <div>{parseInline(content)}</div>
+          </li>
+        )
+        return
+      }
+
+      if (trimmed.startsWith("*Mẹo nhỏ:*") || trimmed.startsWith("Mẹo nhỏ:") || trimmed.startsWith("_Mẹo nhỏ:_")) {
+        flushList()
+        elements.push(
+          <div key={index} className="mt-3 p-3 bg-amber-50/90 border border-amber-200/90 rounded-xl text-xs text-amber-950 font-medium leading-relaxed flex items-start gap-2">
+            <span className="text-amber-600 font-bold shrink-0 mt-0.5">💡</span>
+            <div>{parseInline(trimmed)}</div>
+          </div>
+        )
+        return
+      }
+
+      flushList()
+      elements.push(
+        <p key={index} className="text-xs text-slate-700 font-medium leading-relaxed my-1">
+          {parseInline(trimmed)}
+        </p>
+      )
+    })
+
+    flushList()
+
+    return <div className="space-y-1">{elements}</div>
   }
 
   if (loading) {
@@ -323,9 +469,6 @@ export const SpeakingShadowingPage: React.FC = () => {
         {/* Header Title Bar */}
         <div className="border-b border-slate-200/80 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block">
-              PRACTICE MODULE &gt; SPEAKING &gt; SHADOWING
-            </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-0.5">
               SHADOWING PRACTICE
             </h1>
@@ -675,27 +818,68 @@ export const SpeakingShadowingPage: React.FC = () => {
                     ).length
 
                     return (
-                      <div className="space-y-1 text-xs font-medium text-slate-700 leading-relaxed">
-                        {insertions > 0 && (
-                          <p className="text-purple-800 font-semibold">
-                            • Phát hiện <strong>{insertions} từ dư (Insertion)</strong> do bạn phát âm lặp hoặc nói thêm từ.
-                          </p>
-                        )}
-                        {omissions > 0 && (
-                          <p className="text-amber-800 font-semibold">
-                            • Phát hiện <strong>{omissions} từ bị bỏ sót (Omission)</strong> chưa được đọc trong câu gốc.
-                          </p>
-                        )}
-                        {mispronunciations > 0 && (
-                          <p className="text-rose-800 font-semibold">
-                            • Có <strong>{mispronunciations} từ phát âm sai (Mispronunciation)</strong> cần luyện tập lại ký tự IPA.
-                          </p>
-                        )}
-                        {insertions === 0 && omissions === 0 && mispronunciations === 0 && (
-                          <p className="text-emerald-800 font-semibold">
-                            🎉 Tuyệt vời! Bạn phát âm chính xác tất cả các từ trong câu.
-                          </p>
-                        )}
+                      <div className="space-y-3">
+                        <div className="space-y-1 text-xs font-medium text-slate-700 leading-relaxed">
+                          {insertions > 0 && (
+                            <p className="text-purple-800 font-semibold">
+                              • Phát hiện <strong>{insertions} từ dư (Insertion)</strong> do bạn phát âm lặp hoặc nói thêm từ.
+                            </p>
+                          )}
+                          {omissions > 0 && (
+                            <p className="text-amber-800 font-semibold">
+                              • Phát hiện <strong>{omissions} từ bị bỏ sót (Omission)</strong> chưa được đọc trong câu gốc.
+                            </p>
+                          )}
+                          {mispronunciations > 0 && (
+                            <p className="text-rose-800 font-semibold">
+                              • Có <strong>{mispronunciations} từ phát âm sai (Mispronunciation)</strong> cần luyện tập lại ký tự IPA.
+                            </p>
+                          )}
+                          {insertions === 0 && omissions === 0 && mispronunciations === 0 && (
+                            <p className="text-emerald-800 font-semibold">
+                              🎉 Tuyệt vời! Bạn phát âm chính xác tất cả các từ trong câu.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* BUTTON / RESULT FOR GEMINI AI FEEDBACK */}
+                        <div className="pt-2 border-t border-blue-100/80 space-y-2">
+                          {aiFeedbackText ? (
+                            <div className="p-3 bg-white border border-emerald-200 rounded-xl space-y-1.5 shadow-2xs animate-in fade-in">
+                              <span className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+                                <Sparkles size={12} className="text-emerald-600 animate-pulse" />
+                                Hướng dẫn chi tiết từ Gemini AI:
+                              </span>
+                              <div className="text-xs text-slate-800 font-medium leading-relaxed">
+                                {renderFormattedFeedback(aiFeedbackText)}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={handleGetFeedback}
+                              disabled={isFetchingFeedback}
+                              className="w-full py-2.5 px-4 bg-[#1e50e6] hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-60"
+                            >
+                              {isFetchingFeedback ? (
+                                <>
+                                  <Loader2 size={15} className="animate-spin" />
+                                  <span>Gemini AI đang phân tích...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles size={15} />
+                                  <span>Lấy AI Feedback Chi Tiết</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {feedbackError && (
+                            <p className="text-[11px] text-rose-600 font-semibold text-center mt-1">
+                              {feedbackError}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )
                   })()

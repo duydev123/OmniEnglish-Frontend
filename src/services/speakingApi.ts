@@ -7,7 +7,8 @@ import type {
   SpeakingSessionDetail,
   SpeakingHistoryItem,
   ShadowingSentence,
-  ShadowingEvaluateResponse
+  ShadowingEvaluateResponse,
+  ShadowingFeedbackResponse
 } from "../types/speaking"
 
 export const speakingApi = {
@@ -133,6 +134,18 @@ export const speakingApi = {
       return response.data?.data || response.data
     } catch (error: any) {
       console.error("Error evaluating shadowing:", error)
+      throw error
+    }
+  },
+
+  getShadowingFeedback: async (sentenceId: string, payload: { user_transcript: string; words_detail: any[] }): Promise<ShadowingFeedbackResponse> => {
+    try {
+      const response = await axiosClient.post(`/speaking/shadowing/sentences/${sentenceId}/feedback`, payload, {
+        timeout: 60000
+      })
+      return response.data?.data || response.data
+    } catch (error: any) {
+      console.error("Error fetching shadowing feedback:", error)
       throw error
     }
   }
