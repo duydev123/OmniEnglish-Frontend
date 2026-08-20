@@ -305,6 +305,20 @@ export const SpeakingPracticePage: React.FC = () => {
     (w) => w.error_type === "Mispronunciation" || (w.accuracy_score !== undefined && w.accuracy_score < 60)
   )
 
+  const parseSpeakingFeedback = (raw: string | undefined | null) => {
+    if (!raw) return {}
+    if (typeof raw === "object") return raw as any
+    try {
+      const parsed = JSON.parse(raw)
+      if (typeof parsed === "object" && parsed !== null) {
+        return parsed
+      }
+    } catch (e) {
+      // If not JSON string
+    }
+    return { raw_text: raw }
+  }
+
   return (
     <AppLayout
       breadcrumbs={[
@@ -360,9 +374,6 @@ export const SpeakingPracticePage: React.FC = () => {
             {/* Header Title */}
             <div className="border-b border-slate-200/80 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block">
-                  PRACTICE MODULE &gt; SPEAKING &gt; TOPIC OVERVIEW
-                </span>
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5">
                   Questions List in Topic
                 </h1>
@@ -842,7 +853,7 @@ export const SpeakingPracticePage: React.FC = () => {
                 </button>
 
                 <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                  <span>PRACTICE MODULE</span> &gt; <span>SPEAKING</span> &gt;{" "}
+
                   <span className="text-blue-600">
                     {currentPrompt?.part?.replace("_", " ") || "PART 1"} - {currentPrompt?.sub_topic || "HOMETOWN & STUDIES"}
                   </span>
@@ -851,9 +862,7 @@ export const SpeakingPracticePage: React.FC = () => {
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5">
                   Phân tích chi tiết: {currentPrompt?.sub_topic || "Hometown & Studies"}
                 </h1>
-                <span className="text-xs font-semibold text-slate-400">
-                  IELTS Speaking {currentPrompt?.part?.replace("_", " ") || "Part 1"} • Real API Result
-                </span>
+
               </div>
 
               {/* Overall Performance Badge Top Right */}
@@ -907,7 +916,7 @@ export const SpeakingPracticePage: React.FC = () => {
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-500">
                       <span>{formatTime(audioCurrentTime)}</span>
-                      <span>{formatTime(audioDuration || 45)}</span>
+                      <span>{formatTime(audioDuration || 0)}</span>
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative cursor-pointer">
                       <div
@@ -995,97 +1004,215 @@ export const SpeakingPracticePage: React.FC = () => {
                     </p>
                   </div>
                 )}
+
+                {/* Band 8.0+ Recommended Sample Answer Card */}
+                {(() => {
+                  const fb = parseSpeakingFeedback(activeResult.realtime_feedback)
+                  const sampleText = activeResult.sample_response || fb.sample_response
+
+                  if (!sampleText) return null
+
+                  return (
+                    <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white border border-indigo-500/30 rounded-3xl p-6 shadow-md space-y-3">
+                      <div className="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+                        <div className="flex items-center gap-2">
+                          <BookOpen size={18} className="text-amber-400" />
+                          <h3 className="text-sm font-extrabold text-white tracking-wide">
+                            Gợi Ý Câu Trả Lời Mẫu Hoàn Chỉnh (Band 8.0+ Sample Answer)
+                          </h3>
+                        </div>
+                        <span className="px-2.5 py-0.5 bg-amber-400/20 text-amber-300 border border-amber-400/30 rounded-full text-[10px] font-black uppercase tracking-wider">
+                          Recommended Response
+                        </span>
+                      </div>
+
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-xs text-indigo-100 font-medium leading-relaxed whitespace-pre-wrap">
+                        {sampleText}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* RIGHT COLUMN: AI INSIGHTS & DETAILED CRITERIA CARDS */}
               <div className="lg:col-span-5 space-y-6">
+                {(() => {
+                  const fb = parseSpeakingFeedback(activeResult.realtime_feedback)
 
-                {/* AI Insights Card (Blue Box) */}
-                <div className="bg-[#1e50e6] text-white rounded-3xl p-6 shadow-md space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={16} />
-                    <h3 className="text-sm font-extrabold uppercase tracking-wider">
-                      Phân tích từ AI (AI Insights)
-                    </h3>
-                  </div>
+                  return (
+                    <>
+                      {/* AI Insights Summary Card (Blue Box) */}
+                      <div className="bg-[#1e50e6] text-white rounded-3xl p-6 shadow-md space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkles size={16} />
+                          <h3 className="text-sm font-extrabold uppercase tracking-wider">
+                            Phân tích tổng quan (AI Insights)
+                          </h3>
+                        </div>
 
-                  <div className="text-xs font-medium leading-relaxed text-blue-100 whitespace-pre-wrap">
-                    {activeResult.realtime_feedback || "Hệ thống đang hoàn tất nhận xét chi tiết..."}
-                  </div>
-                </div>
+                        <div className="text-xs font-medium leading-relaxed text-blue-100 whitespace-pre-wrap">
+                          {fb.ai_insights || fb.raw_text || "Chưa có nhận xét tổng quan từ máy chủ."}
+                        </div>
+                      </div>
 
-                {/* Pronunciation Card */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <UserCheck size={16} className="text-blue-600" />
-                      <h3 className="text-sm font-extrabold text-slate-800">Phát âm (Pronunciation)</h3>
-                    </div>
-                    <span className="text-sm font-black text-blue-600">
-                      {activeResult.pronunciation_score ?? 6.8}/10
-                    </span>
-                  </div>
-
-                  <div className="space-y-3">
-                    {mispronouncedWords.length > 0 ? (
-                      mispronouncedWords.slice(0, 4).map((w, i) => (
-                        <div key={i} className="p-3 bg-rose-50/70 border border-rose-100 rounded-2xl space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-rose-800 capitalize">"{w.word}"</span>
-                            <button
-                              onClick={() => handlePlayWordAudio(w.word)}
-                              className="text-xs text-blue-600 hover:underline flex items-center gap-1 cursor-pointer font-semibold"
-                            >
-                              <Volume2 size={12} />
-                              <span>Nghe phát âm chuẩn</span>
-                            </button>
+                      {/* 1. Pronunciation Card */}
+                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-2">
+                            <UserCheck size={16} className="text-blue-600" />
+                            <h3 className="text-sm font-extrabold text-slate-800">1. Phát âm (Pronunciation)</h3>
                           </div>
-                          <span className="text-[11px] text-rose-700 font-medium block">
-                            Từ này bị phát âm chưa rõ hoặc sai âm tiết ({w.accuracy_score}% điểm chính xác).
+                          <span className="text-sm font-black text-blue-600">
+                            {activeResult.pronunciation_score ?? 0}/10
                           </span>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-emerald-700 font-semibold bg-emerald-50 p-3 rounded-2xl">
-                        Phát âm tổng thể rất chuẩn xác!
-                      </p>
-                    )}
-                  </div>
-                </div>
 
-                {/* Grammar Card */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Activity size={16} className="text-amber-500" />
-                      <h3 className="text-sm font-extrabold text-slate-800">Ngữ pháp (Grammar)</h3>
-                    </div>
-                    <span className="text-sm font-black text-amber-600">
-                      {activeResult.grammar_score ?? 5.0}/10
-                    </span>
-                  </div>
+                        <div className="space-y-3">
+                          {mispronouncedWords.length > 0 && (
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                Các từ phát âm chưa chuẩn:
+                              </span>
+                              {mispronouncedWords.slice(0, 4).map((w, i) => (
+                                <div key={i} className="p-3 bg-rose-50/70 border border-rose-100 rounded-2xl space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-rose-800 capitalize">"{w.word}"</span>
+                                    <button
+                                      onClick={() => handlePlayWordAudio(w.word)}
+                                      className="text-xs text-blue-600 hover:underline flex items-center gap-1 cursor-pointer font-semibold"
+                                    >
+                                      <Volume2 size={12} />
+                                      <span>Nghe đọc chuẩn</span>
+                                    </button>
+                                  </div>
+                                  <span className="text-[11px] text-rose-700 font-medium block">
+                                    Điểm chính xác: {w.accuracy_score}% • {w.error_type || "Mispronunciation"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
-                  <div className="p-3.5 bg-amber-50/70 border border-amber-100 rounded-2xl text-xs text-amber-900 font-medium leading-relaxed">
-                    Chú ý các danh từ số nhiều và cấu trúc động từ đi kèm sở thích.
-                  </div>
-                </div>
+                          {fb.pronunciation_feedback && typeof fb.pronunciation_feedback === "object" && (
+                            <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-2xl space-y-1.5 text-xs text-slate-800">
+                              {fb.pronunciation_feedback.word && (
+                                <p className="font-extrabold text-blue-900">
+                                  • Từ cần lưu ý: <span className="underline">{fb.pronunciation_feedback.word}</span>
+                                </p>
+                              )}
+                              {fb.pronunciation_feedback.issue && (
+                                <p className="text-slate-700 font-medium">• Lỗi phát âm: {fb.pronunciation_feedback.issue}</p>
+                              )}
+                              {fb.pronunciation_feedback.tip && (
+                                <p className="text-blue-800 font-semibold">• Mẹo cải thiện: {fb.pronunciation_feedback.tip}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                {/* Fluency Card */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Zap size={16} className="text-emerald-500" />
-                      <h3 className="text-sm font-extrabold text-slate-800">Độ lưu loát (Fluency)</h3>
-                    </div>
-                    <span className="text-sm font-black text-emerald-600">
-                      {activeResult.fluency_score ?? 6.6}/10
-                    </span>
-                  </div>
+                      {/* 2. Grammar Card */}
+                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-2">
+                            <Activity size={16} className="text-amber-500" />
+                            <h3 className="text-sm font-extrabold text-slate-800">2. Ngữ pháp (Grammar)</h3>
+                          </div>
+                          <span className="text-sm font-black text-amber-600">
+                            {activeResult.grammar_score ?? 0}/10
+                          </span>
+                        </div>
 
-                  <div className="p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-2xl text-xs text-emerald-900 font-medium leading-relaxed">
-                    Tốc độ nói khá ổn định. Hạn chế sử dụng từ đệm để tăng độ mạch lạc.
-                  </div>
-                </div>
+                        {fb.grammar_feedback && typeof fb.grammar_feedback === "object" ? (
+                          <div className="p-3.5 bg-amber-50/70 border border-amber-100 rounded-2xl space-y-1.5 text-xs text-amber-950 font-medium">
+                            {fb.grammar_feedback.structure && (
+                              <p className="font-extrabold text-amber-900">• Cấu trúc: {fb.grammar_feedback.structure}</p>
+                            )}
+                            {fb.grammar_feedback.issue && (
+                              <p className="leading-relaxed">• Phân tích &amp; Sửa lỗi: {fb.grammar_feedback.issue}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-3.5 bg-amber-50/70 border border-amber-100 rounded-2xl text-xs text-amber-900 font-medium">
+                            {typeof fb.grammar_feedback === "string" ? fb.grammar_feedback : "Nhận xét ngữ pháp từ AI chưa có dữ liệu."}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 3. Fluency & Coherence Card */}
+                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-2">
+                            <Zap size={16} className="text-emerald-500" />
+                            <h3 className="text-sm font-extrabold text-slate-800">3. Trôi chảy &amp; Mạch lạc (Fluency &amp; Coherence)</h3>
+                          </div>
+                          <span className="text-sm font-black text-emerald-600">
+                            {activeResult.fluency_score ?? 0}/10
+                          </span>
+                        </div>
+
+                        {/* OFF-TOPIC WARNING BANNER IF FLAGGED */}
+                        {(fb.fluency_feedback?.is_off_topic || fb.fluency_feedback?.off_topic_warning) && (
+                          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl space-y-1.5 text-xs text-rose-900 animate-in fade-in">
+                            <div className="flex items-center gap-1.5 text-rose-700 font-black uppercase tracking-wider text-[11px]">
+                              <AlertCircle size={14} className="text-rose-600 shrink-0" />
+                              <span>Cảnh báo Lạc đề (Fluency &amp; Coherence Penalty)</span>
+                            </div>
+                            <p className="font-semibold text-rose-800 leading-relaxed">
+                              {fb.fluency_feedback?.off_topic_warning || "Trả lời không đúng trọng tâm câu hỏi. Trong IELTS Speaking, trả lời lạc đề sẽ bị trừ trực tiếp vào điểm Fluency & Coherence do thiếu tính liên kết logic với câu hỏi."}
+                            </p>
+                          </div>
+                        )}
+
+                        {fb.fluency_feedback && typeof fb.fluency_feedback === "object" ? (
+                          <div className="p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-2xl space-y-1.5 text-xs text-emerald-950 font-medium">
+                            {fb.fluency_feedback.positive_point && (
+                              <p className="font-bold text-emerald-900">• Ưu điểm: {fb.fluency_feedback.positive_point}</p>
+                            )}
+                            {fb.fluency_feedback.note && (
+                              <p className="leading-relaxed">• Khuyến nghị: {fb.fluency_feedback.note}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-2xl text-xs text-emerald-900 font-medium">
+                            {typeof fb.fluency_feedback === "string" ? fb.fluency_feedback : "Nhận xét tốc độ nói và nhịp điệu."}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 4. Vocabulary Card */}
+                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-2">
+                            <BookOpen size={16} className="text-indigo-600" />
+                            <h3 className="text-sm font-extrabold text-slate-800">4. Từ vựng (Lexical Resource)</h3>
+                          </div>
+                          <span className="text-sm font-black text-indigo-600">
+                            {activeResult.lexical_score ?? 0}/10
+                          </span>
+                        </div>
+
+                        {fb.vocabulary_feedback && typeof fb.vocabulary_feedback === "object" ? (
+                          <div className="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-1.5 text-xs text-indigo-950 font-medium">
+                            {fb.vocabulary_feedback.positive_point && (
+                              <p className="font-bold text-indigo-900">• Điểm cộng từ vựng: {fb.vocabulary_feedback.positive_point}</p>
+                            )}
+                            {fb.vocabulary_feedback.positive_detail && (
+                              <p className="text-indigo-800 font-medium">• Từ/Cụm từ hay đã dùng: "{fb.vocabulary_feedback.positive_detail}"</p>
+                            )}
+                            {fb.vocabulary_feedback.note && (
+                              <p className="leading-relaxed">• Gợi ý từ nâng cao thay thế: {fb.vocabulary_feedback.note}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-xs text-indigo-900 font-medium">
+                            {typeof fb.vocabulary_feedback === "string" ? fb.vocabulary_feedback : "Nhận xét từ vựng và collocations."}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )
+                })()}
 
                 {/* Bottom Action Buttons */}
                 <div className="space-y-3 pt-2">
