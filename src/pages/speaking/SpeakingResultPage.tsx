@@ -39,6 +39,7 @@ export const SpeakingResultPage: React.FC = () => {
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<SpeakingSessionDetail | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const currentTime = "0:12"
@@ -49,69 +50,21 @@ export const SpeakingResultPage: React.FC = () => {
   useEffect(() => {
     const fetchResult = async () => {
       setLoading(true)
+      setError(null)
       try {
-        if (sessionId && sessionId !== "sample") {
+        if (sessionId) {
           const detail = await speakingApi.getSessionResult(sessionId)
-          if (detail) setResult(detail)
+          if (detail) {
+            setResult(detail)
+          } else {
+            setError("Không tìm thấy dữ liệu kết quả bài nói từ máy chủ.")
+          }
         } else {
-          setResult({
-            session_id: sessionId || "sample",
-            test_type: "PART_1",
-            title: "Hometown & Studies",
-            duration_str: "04:25",
-            status: "COMPLETED",
-            overall_band_score: 7.5,
-            band_score_delta: 0.5,
-            percentile_rank: "Top 15% User",
-            pronunciation_score: 8.0,
-            fluency_score: 7.2,
-            lexical_score: 7.5,
-            grammar_score: 7.0,
-            key_strengths: [
-              { title: "Effective Collocations", desc: "You used sophisticated phrase pairs like 'evolving rapidly' which sounds very natural." },
-              { title: "Natural Intonation", desc: "Good pitch variation during long sentence delivery." }
-            ],
-            areas_for_growth: [
-              {
-                category: "PRONUNCIATION",
-                title: "Ending Sounds: '/d/'",
-                desc: "Pay attention to ending sounds for past tense words like 'standardized'.",
-                tip: "Practice shadowing exercises with emphasis on final /d/ and /t/ consonants.",
-                incorrect: "standardize",
-                correct: "standardized"
-              },
-              {
-                category: "GRAMMAR",
-                title: "Verb Patterns: 'How to'",
-                desc: "Remember to use infinitive verb form after 'how to'.",
-                tip: "Use 'how to + V-infinitive' instead of past participle.",
-                incorrect: "how to applied",
-                correct: "how to apply"
-              }
-            ],
-            questions_detail: [
-              {
-                question_text: "Can you describe the town or city where you live?",
-                user_transcript: "I believe that modern education system is evolving rapidly. However, many schools still focus too much on standardized testing. ... um ... This might limit the creativity of diverse learners in the classroom. Students need to learn how to applied their knowledge to real-world problems.",
-                user_audio_url: ""
-              },
-              {
-                question_text: "Do you work or are you a student?",
-                user_transcript: "Actually, I am a final-year student majoring in Architecture. It is quite a demanding field, but I find it immensely rewarding to see my designs come to life.",
-                user_audio_url: ""
-              }
-            ],
-            ai_insights_summary: "You tended to omit final consonants (ending sounds). Grammar and vocabulary usage are strong, but work on maintaining smooth pace without hesitation pauses.",
-            detailed_criteria_feedback: [],
-            recommended_resources: [
-              { title: "10 Common IELTS Speaking Part 1 Phrases", desc: "Useful collocations" },
-              { title: "Mastering Final Consonants /d/ & /t/", desc: "Pronunciation shadowing" }
-            ],
-            created_at: new Date().toISOString()
-          })
+          setError("Session ID không hợp lệ.")
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to load session result:", err)
+        setError(err?.response?.data?.message || err?.message || "Không thể kết nối tới máy chủ để tải kết quả bài nói.")
       } finally {
         setLoading(false)
       }
@@ -212,16 +165,18 @@ export const SpeakingResultPage: React.FC = () => {
     )
   }
 
-  if (!result) {
+  if (!result || error) {
     return (
       <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
-        <div className="p-8 text-center space-y-4">
-          <h2 className="text-xl font-bold text-slate-800">Result Not Found</h2>
+        <div className="p-8 text-center space-y-4 max-w-xl mx-auto my-12 bg-white border border-rose-200 rounded-3xl shadow-xs">
+          <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto" />
+          <h2 className="text-lg font-extrabold text-slate-900">Không thể tải kết quả Speaking</h2>
+          <p className="text-xs font-semibold text-rose-700">{error || "Không tìm thấy dữ liệu kết quả lượt làm bài từ máy chủ."}</p>
           <button
             onClick={() => navigate("/practice-modules")}
-            className="px-5 py-2.5 bg-[#1e50e6] text-white font-bold rounded-xl text-xs"
+            className="px-6 py-2.5 bg-[#1e50e6] text-white font-bold rounded-xl text-xs hover:bg-blue-700 transition cursor-pointer"
           >
-            Back to Practice Modules
+            Quay lại Practice Modules
           </button>
         </div>
       </AppLayout>
