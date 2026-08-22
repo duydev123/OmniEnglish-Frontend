@@ -972,14 +972,8 @@ export default function PracticeModulesPage() {
                   ) : (
                     <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
                       <Mic className="w-10 h-10 text-slate-300 mx-auto" />
-                      <h3 className="text-sm font-bold text-slate-700">No speaking topics found</h3>
-                      <p className="text-xs text-slate-400">Click below to start a quick sample practice.</p>
-                      <button
-                        onClick={() => navigate("/speaking/practice/topic/sample")}
-                        className="mt-2 px-5 py-2.5 bg-[#1e50e6] text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 hover:bg-blue-700 transition"
-                      >
-                        Start Speaking Practice
-                      </button>
+                      <h3 className="text-sm font-bold text-slate-700">Chưa có bài nói nào</h3>
+                      <p className="text-xs text-slate-400">Không tìm thấy dữ liệu chủ đề Speaking từ máy chủ.</p>
                     </div>
                   )
                 ) : (

@@ -62,6 +62,7 @@ export interface SpeakingSegmentResult {
   lexical_score?: number
   grammar_score?: number
   realtime_feedback?: string
+  sample_response?: string
   words_detail: WordDetail[]
   next_prompt_id?: string
 }
@@ -84,6 +85,7 @@ export interface QuestionDetailReview {
   question_text: string
   user_transcript: string
   user_audio_url?: string
+  sample_response?: string
 }
 
 export interface Milestone {
@@ -139,4 +141,8 @@ export interface ShadowingEvaluateResponse {
   user_transcript: string
   words_detail: WordDetail[]
   user_audio_url?: string
+}
+
+export interface ShadowingFeedbackResponse {
+  feedback: string
 }
