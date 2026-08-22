@@ -49,12 +49,21 @@ export const SpeakingPracticePage: React.FC = () => {
   // Real API Segment Result state (NO MOCK DATA)
   const [segmentResult, setSegmentResult] = useState<SpeakingSegmentResult | null>(null)
 
-  // Recording State
+  // Recording State & UC-18 Support
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [prepTime, setPrepTime] = useState(60) // 1 min prep for Part 2
   const [isPrepActive, setIsPrepActive] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // UC-18 Recorded Local Audio & Playback States
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null)
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null)
+  const [hasRecorded, setHasRecorded] = useState(false)
+  const [isPlayingLocalAudio, setIsPlayingLocalAudio] = useState(false)
+  const [localAudioCurrentTime, setLocalAudioCurrentTime] = useState(0)
+  const [localAudioDuration, setLocalAudioDuration] = useState(0)
+  const [showShortWarningModal, setShowShortWarningModal] = useState(false)
 
   // Audio Playback state for real user_audio_url
   const [isPlayingResultAudio, setIsPlayingResultAudio] = useState(false)
@@ -70,6 +79,27 @@ export const SpeakingPracticePage: React.FC = () => {
   const timerIntervalRef = useRef<any>(null)
   const prepIntervalRef = useRef<any>(null)
   const resultAudioRef = useRef<HTMLAudioElement | null>(null)
+  const localAudioRef = useRef<HTMLAudioElement | null>(null)
+  const recordingTimeRef = useRef<number>(0)
+
+  // Sync ref with recording time
+  useEffect(() => {
+    recordingTimeRef.current = recordingTime
+  }, [recordingTime])
+
+  // Max recording time per part
+  const getMaxRecordingTime = (part?: string) => {
+    if (part === "PART_2") return 120
+    return 60
+  }
+
+  // TC-UC-18-UI05: Recording limit exceeded -> Auto-stop
+  useEffect(() => {
+    const maxLimit = getMaxRecordingTime(currentPrompt?.part)
+    if (isRecording && recordingTime >= maxLimit) {
+      stopRecording()
+    }
+  }, [isRecording, recordingTime, currentPrompt])
 
   // 1. Fetch Topic Prompts & Display Prompts List Overview FIRST
   useEffect(() => {
@@ -104,7 +134,13 @@ export const SpeakingPracticePage: React.FC = () => {
     fetchPrompts()
   }, [topicId, promptId])
 
-  // Part 2 Prep timer logic
+  // Part 2 Prep timer logic (60s prep time countdown)
+  useEffect(() => {
+    if (currentPrompt?.part === "PART_2" && mode === "PRACTICE") {
+      setIsPrepActive(true)
+    }
+  }, [currentPrompt?.id, mode])
+
   useEffect(() => {
     if (currentPrompt?.part === "PART_2" && isPrepActive && prepTime > 0) {
       prepIntervalRef.current = setInterval(() => {
@@ -113,7 +149,6 @@ export const SpeakingPracticePage: React.FC = () => {
     } else if (prepTime === 0 && isPrepActive) {
       setIsPrepActive(false)
       if (prepIntervalRef.current) clearInterval(prepIntervalRef.current)
-      startRecording()
     }
     return () => {
       if (prepIntervalRef.current) clearInterval(prepIntervalRef.current)
@@ -127,12 +162,35 @@ export const SpeakingPracticePage: React.FC = () => {
         resultAudioRef.current.pause()
         resultAudioRef.current = null
       }
+      if (localAudioRef.current) {
+        localAudioRef.current.pause()
+        localAudioRef.current = null
+      }
+      if (recordedAudioUrl && recordedAudioUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(recordedAudioUrl)
+      }
     }
   }, [mode])
 
   // Start Mic Recording
   const startRecording = async () => {
     setSubmitError(null)
+
+    // Reset local playback if active
+    if (localAudioRef.current) {
+      localAudioRef.current.pause()
+      localAudioRef.current = null
+    }
+    if (recordedAudioUrl && recordedAudioUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(recordedAudioUrl)
+    }
+    setRecordedAudioUrl(null)
+    setRecordedBlob(null)
+    setHasRecorded(false)
+    setIsPlayingLocalAudio(false)
+    setLocalAudioCurrentTime(0)
+    setLocalAudioDuration(0)
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream)
@@ -145,17 +203,35 @@ export const SpeakingPracticePage: React.FC = () => {
         }
       }
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
+        const duration = recordingTimeRef.current
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" })
-        await processSequentialSubmission(audioBlob)
+        setRecordedBlob(audioBlob)
+
+        const localUrl = URL.createObjectURL(audioBlob)
+        setRecordedAudioUrl(localUrl)
+        setHasRecorded(true)
+
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+
+        // TC-UC-18-UI03: Recording too short (< 5 seconds)
+        if (duration < 5) {
+          setShowShortWarningModal(true)
+        }
       }
 
       mediaRecorder.start()
       setIsRecording(true)
       setRecordingTime(0)
+      recordingTimeRef.current = 0
 
+      // TC-UC-18-UI06: Visual timer starts counting up immediately
       timerIntervalRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1)
+        setRecordingTime((prev) => {
+          const next = prev + 1
+          recordingTimeRef.current = next
+          return next
+        })
       }, 1000)
     } catch (err) {
       console.error("Error accessing microphone:", err)
@@ -171,6 +247,52 @@ export const SpeakingPracticePage: React.FC = () => {
     }
     setIsRecording(false)
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+  }
+
+  // TC-UC-18-UI01: Playback recorded audio
+  const handleToggleLocalPlayback = () => {
+    if (!recordedAudioUrl) return
+
+    if (!localAudioRef.current) {
+      const audio = new Audio(recordedAudioUrl)
+      audio.onloadedmetadata = () => setLocalAudioDuration(audio.duration || 0)
+      audio.ontimeupdate = () => setLocalAudioCurrentTime(audio.currentTime || 0)
+      audio.onended = () => {
+        setIsPlayingLocalAudio(false)
+        setLocalAudioCurrentTime(0)
+      }
+      localAudioRef.current = audio
+    }
+
+    if (isPlayingLocalAudio) {
+      localAudioRef.current.pause()
+      setIsPlayingLocalAudio(false)
+    } else {
+      localAudioRef.current.play().catch((e) => console.error("Local audio play error:", e))
+      setIsPlayingLocalAudio(true)
+    }
+  }
+
+  // TC-UC-18-UI02: Re-record response
+  const handleReRecord = () => {
+    if (localAudioRef.current) {
+      localAudioRef.current.pause()
+      localAudioRef.current = null
+    }
+    setIsPlayingLocalAudio(false)
+    startRecording()
+  }
+
+  // TC-UC-18-UI04: Proceed after short recording warning
+  const handleProceedAfterShortWarning = () => {
+    setShowShortWarningModal(false)
+  }
+
+  // Submit recorded audio to AI API
+  const handleSubmitRecording = () => {
+    if (recordedBlob) {
+      processSequentialSubmission(recordedBlob)
+    }
   }
 
   // 2. Sequential API Call Flow upon finishing recording:
@@ -243,10 +365,169 @@ export const SpeakingPracticePage: React.FC = () => {
     setCurrentPrompt(prompt)
     setMode("PRACTICE")
     setRecordingTime(0)
+    recordingTimeRef.current = 0
     setPrepTime(60)
-    setIsPrepActive(false)
+    setIsPrepActive(prompt.part === "PART_2")
+    setCandidateNotes("")
     setSegmentResult(null)
     setSubmitError(null)
+
+    if (localAudioRef.current) {
+      localAudioRef.current.pause()
+      localAudioRef.current = null
+    }
+    if (recordedAudioUrl && recordedAudioUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(recordedAudioUrl)
+    }
+    setRecordedBlob(null)
+    setRecordedAudioUrl(null)
+    setHasRecorded(false)
+    setIsPlayingLocalAudio(false)
+    setShowShortWarningModal(false)
+  }
+
+  // Unified Recording & Playback Control Component (UC-18)
+  const renderRecordingControls = () => {
+    const maxTime = getMaxRecordingTime(currentPrompt?.part)
+
+    return (
+      <div className="w-full flex flex-col items-center justify-center text-center space-y-5">
+        {/* Visual Recording Timer (TC-UC-18-UI01, TC-UC-18-UI06) */}
+        <div className="space-y-1">
+          <div className="text-3xl font-black text-slate-800 font-mono tracking-wider" data-testid="recording-timer">
+            {isPlayingLocalAudio
+              ? `${formatTime(localAudioCurrentTime)} / ${formatTime(localAudioDuration || recordingTime)}`
+              : formatTime(recordingTime)}
+          </div>
+          <span className="text-[11px] font-semibold text-slate-400 block">
+            {isRecording
+              ? `Max limit: ${formatTime(maxTime)}`
+              : isPlayingLocalAudio
+              ? "Playing back recorded response..."
+              : hasRecorded
+              ? `Recorded response (${formatTime(recordingTime)})`
+              : `Time limit: ${formatTime(maxTime)}`}
+          </span>
+        </div>
+
+        {/* Waveform / Visual Audio Bar */}
+        <div className="flex items-center gap-1.5 h-8">
+          {[40, 70, 30, 90, 50, 100, 60, 80, 40, 90, 30].map((h, i) => (
+            <div
+              key={i}
+              className={`w-1 rounded-full transition-all duration-300 ${
+                isRecording
+                  ? "bg-rose-500 animate-pulse"
+                  : isPlayingLocalAudio
+                  ? "bg-blue-600 animate-pulse"
+                  : "bg-slate-200"
+              }`}
+              style={{
+                height: isRecording ? `${h}%` : isPlayingLocalAudio ? `${h * 0.7}%` : "20%"
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {/* STATE 1: IDLE */}
+          {!isRecording && !hasRecorded && (
+            <button
+              onClick={startRecording}
+              disabled={isSubmitting}
+              title="Start Recording"
+              aria-label="Start Recording"
+              className="px-6 py-3.5 bg-[#1e50e6] hover:bg-blue-700 text-white rounded-2xl font-extrabold text-sm shadow-lg shadow-blue-500/25 flex items-center gap-2.5 transition transform hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Mic size={22} />
+              <span>Start Recording</span>
+            </button>
+          )}
+
+          {/* STATE 2: RECORDING ACTIVE */}
+          {isRecording && (
+            <button
+              onClick={stopRecording}
+              title="Stop Recording"
+              aria-label="Stop Recording"
+              className="px-6 py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-extrabold text-sm shadow-lg shadow-rose-500/25 flex items-center gap-2.5 animate-pulse transition transform hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Square size={20} />
+              <span>Stop Recording</span>
+            </button>
+          )}
+
+          {/* STATE 3: RECORDED - PLAYBACK, RE-RECORD, SUBMIT */}
+          {!isRecording && hasRecorded && (
+            <>
+              {/* Playback Button (TC-UC-18-UI01) */}
+              <button
+                onClick={handleToggleLocalPlayback}
+                disabled={isSubmitting}
+                title="Playback"
+                aria-label="Playback"
+                data-testid="playback-btn"
+                className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center gap-2 transition cursor-pointer"
+              >
+                {isPlayingLocalAudio ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+                <span>{isPlayingLocalAudio ? "Pause Playback" : "Playback"}</span>
+              </button>
+
+              {/* Re-record Button (TC-UC-18-UI02 / Làm lại câu) */}
+              <button
+                onClick={handleReRecord}
+                disabled={isSubmitting}
+                title="Làm lại câu"
+                aria-label="Làm lại câu"
+                data-testid="rerecord-btn"
+                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs flex items-center gap-2 transition cursor-pointer border border-slate-200"
+              >
+                <RotateCcw size={16} />
+                <span>Làm lại câu</span>
+              </button>
+
+              {/* Next Question Button (Câu tiếp theo - Đặt ngay cạnh nút Làm lại câu) */}
+              {nextPrompt && (
+                <button
+                  onClick={() => handleSelectPromptToPractice(nextPrompt)}
+                  disabled={isSubmitting}
+                  title="Câu tiếp theo"
+                  aria-label="Câu tiếp theo"
+                  data-testid="next-prompt-btn"
+                  className="px-5 py-3 bg-blue-50 hover:bg-blue-100 text-[#1e50e6] rounded-2xl font-extrabold text-xs flex items-center gap-1.5 transition cursor-pointer border border-blue-200"
+                >
+                  <span>Câu tiếp theo</span>
+                  <ChevronRight size={16} />
+                </button>
+              )}
+
+              {/* Submit & Evaluate Button */}
+              <button
+                onClick={handleSubmitRecording}
+                disabled={isSubmitting}
+                title="Submit & Evaluate"
+                aria-label="Submit & Evaluate"
+                className="px-6 py-3 bg-[#1e50e6] hover:bg-blue-700 text-white rounded-2xl font-extrabold text-xs shadow-md shadow-blue-500/20 flex items-center gap-2 transition cursor-pointer"
+              >
+                {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                <span>Submit &amp; Evaluate</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        <p className="text-xs font-semibold text-slate-400 max-w-xs">
+          {isSubmitting
+            ? "Analyzing speech with AI..."
+            : isRecording
+            ? "Speaking response... Tap 'Stop Recording' when finished."
+            : hasRecorded
+            ? "Click 'Playback' to listen, 'Re-record' to try again, or 'Submit & Evaluate' for feedback."
+            : "Click 'Start Recording' to speak your response."}
+        </p>
+      </div>
+    )
   }
 
   const handlePlayWordAudio = (word: string) => {
@@ -297,6 +578,10 @@ export const SpeakingPracticePage: React.FC = () => {
   const part1Prompts = promptsMap["PART_1"] || []
   const part2Prompts = promptsMap["PART_2"] || []
   const part3Prompts = promptsMap["PART_3"] || []
+
+  const allPrompts = [...part1Prompts, ...part2Prompts, ...part3Prompts]
+  const currentPromptIndex = allPrompts.findIndex((p) => p.id === currentPrompt?.id)
+  const nextPrompt = currentPromptIndex >= 0 && currentPromptIndex < allPrompts.length - 1 ? allPrompts[currentPromptIndex + 1] : null
 
   const activeResult = segmentResult
 
@@ -555,7 +840,7 @@ export const SpeakingPracticePage: React.FC = () => {
             </div>
 
             {currentPrompt.part === "PART_1" && (
-              /* PART 1 LAYOUT (Figma Image 3) */
+              /* PART 1 LAYOUT */
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-6">
                   <div className="space-y-4">
@@ -578,50 +863,7 @@ export const SpeakingPracticePage: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xs flex flex-col items-center justify-center text-center space-y-6 min-h-[360px]">
-                  <div className="text-3xl font-black text-slate-800 font-mono tracking-wider">
-                    {formatTime(recordingTime)}
-                  </div>
-                  {isRecording && <span className="text-xs font-bold text-emerald-600 animate-pulse">Recording active</span>}
-
-                  <div className="flex items-center gap-1.5 h-8">
-                    {[40, 70, 30, 90, 50, 100, 60, 80, 40, 90, 30].map((h, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 rounded-full transition-all duration-300 ${
-                          isRecording ? "bg-[#1e50e6] animate-pulse" : "bg-slate-200"
-                        }`}
-                        style={{ height: isRecording ? `${h}%` : "20%" }}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={isSubmitting}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 cursor-pointer shadow-lg ${
-                      isSubmitting
-                        ? "bg-slate-300 text-slate-500"
-                        : isRecording
-                        ? "bg-rose-600 text-white shadow-rose-500/30 animate-pulse"
-                        : "bg-[#1e50e6] text-white shadow-blue-500/30"
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <Loader2 size={28} className="animate-spin" />
-                    ) : isRecording ? (
-                      <Square size={28} />
-                    ) : (
-                      <Mic size={32} />
-                    )}
-                  </button>
-
-                  <p className="text-xs font-semibold text-slate-400 max-w-xs">
-                    {isSubmitting
-                      ? "Calling /prompts/start & /sessions/segments API..."
-                      : isRecording
-                      ? "Tap the mic to finish your response & evaluate"
-                      : "Tap the mic button to start recording your response"}
-                  </p>
+                  {renderRecordingControls()}
                 </div>
 
                 <div className="lg:col-span-3 space-y-6">
@@ -661,7 +903,7 @@ export const SpeakingPracticePage: React.FC = () => {
             )}
 
             {currentPrompt.part === "PART_2" && (
-              /* PART 2 LAYOUT (Figma Image 4 Left) with Takenote Textarea */
+              /* PART 2 LAYOUT */
               <div className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                   <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-5">
@@ -712,34 +954,7 @@ export const SpeakingPracticePage: React.FC = () => {
                       </div>
                     </div>
 
-                    <button
-                      onClick={isRecording ? stopRecording : startRecording}
-                      disabled={isSubmitting}
-                      className={`w-20 h-20 rounded-full flex items-center justify-center transition-all transform hover:scale-105 cursor-pointer shadow-lg ${
-                        isSubmitting
-                          ? "bg-slate-300 text-slate-500"
-                          : isRecording
-                          ? "bg-rose-600 text-white shadow-rose-500/30 animate-pulse"
-                          : "bg-[#1e50e6] text-white shadow-blue-500/30"
-                      }`}
-                    >
-                      {isSubmitting ? (
-                        <Loader2 size={28} className="animate-spin" />
-                      ) : isRecording ? (
-                        <Square size={28} />
-                      ) : (
-                        <Mic size={32} />
-                      )}
-                    </button>
-
-                    {isRecording && (
-                      <button
-                        onClick={stopRecording}
-                        className="w-full py-3 bg-rose-600 text-white rounded-2xl font-extrabold text-xs shadow-md shadow-rose-500/20 hover:bg-rose-700 transition cursor-pointer"
-                      >
-                        Stop &amp; Submit
-                      </button>
-                    )}
+                    {renderRecordingControls()}
                   </div>
 
                   {/* Takenote Textarea */}
@@ -749,14 +964,31 @@ export const SpeakingPracticePage: React.FC = () => {
                         <Edit3 size={14} className="text-blue-600" />
                         <span>Note-taking</span>
                       </h3>
-                      <span className="text-[10px] font-semibold text-slate-400">Auto-saving...</span>
+                      <span
+                        className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                          prepTime > 0
+                            ? "bg-amber-100 text-amber-800 animate-pulse"
+                            : "bg-rose-100 text-rose-700"
+                        }`}
+                      >
+                        {prepTime > 0 ? `Prep time: ${formatTime(prepTime)}` : "Hết thời gian - Đã khóa note"}
+                      </span>
                     </div>
 
                     <textarea
                       value={candidateNotes}
                       onChange={(e) => setCandidateNotes(e.target.value)}
-                      placeholder="Type your takenotes during 1-min prep time... (e.g. Intro: 'The Alchemist', When: 2 months ago, Plot: Santiago's journey)"
-                      className="w-full h-48 p-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                      disabled={prepTime === 0}
+                      placeholder={
+                        prepTime > 0
+                          ? "Soạn ghi chú của bạn trong 60s chuẩn bị... (VD: Intro: 'The Alchemist', When: 2 months ago)"
+                          : "Hết thời gian chuẩn bị 60s. Không thể nhập thêm ghi chú."
+                      }
+                      className={`w-full h-48 p-3 border rounded-2xl text-xs font-medium resize-none transition ${
+                        prepTime === 0
+                          ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none opacity-80"
+                          : "bg-slate-50 text-slate-700 border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      }`}
                     />
                   </div>
                 </div>
@@ -774,7 +1006,7 @@ export const SpeakingPracticePage: React.FC = () => {
             )}
 
             {currentPrompt.part === "PART_3" && (
-              /* PART 3 LAYOUT (Figma Image 4 Right) */
+              /* PART 3 LAYOUT */
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-4 space-y-6">
                   <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
@@ -798,22 +1030,7 @@ export const SpeakingPracticePage: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-6">
-                  <div className="flex flex-col items-center text-center space-y-4 pt-4">
-                    <div className="relative w-36 h-36 rounded-full border-4 border-blue-500/20 flex items-center justify-center">
-                      <button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        disabled={isSubmitting}
-                        className={`w-24 h-24 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-md ${
-                          isRecording ? "bg-rose-600 text-white animate-pulse" : "bg-[#1e50e6] text-white"
-                        }`}
-                      >
-                        {isRecording ? <Square size={24} /> : <Mic size={28} />}
-                      </button>
-                      <span className="absolute bottom-2 text-xs font-black font-mono text-blue-700 bg-white px-2 py-0.5 rounded-md shadow-2xs">
-                        {formatTime(recordingTime)}
-                      </span>
-                    </div>
-                  </div>
+                  {renderRecordingControls()}
                 </div>
 
                 <div className="lg:col-span-3 space-y-6">
@@ -1216,13 +1433,33 @@ export const SpeakingPracticePage: React.FC = () => {
 
                 {/* Bottom Action Buttons */}
                 <div className="space-y-3 pt-2">
-                  <button
-                    onClick={() => setMode("PRACTICE")}
-                    className="w-full py-3.5 bg-[#1e50e6] hover:bg-blue-700 text-white rounded-2xl font-extrabold text-xs shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition cursor-pointer"
-                  >
-                    <RotateCcw size={16} />
-                    <span>Thực hành lại</span>
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setMode("PRACTICE")}
+                      className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-extrabold text-xs border border-slate-200 flex items-center justify-center gap-2 transition cursor-pointer"
+                    >
+                      <RotateCcw size={16} />
+                      <span>Thực hành lại</span>
+                    </button>
+
+                    {nextPrompt ? (
+                      <button
+                        onClick={() => handleSelectPromptToPractice(nextPrompt)}
+                        className="w-full py-3.5 bg-[#1e50e6] hover:bg-blue-700 text-white rounded-2xl font-extrabold text-xs shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition cursor-pointer"
+                      >
+                        <span>Câu tiếp theo</span>
+                        <ChevronRight size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setMode("TOPIC_OVERVIEW")}
+                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-extrabold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition cursor-pointer"
+                      >
+                        <span>Danh sách câu hỏi</span>
+                        <ChevronRight size={16} />
+                      </button>
+                    )}
+                  </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <button className="py-3 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition cursor-pointer">
@@ -1347,6 +1584,44 @@ export const SpeakingPracticePage: React.FC = () => {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* TC-UC-18-UI03 / UI04: Short Recording Warning Modal */}
+      {showShortWarningModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 border border-slate-100 text-center">
+            <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle size={30} />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-slate-900">Recording Too Short</h3>
+              <p className="text-xs font-medium text-slate-600 leading-relaxed">
+                Your response is very short. Try to speak more for better feedback.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowShortWarningModal(false)
+                  handleReRecord()
+                }}
+                aria-label="Re-record"
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-2xl text-xs transition cursor-pointer"
+              >
+                Re-record
+              </button>
+              <button
+                onClick={handleProceedAfterShortWarning}
+                aria-label="Proceed"
+                className="flex-1 py-3 px-4 bg-[#1e50e6] hover:bg-blue-700 text-white font-extrabold rounded-2xl text-xs transition shadow-md shadow-blue-500/20 cursor-pointer"
+              >
+                Proceed anyway
+              </button>
+            </div>
           </div>
         </div>
       )}
