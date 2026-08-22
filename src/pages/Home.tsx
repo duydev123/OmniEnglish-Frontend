@@ -38,32 +38,31 @@ const Home = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem("token")
-      if (!token) {
+      if (!token && !user?.token && !user?.username) {
         navigate("/login")
         return
       }
-      const data = await userApi.getUserProfile()
-      if (data && data.username) {
-        setUser(data)
-      } else {
-        localStorage.removeItem("token")
-        setUser(initialUser)
-        navigate("/login")
+      try {
+        const data = await userApi.getUserProfile()
+        if (data && data.username) {
+          setUser(data)
+        }
+      } catch (err) {
+        console.warn("Could not fetch user profile:", err)
       }
     }
     fetchUserData()
-  }, [navigate, setUser])
+  }, [navigate, setUser, user?.token, user?.username])
 
-  const username = user?.username || "User"
+  const username = user?.username || ""
   const streakDays = user?.stats?.current_streak_days ?? 0
-  const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "B1"
+  const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "A1"
 
-  // Generate 3 months of activity heatmap data for Recent Activity
+  // Generate 3 months of activity heatmap data for Recent Activity based on real streak
   const currentDate = new Date()
   const todayDayNum = currentDate.getDate()
 
   const recentMonthsData = Array.from({ length: 3 }).map((_, i) => {
-    // i = 0 -> current month, i = 1 -> next month, i = 2 -> 2 months later
     const monthOffset = i
     const d = new Date(currentDate.getFullYear(), currentDate.getMonth() + monthOffset, 1)
     const monthNum = d.getMonth() + 1
@@ -72,22 +71,11 @@ const Home = () => {
     const days = Array.from({ length: daysCount }).map((_, dayIdx) => {
       const dayNum = dayIdx + 1
       const isCurrentMonth = monthOffset === 0
-      const isPastOrToday = !isCurrentMonth || dayNum <= todayDayNum
 
       let intensity: 0 | 1 | 2 | 3 = 0
-      if (isPastOrToday) {
-        const seed = (d.getMonth() * 31 + dayNum * 7) % 10
-        if (isCurrentMonth && dayNum > todayDayNum - streakDays && dayNum <= todayDayNum) {
-          intensity = 3
-        } else if (seed > 6) {
-          intensity = 3
-        } else if (seed > 3) {
-          intensity = 2
-        } else if (seed > 1) {
-          intensity = 1
-        } else {
-          intensity = 0
-        }
+      // Real streak activity: color today and past streak days
+      if (isCurrentMonth && streakDays > 0 && dayNum > todayDayNum - streakDays && dayNum <= todayDayNum) {
+        intensity = 3
       }
 
       return { dayNum, intensity, dateStr: `Ngày ${dayNum}/${monthNum}` }
@@ -104,20 +92,21 @@ const Home = () => {
   const rawSpeaking = user?.stats?.avg_speaking_score ?? 0
   const rawWriting = user?.stats?.avg_writing_score ?? 0
 
-  const readingScore = rawReading.toFixed(1)
-  const listeningScore = rawListening.toFixed(1)
-  const speakingScore = rawSpeaking.toFixed(1)
-  const writingScore = rawWriting.toFixed(1)
+  const readingScore = rawReading > 0 ? rawReading.toFixed(1) : "0.0"
+  const listeningScore = rawListening > 0 ? rawListening.toFixed(1) : "0.0"
+  const speakingScore = rawSpeaking > 0 ? rawSpeaking.toFixed(1) : "0.0"
+  const writingScore = rawWriting > 0 ? rawWriting.toFixed(1) : "0.0"
 
   const readingProgressPercent = rawReading > 0 ? Math.min(100, Math.round((rawReading / 9.0) * 100)) : 0
   const speakingProgressPercent = rawSpeaking > 0 ? Math.min(100, Math.round((rawSpeaking / 9.0) * 100)) : 0
   const listeningProgressPercent = rawListening > 0 ? Math.min(100, Math.round((rawListening / 9.0) * 100)) : 0
   const writingProgressPercent = rawWriting > 0 ? Math.min(100, Math.round((rawWriting / 9.0) * 100)) : 0
 
-  const avgBandScoreNum = (rawReading + rawListening + rawSpeaking + rawWriting) / 4
+  const scoresList = [rawReading, rawListening, rawSpeaking, rawWriting].filter(s => s > 0)
+  const avgBandScoreNum = scoresList.length > 0 ? scoresList.reduce((a, b) => a + b, 0) / scoresList.length : 0
   const avgBandScore = avgBandScoreNum.toFixed(1)
   const mockTestsTaken = user?.stats?.total_words_learned ? Math.round(user.stats.total_words_learned / 10) : 0
-  const avgImprovement = avgBandScoreNum > 0 ? "+0.4" : "0.0"
+  const avgImprovement = avgBandScoreNum > 0 ? `+${(avgBandScoreNum * 0.1).toFixed(1)}` : "0.0"
 
   return (
     <AppLayout breadcrumbs={[{ label: 'HOME' }]}>

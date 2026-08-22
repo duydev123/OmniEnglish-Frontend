@@ -50,29 +50,29 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem("token");
-      if (!token) {
+      if (!token && !user?.token && !user?.username) {
         navigate("/login");
         return;
       }
-      const data = await userApi.getUserProfile();
-      if (data && data.username) {
-        setUser(data);
-        if (data.settings?.learning_mode === "Fluency Push") {
-          setSelectedGoal("fluency");
-        } else if (data.settings?.learning_mode === "Steady Growth") {
-          setSelectedGoal("steady");
+      try {
+        const data = await userApi.getUserProfile();
+        if (data && data.username) {
+          setUser(data);
+          if (data.settings?.learning_mode === "Fluency Push") {
+            setSelectedGoal("fluency");
+          } else if (data.settings?.learning_mode === "Steady Growth") {
+            setSelectedGoal("steady");
+          }
+          if (typeof data.settings?.weekend_mastery === "boolean") {
+            setWeekendMastery(data.settings.weekend_mastery);
+          }
         }
-        if (typeof data.settings?.weekend_mastery === "boolean") {
-          setWeekendMastery(data.settings.weekend_mastery);
-        }
-      } else {
-        localStorage.removeItem("token");
-        setUser(initialUser);
-        navigate("/login");
+      } catch (err) {
+        console.warn("Could not fetch user profile:", err);
       }
     };
     fetchUserData();
-  }, [navigate, setUser]);
+  }, [navigate, setUser, user?.token, user?.username]);
 
   const handleSelectGoal = async (mode: "Fluency Push" | "Steady Growth") => {
     const goalKey = mode === "Fluency Push" ? "fluency" : "steady";
@@ -98,7 +98,7 @@ const ProfilePage = () => {
     }
   };
 
-  const username = user?.username || "User";
+  const username = user?.username || "";
   const email = user?.email || "";
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1e50e6&color=fff&size=128`;
   const avatarUrl = user?.avatar || user?.avarta || defaultAvatar;

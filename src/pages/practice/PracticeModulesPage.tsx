@@ -85,21 +85,21 @@ export default function PracticeModulesPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem("token")
-      if (!token) {
+      if (!token && !user?.token && !user?.username) {
         navigate("/login")
         return
       }
-      const data = await userApi.getUserProfile()
-      if (data) {
-        setUser(data)
-      } else {
-        localStorage.removeItem("token")
-        setUser(initialUser)
-        navigate("/login")
+      try {
+        const data = await userApi.getUserProfile()
+        if (data) {
+          setUser(data)
+        }
+      } catch (err) {
+        console.warn("Could not fetch user profile:", err)
       }
     }
     fetchUserData()
-  }, [navigate, setUser])
+  }, [navigate, setUser, user?.token, user?.username])
 
   // Close dropdowns when clicking outside
   useEffect(() => {
