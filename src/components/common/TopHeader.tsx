@@ -23,7 +23,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs = [], onMenuCl
   const { showToast } = useToast();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const username = user?.username || 'User';
+  const username = user?.username || '';
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1D4ED8&color=fff&size=128`;
   const avatarUrl = user?.avatar || user?.avarta || defaultAvatar;
 

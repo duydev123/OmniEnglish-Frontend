@@ -17,6 +17,8 @@ import ListeningResultPage from "./pages/listening/ListeningResultPage"
 import SpeakingPracticePage from "./pages/speaking/SpeakingPracticePage"
 import SpeakingShadowingPage from "./pages/speaking/SpeakingShadowingPage"
 import SpeakingResultPage from "./pages/speaking/SpeakingResultPage"
+import AdminCMSPage from "./pages/admin/AdminCMSPage"
+import AdminUsersPage from "./pages/admin/AdminUsersPage"
 import { ToastProvider } from "./components/common/Toast"
 import { ProtectedRoute, PublicOnlyRoute } from "./components/common/ProtectedRoute"
 
@@ -32,6 +34,9 @@ const App = () => {
         {/* Protected routes - require login */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
+          <Route path="/admin" element={<AdminCMSPage />} />
+          <Route path="/admin/content-cms" element={<AdminCMSPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/practice-modules" element={<Navigate to="/practice-modules/listening" replace />} />
           <Route path="/practice-modules/:category" element={<PracticeModulesPage />} />
