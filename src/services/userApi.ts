@@ -20,35 +20,35 @@ export interface SocialLoginPayload {
   token?: string;
 }
 
-// Fallback demo user data for offline / fallback mode
+// Default fallback user data for offline / fallback mode
 export const fallbackUserData: User = {
-  id: "demo-user-123",
-  username: "Alex",
-  email: "alex@omnienglish.com",
+  id: "user-default-id",
+  username: "",
+  email: "",
   role: "user",
-  avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120",
-  proficiency_level: "B1",
+  avatar: "",
+  proficiency_level: "A1",
   status: "Active",
   settings: {
-    focus_areas: ["General English", "IELTS Academic"],
-    daily_word_target: 30,
+    focus_areas: ["General English"],
+    daily_word_target: 20,
     learning_mode: "Steady Growth",
-    weekend_mastery: true,
+    weekend_mastery: false,
     base_language: "vi-VN",
     notifications_enabled: true,
   },
   stats: {
-    current_streak_days: 15,
-    total_xp: 2850,
-    weekly_xp: 420,
-    total_words_learned: 240,
-    total_speaking_hours: 12.5,
-    general_english_level: "B2",
-    business_english_progress: 45.0,
-    avg_reading_score: 7.0,
-    avg_listening_score: 6.5,
-    avg_speaking_score: 6.0,
-    avg_writing_score: 6.5,
+    current_streak_days: 0,
+    total_xp: 0,
+    weekly_xp: 0,
+    total_words_learned: 0,
+    total_speaking_hours: 0,
+    general_english_level: "A1",
+    business_english_progress: 0,
+    avg_reading_score: 0,
+    avg_listening_score: 0,
+    avg_speaking_score: 0,
+    avg_writing_score: 0,
   },
 };
 
@@ -78,7 +78,10 @@ export const userApi = {
     if (token) {
       localStorage.setItem("token", token);
     }
-    return response.data;
+    return {
+      ...response.data,
+      token: token || "",
+    };
   },
 
   /**
@@ -90,7 +93,10 @@ export const userApi = {
     if (token) {
       localStorage.setItem("token", token);
     }
-    return response.data;
+    return {
+      ...response.data,
+      token: token || "",
+    };
   },
 
   /**
@@ -105,16 +111,8 @@ export const userApi = {
       }
       return response.data;
     } catch (error) {
-      console.warn("Backend google-login unavailable, using fallback user profile:", error);
-      const token = "demo_google_token_" + Date.now();
-      localStorage.setItem("token", token);
-      return {
-        ...fallbackUserData,
-        username: payload.name || "Google User",
-        email: payload.email || "google_user@example.com",
-        avatar: payload.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
-        token: token,
-      };
+      console.error("Backend google-login error:", error);
+      throw error;
     }
   },
 
@@ -130,16 +128,8 @@ export const userApi = {
       }
       return response.data;
     } catch (error) {
-      console.warn("Backend facebook-login unavailable, using fallback user profile:", error);
-      const token = "demo_facebook_token_" + Date.now();
-      localStorage.setItem("token", token);
-      return {
-        ...fallbackUserData,
-        username: payload.name || "Facebook User",
-        email: payload.email || "facebook_user@example.com",
-        avatar: payload.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=120",
-        token: token,
-      };
+      console.error("Backend facebook-login error:", error);
+      throw error;
     }
   },
 

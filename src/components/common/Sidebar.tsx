@@ -6,7 +6,7 @@ import { useToast } from './Toast'
 import { LogoutModal } from './LogoutModal'
 import {
   House, BookOpen, FileText, Clock, User,
-  ChevronDown, Zap, LogOut
+  ChevronDown, Zap, LogOut, LayoutGrid, Users as UsersIcon, Settings
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -18,6 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const [basicOpen, setBasicOpen] = useState(true)
+  const [adminOpen, setAdminOpen] = useState(true)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const { user, setUser } = useUserStore()
   const { showToast } = useToast()
@@ -128,6 +129,63 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           <User size={18} />
           <span>Profile</span>
         </button>
+
+        {/* Admin Suite Section (Collapsible) */}
+        <div>
+          <button
+            onClick={() => setAdminOpen(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer font-bold"
+          >
+            <div className="flex items-center gap-3.5">
+              <Zap size={18} className="text-amber-500 fill-amber-400" />
+              <span>Admin Suite</span>
+            </div>
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-200 ${adminOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {adminOpen && (
+            <div className="ml-5 pl-3 border-l-2 border-slate-200/80 my-1 space-y-1">
+              <button
+                onClick={() => { navigate('/admin/content-cms'); onClose?.() }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${
+                  location.pathname === '/admin' || location.pathname.startsWith('/admin/content-cms')
+                    ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <FileText size={16} />
+                <span>Content CMS</span>
+              </button>
+
+              <button
+                onClick={() => { navigate('/admin/users'); onClose?.() }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${
+                  location.pathname.startsWith('/admin/users')
+                    ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <UsersIcon size={16} />
+                <span>Users</span>
+              </button>
+
+              <button
+                onClick={() => { navigate('/admin/settings'); onClose?.() }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${
+                  location.pathname.startsWith('/admin/settings')
+                    ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <Settings size={16} />
+                <span>Settings</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Sign Out Button */}
         <button
