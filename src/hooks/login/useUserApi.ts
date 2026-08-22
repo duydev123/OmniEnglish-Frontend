@@ -77,25 +77,10 @@ export const useUserApi = () => {
       // Real Google Identity OAuth Popup flow if VITE_GOOGLE_CLIENT_ID is provided
       if (googleClientId && window.google?.accounts?.oauth2) {
         return new Promise((resolve, reject) => {
-          let resolvedOrRejected = false;
-
-          const handleWindowFocus = () => {
-            setTimeout(() => {
-              if (!resolvedOrRejected) {
-                resolvedOrRejected = true;
-                window.removeEventListener("focus", handleWindowFocus);
-                showToast("Đã hủy cửa sổ đăng nhập Google!", "info");
-                reject(new Error("Popup closed"));
-              }
-            }, 600);
-          };
-
           const client = window.google.accounts.oauth2.initTokenClient({
             client_id: googleClientId,
             scope: "openid email profile",
             callback: async (tokenResponse: any) => {
-              resolvedOrRejected = true;
-              window.removeEventListener("focus", handleWindowFocus);
               if (tokenResponse.error) {
                 showToast("Đăng nhập Google bị hủy!", "warning");
                 return reject(tokenResponse);
@@ -118,20 +103,19 @@ export const useUserApi = () => {
                 showToast(`Xin chào ${userInfo.name || userInfo.email}! Đăng nhập Google thành công!`, "success");
                 navigate("/");
                 resolve(user);
-              } catch (err) {
-                showToast("Không lấy được thông tin từ Google!", "error");
+              } catch (err: any) {
+                console.error("Google Login error:", err);
+                const msg = err.response?.data?.detail || "Không thể đăng nhập bằng Google!";
+                showToast(msg, "error");
                 reject(err);
               }
             },
             error_callback: (error: any) => {
-              resolvedOrRejected = true;
-              window.removeEventListener("focus", handleWindowFocus);
               showToast("Đã đóng cửa sổ đăng nhập Google!", "warning");
               reject(error);
             },
           });
 
-          window.addEventListener("focus", handleWindowFocus, { once: true });
           client.requestAccessToken();
         });
       } else {
@@ -179,19 +163,6 @@ export const useUserApi = () => {
       // Real Facebook SDK OAuth Popup flow if VITE_FACEBOOK_APP_ID is provided
       if (facebookAppId && window.FB) {
         return new Promise((resolve, reject) => {
-          let resolvedOrRejected = false;
-
-          const handleWindowFocus = () => {
-            setTimeout(() => {
-              if (!resolvedOrRejected) {
-                resolvedOrRejected = true;
-                window.removeEventListener("focus", handleWindowFocus);
-                showToast("Đã hủy cửa sổ đăng nhập Facebook!", "info");
-                reject(new Error("Popup closed"));
-              }
-            }, 600);
-          };
-
           window.FB.init({
             appId: facebookAppId,
             cookie: true,
@@ -199,12 +170,7 @@ export const useUserApi = () => {
             version: "v18.0",
           });
 
-          window.addEventListener("focus", handleWindowFocus, { once: true });
-
           window.FB.login((response: any) => {
-            resolvedOrRejected = true;
-            window.removeEventListener("focus", handleWindowFocus);
-
             if (response.authResponse) {
               const accessToken = response.authResponse.accessToken;
               window.FB.api("/me", { fields: "name,email,picture" }, async (userInfo: any) => {
