@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUserStore, initialUser } from "../stores/user/useUserStore";
-import { userApi } from "../services/userApi";
-import { clearLocalVocabCache } from "../services/vocabularyApi";
-import { useToast } from "../components/common/Toast";
-import { LogoutModal } from "../components/common/LogoutModal";
-import { AppLayout } from "../components/common/AppLayout";
+import { useUserStore, initialUser } from "../../stores/user/useUserStore";
+import { userApi } from "../../services/userApi";
+import { clearLocalVocabCache } from "../../services/vocabularyApi";
+import { useToast } from "../../components/common/Toast";
+import { LogoutModal } from "../../components/common/LogoutModal";
+import { AppLayout } from "../../components/common/AppLayout";
 import {
   Bell,
   BookOpen,
