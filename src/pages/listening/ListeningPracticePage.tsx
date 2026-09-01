@@ -168,7 +168,7 @@ export default function ListeningPracticePage() {
 
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice' }, { label: 'LISTENING' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Listening' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 size={40} className="text-blue-600 animate-spin" />
           <p className="text-slate-500 font-semibold">Đang tải bài nghe...</p>
@@ -179,7 +179,7 @@ export default function ListeningPracticePage() {
 
   if (error || !session) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice' }, { label: 'LISTENING' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Listening' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <AlertCircle size={40} className="text-red-500" />
           <p className="text-slate-700 font-semibold">{error ?? 'Không tìm thấy bài nghe'}</p>
@@ -197,9 +197,9 @@ export default function ListeningPracticePage() {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: 'PRACTICE MODULE', href: '/practice' },
-        { label: 'LISTENING', href: '/practice?tab=listening' },
-        { label: session.unit_code ?? 'LISTENING' },
+        { label: 'Practice Modules', href: '/practice-modules' },
+        { label: 'Listening', href: '/practice-modules?tab=listening' },
+        { label: session.unit_code ?? 'Listening' },
       ]}
     >
       <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6">

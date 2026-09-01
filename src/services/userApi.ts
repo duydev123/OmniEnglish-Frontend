@@ -58,9 +58,14 @@ export const userApi = {
    */
   async getUserProfile(): Promise<User | null> {
     try {
-      const response = await axiosClient.get<User>("/users/auth");
-      if (response.data && response.data.username) {
-        return response.data;
+      const response = await axiosClient.get<any>("/users/auth");
+      const data = response.data?.user || response.data;
+      if (data && (data.id || data._id || data.username || data.email)) {
+        return {
+          ...data,
+          id: data.id || data._id || "user-id",
+          username: data.username || data.name || data.email?.split("@")[0] || "User",
+        };
       }
       return null;
     } catch (error) {
@@ -190,5 +195,38 @@ export const userApi = {
       new_password: newPassword,
     });
     return response.data;
+  },
+
+  /**
+   * Daily Check-in / Login Activity POST /users/check-in
+   */
+  async checkIn(): Promise<{
+    status?: string;
+    message?: string;
+    today_checked_in?: boolean;
+    streak_days?: number;
+    activity_dates?: string[];
+    user?: User;
+  }> {
+    try {
+      const response = await axiosClient.post("/users/check-in");
+      return response.data;
+    } catch (error) {
+      console.warn("Check-in API error:", error);
+      return {};
+    }
+  },
+
+  /**
+   * Fetch user activity logs GET /users/activity-logs
+   */
+  async getActivityLogs(): Promise<Array<{ date_str: string; activities_count: number; xp_earned: number }>> {
+    try {
+      const response = await axiosClient.get("/users/activity-logs");
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.warn("Get activity logs error:", error);
+      return [];
+    }
   },
 };

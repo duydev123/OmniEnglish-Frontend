@@ -134,7 +134,7 @@ export default function CollectionDetailPage() {
 
   if (loading) {
     return (
-      <VocabLayout breadcrumbs={[{ label: 'BASIC', href: '/vocabulary' }, { label: 'VOCABULARY', href: '/vocabulary' }, { label: '...' }]}>
+      <VocabLayout breadcrumbs={[{ label: 'Vocabulary', href: '/vocabulary' }, { label: '...' }]}>
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </div>
@@ -180,10 +180,9 @@ export default function CollectionDetailPage() {
 
   return (
     <VocabLayout breadcrumbs={[
-      { label: 'BASIC', href: '/vocabulary' },
-      { label: 'VOCABULARY', href: '/vocabulary' },
-      { label: collection.is_official ? 'BỘ TỪ VỰNG MẶC ĐỊNH' : 'BỘ TỪ VỰNG CỦA TÔI', href: '/vocabulary' },
-      { label: collection.title.toUpperCase() },
+      { label: 'Vocabulary', href: '/vocabulary' },
+      { label: collection.is_official ? 'Bộ từ vựng mặc định' : 'Bộ từ vựng của tôi', href: '/vocabulary' },
+      { label: collection.title },
     ]}>
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
         {/* Main Page Action Bar Header */}

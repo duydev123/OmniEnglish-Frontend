@@ -87,6 +87,26 @@ export const SpeakingPracticePage: React.FC = () => {
     recordingTimeRef.current = recordingTime
   }, [recordingTime])
 
+  // Helper for formatting time (mm:ss)
+  const formatTime = (sec: number) => {
+    const s = Math.floor(sec || 0)
+    const m = Math.floor(s / 60)
+    const rem = s % 60
+    return `${m.toString().padStart(2, "0")}:${rem.toString().padStart(2, "0")}`
+  }
+
+  // Play single word TTS pronunciation
+  const handlePlayWordAudio = (word: string) => {
+    if (!word) return
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const utterance = new SpeechSynthesisUtterance(word)
+      utterance.lang = 'en-US'
+      utterance.rate = 0.9
+      window.speechSynthesis.speak(utterance)
+    }
+  }
+
   // Max recording time per part
   const getMaxRecordingTime = (part?: string) => {
     if (part === "PART_2") return 120
@@ -528,22 +548,6 @@ export const SpeakingPracticePage: React.FC = () => {
         </p>
       </div>
     )
-  }
-
-  const handlePlayWordAudio = (word: string) => {
-    try {
-      const utterance = new SpeechSynthesisUtterance(word)
-      utterance.lang = "en-US"
-      window.speechSynthesis.speak(utterance)
-    } catch (e) {
-      console.error("Web speech error:", e)
-    }
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
   if (loading) {

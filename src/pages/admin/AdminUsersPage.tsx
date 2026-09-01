@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  UserPlus,
   ChevronDown,
   Pencil,
   Trash2,
@@ -10,12 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  UserCheck,
-  ShieldCheck,
-  Shield,
-  Loader2,
-  MoreVertical,
-  Check
+  Loader2
 } from 'lucide-react';
 import { AppLayout } from '../../components/common/AppLayout';
 import { useToast } from '../../components/common/Toast';
@@ -33,8 +27,6 @@ export interface UserRow {
   joined_date: string;
 }
 
-const initialUsers: UserRow[] = [];
-
 export const AdminUsersPage: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +41,6 @@ export const AdminUsersPage: React.FC = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   // Edit User Modal State
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
@@ -150,7 +141,7 @@ export const AdminUsersPage: React.FC = () => {
   const totalUsersCount = users.length;
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'ADMIN SUITE' }, { label: 'USER MANAGEMENT' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Admin' }, { label: 'Users' }]}>
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 select-none font-['Be_Vietnam_Pro'] max-w-7xl mx-auto">
         {/* Header Row: Title */}
         <div>

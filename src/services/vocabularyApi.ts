@@ -76,7 +76,7 @@ export function sanitizeCollection(collection: VocabularyCollection): Vocabulary
   if (!collection) return collection
   if (collection.words_list && Array.isArray(collection.words_list)) {
     const cleaned = collection.words_list.map(w => {
-      let item = { ...w }
+      const item = { ...w }
       if (item && item.image_url && typeof item.image_url === 'string' && item.image_url.startsWith('blob:')) {
         item.image_url = ''
       }
