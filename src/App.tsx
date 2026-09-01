@@ -37,6 +37,7 @@ const App = () => {
           <Route path="/admin" element={<AdminCMSPage />} />
           <Route path="/admin/content-cms" element={<AdminCMSPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/settings" element={<AdminCMSPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/practice-modules" element={<Navigate to="/practice-modules/listening" replace />} />
           <Route path="/practice-modules/:category" element={<PracticeModulesPage />} />

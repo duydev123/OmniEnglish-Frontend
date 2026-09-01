@@ -175,9 +175,8 @@ export default function VocabularyPage() {
 
   return (
     <VocabLayout breadcrumbs={[
-      { label: 'BASIC', href: '/vocabulary' },
-      { label: 'VOCABULARY', href: '/vocabulary' },
-      { label: activeTab === 'default' ? 'BỘ TỪ VỰNG MẶC ĐỊNH' : 'BỘ TỪ VỰNG CỦA TÔI' },
+      { label: 'Vocabulary', href: '/vocabulary' },
+      { label: activeTab === 'default' ? 'Bộ từ vựng mặc định' : 'Bộ từ vựng của tôi' },
     ]}>
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto font-['Be_Vietnam_Pro'] select-none">
         {/* Dynamic Title */}

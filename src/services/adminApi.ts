@@ -19,6 +19,15 @@ export const adminApi = {
     itemsCount: number;
     status: string;
     type: string;
+    prompts?: any[];
+    questions?: any[];
+    description?: string;
+    content?: string;
+    audio_url?: string;
+    transcript?: string;
+    image_url?: string;
+    is_full_test?: boolean;
+    tags?: string;
   }): Promise<ContentSet> {
     const response = await axiosClient.post<ContentSet>("/admin/cms/content-sets", payload);
     return response.data;

@@ -238,11 +238,10 @@ export default function BulkAddPage() {
 
   return (
     <VocabLayout breadcrumbs={[
-      { label: 'BASIC' },
-      { label: 'VOCABULARY', href: '/vocabulary' },
-      { label: 'BỘ TỪ VỰNG CỦA TÔI', href: '/vocabulary' },
-      { label: collectionTitle.toUpperCase(), href: `/vocabulary/${id}` },
-      { label: 'THÊM HÀNG LOẠT' },
+      { label: 'Vocabulary', href: '/vocabulary' },
+      { label: 'Bộ từ vựng của tôi', href: '/vocabulary' },
+      { label: collectionTitle, href: `/vocabulary/${id}` },
+      { label: 'Thêm hàng loạt' },
     ]}>
       <div className="min-h-screen flex flex-col font-['Be_Vietnam_Pro']">
         <div className="flex-1 px-3 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto w-full pb-28">
