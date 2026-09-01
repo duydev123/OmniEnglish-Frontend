@@ -1,15 +1,11 @@
 import { useState } from "react";
-import SignIn from "../components/login/SignIn";
-import Register from "../components/login/Register";
-import Forgot from "../components/login/Forgot";
-import towerBridge from "../assets/towerBridge.png";
+import SignIn from "../../components/login/SignIn";
+import Register from "../../components/login/Register";
+import Forgot from "../../components/login/Forgot";
+import towerBridge from "../../assets/towerBridge.png";
 import { Sparkles, ShieldCheck, Zap } from "lucide-react";
 
-export interface UserData {
-  username: string;
-  email: string;
-  password: string;
-}
+import type { UserData } from "../../types/user";
 
 const getStageText = (stage: string) => {
   switch (stage) {

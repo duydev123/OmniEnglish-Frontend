@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUserApi } from "../../hooks/login/useUserApi";
-import type { UserData } from "../../pages/Login";
+import type { UserData } from "../../types/user";
 import Hero from "../utils/Hero";
 import { Lock, Mail, User, Loader2 } from "lucide-react";
 
