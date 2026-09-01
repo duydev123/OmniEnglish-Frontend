@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Lock, Mail, Loader2 } from "lucide-react";
 import Hero from "../utils/Hero";
-import type { UserData } from "../../pages/Login";
+import type { UserData } from "../../types/user";
 import { useUserApi } from "../../hooks/login/useUserApi";
 
 const SignIn = ({

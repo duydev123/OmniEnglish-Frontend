@@ -1,7 +1,7 @@
 import { Route, Routes, Navigate } from "react-router-dom"
 import Home from "./pages/Home"
-import Login from "./pages/Login"
-import ProfilePage from "./pages/ProfilePage"
+import Login from "./pages/user/Login"
+import ProfilePage from "./pages/user/ProfilePage"
 // import PracticeModulesPage from "./pages/PracticeModulesPage"
 import PracticeModulesPage from "./pages/practice/PracticeModulesPage"
 import VocabularyPage from "./pages/vocabulary/VocabularyPage"
@@ -20,7 +20,7 @@ import SpeakingResultPage from "./pages/speaking/SpeakingResultPage"
 import AdminCMSPage from "./pages/admin/AdminCMSPage"
 import AdminUsersPage from "./pages/admin/AdminUsersPage"
 import { ToastProvider } from "./components/common/Toast"
-import { ProtectedRoute, PublicOnlyRoute } from "./components/common/ProtectedRoute"
+import { ProtectedRoute, PublicOnlyRoute, AdminRoute } from "./components/common/ProtectedRoute"
 
 const App = () => {
   return (
@@ -31,13 +31,17 @@ const App = () => {
           <Route path="/login" element={<Login />} />
         </Route>
 
-        {/* Protected routes - require login */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Home />} />
+        {/* Admin routes - require Admin role */}
+        <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminCMSPage />} />
           <Route path="/admin/content-cms" element={<AdminCMSPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/settings" element={<AdminCMSPage />} />
+        </Route>
+
+        {/* Protected routes - require login */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Home />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/practice-modules" element={<Navigate to="/practice-modules/listening" replace />} />
           <Route path="/practice-modules/:category" element={<PracticeModulesPage />} />
