@@ -185,7 +185,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <AppLayout breadcrumbs={[{ label: "PROFILE" }]}>
+    <AppLayout breadcrumbs={[{ label: "Profile" }]}>
       <div className="p-4 sm:p-6 lg:p-8 space-y-7 max-w-7xl mx-auto overflow-x-hidden flex flex-col justify-between">
         <div className="space-y-7">
           {/* Header Title & Description */}
