@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import type { UserData } from "../../pages/Login";
+import type { UserData } from "../../types/user";
 import Hero from "../utils/Hero";
 import { ArrowLeft, Mail, Lock, KeyRound, Loader2, CheckCircle2 } from "lucide-react";
 import { userApi } from "../../services/userApi";

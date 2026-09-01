@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import type { UserData } from "../../pages/Login";
+import type { UserData } from "../../types/user";
 import { userApi, type SocialLoginPayload } from "../../services/userApi";
 import { useUserStore } from "../../stores/user/useUserStore";
 import { useToast } from "../../components/common/Toast";
@@ -19,6 +19,10 @@ export const useUserApi = () => {
   const Login = async (req: UserData) => {
     try {
       const user = await userApi.login({ email: req.email, password: req.password });
+      if (user?.status?.toLowerCase() === "blocked" || user?.status?.toLowerCase() === "inactive") {
+        showToast("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên!", "error");
+        return;
+      }
       setUser(user);
       if (user?.token) {
         localStorage.setItem("token", user.token);
