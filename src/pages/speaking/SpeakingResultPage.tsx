@@ -122,13 +122,21 @@ export const SpeakingResultPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => navigate("/practice-modules")}
-              className="px-5 py-2.5 bg-[#1e50e6] hover:bg-blue-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/20 flex items-center gap-2 transition cursor-pointer"
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
             >
               <RotateCcw size={15} />
               <span>Practice Again</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/practice-modules")}
+              className="px-5 py-2.5 bg-[#1e50e6] hover:bg-blue-700 text-white rounded-2xl font-extrabold text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <span>Next Question</span>
+              <ArrowRight size={15} />
             </button>
 
             <button className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl transition cursor-pointer shadow-2xs">
