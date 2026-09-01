@@ -27,8 +27,59 @@ export const SpeakingResultPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<SpeakingSessionDetail | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const currentTime = "00:00"
-  const duration = "00:45"
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0)
+  const [audioDuration, setAudioDuration] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const formatTime = (sec: number) => {
+    const s = Math.floor(sec || 0)
+    const m = Math.floor(s / 60)
+    const rem = s % 60
+    return `${m.toString().padStart(2, "0")}:${rem.toString().padStart(2, "0")}`
+  }
+
+  const handleToggleAudio = () => {
+    const url = result?.user_audio_url || (result as any)?.audio_url
+    if (!url) return
+
+    if (!audioRef.current) {
+      const audio = new Audio(url)
+      audio.onloadedmetadata = () => setAudioDuration(audio.duration || 0)
+      audio.ontimeupdate = () => setAudioCurrentTime(audio.currentTime || 0)
+      audio.onended = () => {
+        setIsPlaying(false)
+        setAudioCurrentTime(0)
+      }
+      audioRef.current = audio
+    }
+
+    if (isPlaying) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+    } else {
+      audioRef.current.play().catch((e) => console.error("Result audio play error:", e))
+      setIsPlaying(true)
+    }
+  }
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !audioDuration) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const clickX = e.clientX - rect.left
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width))
+    const targetTime = percentage * audioDuration
+    audioRef.current.currentTime = targetTime
+    setAudioCurrentTime(targetTime)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
+  }, [])
 
   const parseSpeakingFeedback = (raw: string | undefined | null) => {
     if (!raw) return {}
@@ -232,7 +283,7 @@ export const SpeakingResultPage: React.FC = () => {
             {/* Audio Player Card */}
             <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
               <button
-                onClick={() => setIsPlaying(!isPlaying)}
+                onClick={handleToggleAudio}
                 className="w-12 h-12 rounded-full bg-[#1e50e6] text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition cursor-pointer shrink-0"
               >
                 {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
@@ -240,11 +291,19 @@ export const SpeakingResultPage: React.FC = () => {
 
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-500">
-                  <span>{currentTime}</span>
-                  <span>{duration}</span>
+                  <span>{formatTime(audioCurrentTime)}</span>
+                  <span>{formatTime(audioDuration)}</span>
                 </div>
-                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative cursor-pointer">
-                  <div className="h-full bg-[#1e50e6] rounded-full w-1/4" />
+                <div
+                  onClick={handleSeek}
+                  className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative cursor-pointer"
+                >
+                  <div
+                    className="h-full bg-[#1e50e6] rounded-full transition-all duration-150"
+                    style={{
+                      width: `${audioDuration > 0 ? (audioCurrentTime / audioDuration) * 100 : 0}%`
+                    }}
+                  />
                 </div>
               </div>
 

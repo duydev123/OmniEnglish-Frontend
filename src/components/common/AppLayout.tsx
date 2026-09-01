@@ -27,18 +27,23 @@ export function AppLayout({ breadcrumbs, children }: AppLayoutProps) {
       }
       try {
         const data = await userApi.getUserProfile();
-        if (data && data.username && data.id) {
+        if (data && (data.username || data.email)) {
           setUser(data);
-        } else {
-          localStorage.removeItem('token');
+          // Send daily check-in API call to backend
+          const checkInRes = await userApi.checkIn();
+          if (checkInRes?.user) {
+            setUser(checkInRes.user);
+          }
+        } else if (!localStorage.getItem('token')) {
           setUser(initialUser);
           navigate('/login');
         }
       } catch (err) {
-        console.warn('Authentication data missing or invalid token. Auto logging out:', err);
-        localStorage.removeItem('token');
-        setUser(initialUser);
-        navigate('/login');
+        console.warn('Profile fetch warning:', err);
+        if (!localStorage.getItem('token')) {
+          setUser(initialUser);
+          navigate('/login');
+        }
       }
     };
     verifyUserAuthData();

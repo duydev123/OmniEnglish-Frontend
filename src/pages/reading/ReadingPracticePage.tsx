@@ -243,7 +243,7 @@ export default function ReadingPracticePage() {
   // ── Loading / Error states ───────────────────────────────────────────────
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice' }, { label: 'READING' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Reading' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 size={40} className="text-blue-600 animate-spin" />
           <p className="text-slate-500 font-semibold">Đang tải bài đọc...</p>
@@ -254,7 +254,7 @@ export default function ReadingPracticePage() {
 
   if (error || !passageData || !session) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice' }, { label: 'READING' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Reading' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <AlertCircle size={40} className="text-red-500" />
           <p className="text-slate-700 font-semibold">{error ?? 'Không tìm thấy bài đọc'}</p>
@@ -272,9 +272,9 @@ export default function ReadingPracticePage() {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: 'PRACTICE MODULE', href: '/practice' },
-        { label: 'READING', href: '/practice?tab=reading' },
-        { label: session.title.toUpperCase() },
+        { label: 'Practice Modules', href: '/practice-modules' },
+        { label: 'Reading', href: '/practice-modules?tab=reading' },
+        { label: session.title },
       ]}
     >
       <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4">
