@@ -10,6 +10,7 @@ import EditCollectionModal from '../../components/vocabulary/modals/EditCollecti
 import BulkEditModal from '../../components/vocabulary/modals/BulkEditModal'
 import FlashcardModal from '../../components/vocabulary/flashcard/FlashcardModal'
 import { useToast } from '../../components/common/Toast'
+import { getApiErrorMessage } from '../../utils/error'
 import {
   getCollection,
   updateCollectionProgress,
@@ -66,8 +67,8 @@ export default function CollectionDetailPage() {
       if (data) {
         sessionStorage.setItem('vocab_active_tab', data.is_official ? 'default' : 'mine')
       }
-    } catch {
-      showToast('Không tìm thấy bộ từ vựng', 'error')
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Không tìm thấy bộ từ vựng'), 'error')
       navigate('/vocabulary')
     } finally {
       setLoading(false)

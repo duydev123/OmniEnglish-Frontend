@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/common/AppLayout';
 import { writingApi } from '../../services/writingApi';
 import { useToast } from '../../components/common/Toast';
+import { getApiErrorMessage } from '../../utils/error';
 import type {
   WritingPrompt,
   AIOutlineResponse,
@@ -263,8 +264,8 @@ export const WritingEditorPage: React.FC = () => {
         if (data.time_spent_seconds) {
           setTimeSpentSeconds(data.time_spent_seconds);
         }
-      } catch {
-        showToast('Lỗi khi tải đề bài writing', 'error');
+      } catch (err) {
+        showToast(getApiErrorMessage(err, 'Lỗi khi tải đề bài writing'), 'error');
       } finally {
         setLoadingPrompt(false);
       }
@@ -293,8 +294,8 @@ export const WritingEditorPage: React.FC = () => {
         time_spent_seconds: timeSpentSeconds,
       });
       showToast('Đã lưu nháp bài viết thành công!', 'success');
-    } catch {
-      showToast('Lỗi khi lưu nháp bài viết', 'error');
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Lỗi khi lưu nháp bài viết'), 'error');
     } finally {
       setSavingDraft(false);
     }
@@ -318,7 +319,7 @@ export const WritingEditorPage: React.FC = () => {
       showToast('Nộp bài thành công! Đang chuyển tới trang đánh giá AI...', 'success');
       navigate(`/writing/review/${res.session_id}`);
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi nộp bài essay', 'error');
+      showToast(getApiErrorMessage(err, 'Lỗi khi nộp bài essay'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -548,37 +549,36 @@ export const WritingEditorPage: React.FC = () => {
             </div>
 
             {/* Reference Image Box (For Chart / Graph Tasks) */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-wider">
-                  REFERENCE IMAGE
-                </h2>
-                {prompt.ref_id && (
-                  <span className="text-[10px] font-mono font-bold text-slate-400">
-                    Ref ID: {prompt.ref_id}
-                  </span>
-                )}
-              </div>
+            {(prompt.task_type === 'WITH_GRAPH' || prompt.reference_image_url) && (
+              <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                    REFERENCE IMAGE
+                  </h2>
+                  {prompt.ref_id && (
+                    <span className="text-[10px] font-mono font-bold text-slate-400">
+                      Ref ID: {prompt.ref_id}
+                    </span>
+                  )}
+                </div>
 
-              <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer">
-                <img
-                  src={
-                    prompt.reference_image_url ||
-                    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80'
-                  }
-                  alt="Reference Chart"
-                  className="w-full h-48 sm:h-56 object-cover transition-transform duration-300 group-hover:scale-105"
-                  onClick={() => setImageModalOpen(true)}
-                />
-                <button
-                  onClick={() => setImageModalOpen(true)}
-                  className="absolute bottom-3 right-3 p-2 bg-slate-900/80 text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer"
-                  title="Phóng to ảnh"
-                >
-                  <Maximize2 size={14} />
-                </button>
+                <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer">
+                  <img
+                    src={prompt.reference_image_url || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80'}
+                    alt="Reference Chart"
+                    className="w-full h-48 sm:h-56 object-cover transition-transform duration-300 group-hover:scale-105"
+                    onClick={() => setImageModalOpen(true)}
+                  />
+                  <button
+                    onClick={() => setImageModalOpen(true)}
+                    className="absolute bottom-3 right-3 p-2 bg-slate-900/80 text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer"
+                    title="Phóng to ảnh"
+                  >
+                    <Maximize2 size={14} />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ================= CENTER COLUMN: Editor & Writing Controls (5 cols) ================= */}

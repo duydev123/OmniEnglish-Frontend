@@ -19,6 +19,7 @@ export interface UserStats {
   avg_listening_score: number;
   avg_speaking_score: number;
   avg_writing_score: number;
+  overall_score?: number;
 }
 
 export interface User {

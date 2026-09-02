@@ -4,6 +4,7 @@ import { Clock, ArrowLeft, CheckCircle2, BookMarked, Loader2, AlertCircle, Save,
 import AppLayout from '../../components/common/AppLayout'
 import AudioPlayerCard, { type AudioPlayerRef } from '../../components/listening/AudioPlayerCard'
 import { useToast } from '../../components/common/Toast'
+import { getApiErrorMessage } from '../../utils/error'
 import {
   getListeningPassages,
   saveListeningDraft,
@@ -104,8 +105,8 @@ export default function ListeningPracticePage() {
         user_answers: answers,
       })
       showToast('Draft saved successfully.', 'success')
-    } catch {
-      showToast('Không thể lưu nháp, vui lòng thử lại', 'error')
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Không thể lưu nháp, vui lòng thử lại'), 'error')
     } finally {
       setSaving(false)
     }
@@ -122,8 +123,8 @@ export default function ListeningPracticePage() {
       })
       showToast(autoSubmit ? 'Hết giờ, hệ thống đã nộp bài' : `Nộp bài thành công! Điểm: ${result.accuracy_rate ?? 0}%`, 'success')
       navigate(`/listening/result?session_id=${session.session_id}`)
-    } catch {
-      showToast('Nộp bài thất bại, vui lòng thử lại', 'error')
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Nộp bài thất bại, vui lòng thử lại'), 'error')
     } finally {
       setSubmitting(false)
     }

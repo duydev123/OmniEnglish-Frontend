@@ -92,7 +92,13 @@ export const SpeakingResultPage: React.FC = () => {
     } catch (e) {
       // Not JSON format
     }
-    return { raw_text: raw }
+  const getScoreLevelText = (score: number) => {
+    if (score >= 8.5) return "Excellent"
+    if (score >= 7.5) return "Very Good"
+    if (score >= 6.5) return "Good"
+    if (score >= 5.5) return "Moderate"
+    if (score > 0) return "Needs Work"
+    return "Not Graded"
   }
 
   useEffect(() => {
@@ -215,7 +221,7 @@ export const SpeakingResultPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-1 text-[11px] font-extrabold text-emerald-600">
               <TrendingUp size={12} />
-              <span>+{result.band_score_delta || 0.5} vs last attempt</span>
+              <span>{result.band_score_delta !== undefined && result.band_score_delta !== null ? (result.band_score_delta >= 0 ? `+${result.band_score_delta}` : `${result.band_score_delta}`) : "+0.0"} vs last attempt</span>
             </div>
           </div>
 
@@ -230,7 +236,7 @@ export const SpeakingResultPage: React.FC = () => {
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-blue-600 rounded-full" style={{ width: `${(result.pronunciation_score / 10) * 100}%` }} />
             </div>
-            <span className="text-[10px] font-bold text-blue-600 block">Excellent</span>
+            <span className="text-[10px] font-bold text-blue-600 block">{getScoreLevelText(result.pronunciation_score)}</span>
           </div>
 
           {/* Fluency */}
@@ -244,7 +250,7 @@ export const SpeakingResultPage: React.FC = () => {
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(result.fluency_score / 10) * 100}%` }} />
             </div>
-            <span className="text-[10px] font-bold text-emerald-600 block">Stable</span>
+            <span className="text-[10px] font-bold text-emerald-600 block">{getScoreLevelText(result.fluency_score)}</span>
           </div>
 
           {/* Vocabulary */}
@@ -258,7 +264,7 @@ export const SpeakingResultPage: React.FC = () => {
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-slate-800 rounded-full" style={{ width: `${(result.lexical_score / 10) * 100}%` }} />
             </div>
-            <span className="text-[10px] font-bold text-slate-700 block">High</span>
+            <span className="text-[10px] font-bold text-slate-700 block">{getScoreLevelText(result.lexical_score)}</span>
           </div>
 
           {/* Grammar */}
@@ -272,7 +278,7 @@ export const SpeakingResultPage: React.FC = () => {
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(result.grammar_score / 10) * 100}%` }} />
             </div>
-            <span className="text-[10px] font-bold text-amber-600 block">Good</span>
+            <span className="text-[10px] font-bold text-amber-600 block">{getScoreLevelText(result.grammar_score)}</span>
           </div>
         </div>
 

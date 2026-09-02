@@ -12,6 +12,7 @@ import AddWordModal from '../../components/vocabulary/modals/AddWordModal'
 import DeleteModal from '../../components/vocabulary/modals/DeleteModal'
 import FlashcardModal from '../../components/vocabulary/flashcard/FlashcardModal'
 import { useToast } from '../../components/common/Toast'
+import { getApiErrorMessage } from '../../utils/error'
 import {
   getCollection,
   deleteCollection,
@@ -98,8 +99,8 @@ export default function VocabularyPage() {
       try {
         const fullCol = await getCollection(col.id)
         setFlashcardTarget(fullCol)
-      } catch {
-        showToast('Không thể tải danh sách từ vựng để luyện tập', 'error')
+      } catch (err) {
+        showToast(getApiErrorMessage(err, 'Không thể tải danh sách từ vựng để luyện tập'), 'error')
       }
     } else {
       setFlashcardTarget(col)
@@ -114,7 +115,7 @@ export default function VocabularyPage() {
       setMyCollections(prev => prev.filter(c => c.id !== deleteTarget.id))
       showToast(`Đã xóa bộ từ "${deleteTarget.title}"`, 'success')
     } catch (err) {
-      showToast(`Lỗi: ${(err as Error).message}`, 'error')
+      showToast(getApiErrorMessage(err, `Lỗi khi xóa bộ từ "${deleteTarget.title}"`), 'error')
     } finally {
       setDeleteTarget(null)
     }

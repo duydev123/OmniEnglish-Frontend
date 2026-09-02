@@ -6,6 +6,7 @@ import { useUserStore, initialUser } from "../../stores/user/useUserStore";
 import { userApi } from "../../services/userApi";
 import { clearLocalVocabCache } from "../../services/vocabularyApi";
 import { useToast } from "../../components/common/Toast";
+import { getApiErrorMessage } from "../../utils/error";
 import { LogoutModal } from "../../components/common/LogoutModal";
 import { AppLayout } from "../../components/common/AppLayout";
 import {
@@ -81,8 +82,8 @@ const ProfilePage = () => {
       const updatedUser = await userApi.updateProfile({ learning_mode: mode });
       setUser(updatedUser);
       showToast(`Đã đổi mục tiêu học tập thành ${mode}!`, "success");
-    } catch {
-      showToast("Không thể lưu mục tiêu học tập!", "error");
+    } catch (err: any) {
+      showToast(getApiErrorMessage(err, "Không thể lưu mục tiêu học tập!"), "error");
     }
   };
 
@@ -93,8 +94,8 @@ const ProfilePage = () => {
       const updatedUser = await userApi.updateProfile({ weekend_mastery: nextVal });
       setUser(updatedUser);
       showToast(`Đã ${nextVal ? "bật" : "tắt"} Weekend Mastery!`, "info");
-    } catch {
-      showToast("Không thể lưu cài đặt!", "error");
+    } catch (err: any) {
+      showToast(getApiErrorMessage(err, "Không thể lưu cài đặt!"), "error");
     }
   };
 
@@ -123,7 +124,7 @@ const ProfilePage = () => {
       showToast("Đã cập nhật ảnh đại diện thành công!", "success");
       setShowAvatarModal(false);
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Không thể cập nhật ảnh đại diện!", "error");
+      showToast(getApiErrorMessage(err, "Không thể cập nhật ảnh đại diện!"), "error");
     } finally {
       setAvatarLoading(false);
     }
@@ -148,7 +149,7 @@ const ProfilePage = () => {
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Đổi mật khẩu thất bại!", "error");
+      showToast(getApiErrorMessage(err, "Đổi mật khẩu thất bại!"), "error");
     } finally {
       setPasswordLoading(false);
     }

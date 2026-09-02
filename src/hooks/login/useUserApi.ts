@@ -3,6 +3,7 @@ import type { UserData } from "../../types/user";
 import { userApi, type SocialLoginPayload } from "../../services/userApi";
 import { useUserStore } from "../../stores/user/useUserStore";
 import { useToast } from "../../components/common/Toast";
+import { getApiErrorMessage } from "../../utils/error";
 
 declare global {
   interface Window {
@@ -32,8 +33,7 @@ export const useUserApi = () => {
       return user;
     } catch (error: any) {
       console.error("Login error:", error);
-      const message = error.response?.data?.detail || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
-      showToast(message, "error");
+      showToast(getApiErrorMessage(error, "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!"), "error");
     }
   };
 
@@ -53,8 +53,7 @@ export const useUserApi = () => {
       return user;
     } catch (error: any) {
       console.error("Register error:", error);
-      const message = error.response?.data?.detail || "Đăng ký thất bại. Vui lòng kiểm tra lại!";
-      showToast(message, "error");
+      showToast(getApiErrorMessage(error, "Đăng ký thất bại. Vui lòng kiểm tra lại!"), "error");
     }
   };
 
