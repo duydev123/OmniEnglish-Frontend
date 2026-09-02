@@ -1,5 +1,4 @@
-// src/components/common/HighlightToolbar.tsx
-import { Trash2, Pencil, Plus } from 'lucide-react';
+import { Trash2, Pencil, Plus, BookPlus } from 'lucide-react';
 
 interface HighlightToolbarProps {
     show: boolean;
@@ -13,6 +12,8 @@ interface HighlightToolbarProps {
     setNoteText?: (text: string) => void;
     setNoteInputOpen?: (open: boolean) => void;
     showNoteButton?: boolean;
+    showAddVocabButton?: boolean;
+    onAddVocab?: () => void;
 }
 
 export const HighlightToolbar = ({
@@ -27,6 +28,8 @@ export const HighlightToolbar = ({
     setNoteText,
     setNoteInputOpen,
     showNoteButton = false,
+    showAddVocabButton = true,
+    onAddVocab,
 }: HighlightToolbarProps) => {
     if (!show) return null;
 
@@ -100,6 +103,21 @@ export const HighlightToolbar = ({
                         >
                             <Plus size={13} />
                         </button>
+                    )}
+
+                    {/* Add Vocab Button - Thêm vào bộ từ vựng Flashcard */}
+                    {showAddVocabButton && onAddVocab && (
+                        <>
+                            <div className="h-3.5 w-px bg-slate-600 mx-0.5" />
+                            <button
+                                onClick={onAddVocab}
+                                className="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 rounded-md text-[11px] font-extrabold text-white flex items-center gap-1 transition shadow-xs"
+                                title="Thêm từ vựng này vào bộ Flashcard"
+                            >
+                                <BookPlus size={13} />
+                                <span>Thêm từ</span>
+                            </button>
+                        </>
                     )}
                 </>
             ) : (
