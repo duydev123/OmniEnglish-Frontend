@@ -223,7 +223,7 @@ export const SpeakingShadowingPage: React.FC = () => {
     setFeedbackError(null)
     try {
       const res = await speakingApi.getShadowingFeedback(sentence.id, {
-        user_transcript: evaluation.user_transcript,
+        user_transcript: evaluation.user_transcript || "",
         words_detail: evaluation.words_detail || []
       })
       if (res && res.feedback) {
@@ -587,7 +587,7 @@ export const SpeakingShadowingPage: React.FC = () => {
                 ) : (
                   /* Evaluated State: Real backend words_detail rendering Insertions, Omissions, Mispronunciations, and Correct words */
                   <div className="flex flex-wrap items-center justify-center gap-2 py-3">
-                    {evaluation.words_detail.map((w, index) => {
+                    {(evaluation.words_detail || []).map((w, index) => {
                       const isInsertion = w.error_type === "Insertion"
                       const isOmission = w.error_type === "Omission"
                       const isMispronunciation = w.error_type === "Mispronunciation" || ((w.accuracy_score ?? 0) < 60 && !isOmission && !isInsertion)
@@ -811,9 +811,10 @@ export const SpeakingShadowingPage: React.FC = () => {
               <div className="p-4 bg-blue-50/70 border border-blue-100/80 rounded-2xl space-y-2">
                 {evaluation ? (
                   (() => {
-                    const insertions = evaluation.words_detail.filter((w) => w.error_type === "Insertion").length
-                    const omissions = evaluation.words_detail.filter((w) => w.error_type === "Omission").length
-                    const mispronunciations = evaluation.words_detail.filter(
+                    const wordsList = evaluation.words_detail || []
+                    const insertions = wordsList.filter((w) => w.error_type === "Insertion").length
+                    const omissions = wordsList.filter((w) => w.error_type === "Omission").length
+                    const mispronunciations = wordsList.filter(
                       (w) => w.error_type === "Mispronunciation" || ((w.accuracy_score ?? 0) < 60 && w.error_type !== "Omission" && w.error_type !== "Insertion")
                     ).length
 

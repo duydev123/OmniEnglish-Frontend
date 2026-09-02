@@ -7,7 +7,7 @@ import axiosClient from '../configs/axios'
 export interface PassageSummary {
   id: string
   title: string
-  topic: string
+  topic?: string
   time_limit_minutes: number
   total_questions: number
   image_url?: string | null
@@ -26,6 +26,11 @@ export interface PassageListResponse {
 
 export interface PassageDetail extends PassageSummary {
   content: string
+  passage?: PassageDetail
+  multiple_choices?: MultipleChoiceQuestion[]
+  heading_matchings?: HeadingMatchingQuestion[]
+  fill_blanks?: FillBlankQuestion[]
+  true_false_not_given?: TrueFalseNotGivenQuestion[]
 }
 
 export interface MultipleChoiceQuestion {
@@ -62,11 +67,12 @@ export interface ReadingSession {
   completed_questions: number
   total_questions: number
   time_remaining_seconds: number
-  multiple_choices: MultipleChoiceQuestion[]
-  heading_matchings: HeadingMatchingQuestion[]
-  fill_blanks: FillBlankQuestion[]
-  true_false_not_given: TrueFalseNotGivenQuestion[]
+  multiple_choices?: MultipleChoiceQuestion[]
+  heading_matchings?: HeadingMatchingQuestion[]
+  fill_blanks?: FillBlankQuestion[]
+  true_false_not_given?: TrueFalseNotGivenQuestion[]
   user_answers?: Record<string, string>
+  status?: string
 }
 
 export interface ReadingSessionDetail {
@@ -85,6 +91,9 @@ export interface ReadingSessionDetail {
 }
 
 export interface QuestionResult {
+  order?: number
+  type?: string
+  question?: string
   is_correct: boolean
   user_answer: string
   correct_answer: string
@@ -95,6 +104,7 @@ export interface QuestionResult {
 }
 
 export interface ReadingSubmitResponse {
+  session_id?: string
   status: string
   score: number
   total_questions: number

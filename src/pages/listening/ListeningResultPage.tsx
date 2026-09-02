@@ -57,7 +57,7 @@ export default function ListeningResultPage() {
     }
 
     const startSec = (startTimeMs !== undefined && startTimeMs !== null) ? (startTimeMs / 1000.0) : parseTimeToSeconds(clipTime)
-    let endSec = (endTimeMs !== undefined && endTimeMs !== null) ? (endTimeMs / 1000.0) : (startSec + 15)
+    const endSec = (endTimeMs !== undefined && endTimeMs !== null) ? (endTimeMs / 1000.0) : (startSec + 15)
 
     const segmentDuration = endSec - startSec
     setClipDuration(segmentDuration)

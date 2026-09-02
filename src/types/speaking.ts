@@ -16,7 +16,7 @@ export interface ResponseStructureItem {
 
 export interface SpeakingPrompt {
   id: string
-  topic_id: string
+  topic_id?: string
   part: "PART_1" | "PART_2" | "PART_3" | "SHADOWING" | string
   sub_topic?: string
   question_text: string
@@ -100,6 +100,7 @@ export interface SpeakingSessionDetail {
   duration_str: string
   status: string
   full_session_audio_url?: string
+  user_audio_url?: string
   overall_band_score: number
   band_score_delta: number
   percentile_rank?: string
@@ -138,8 +139,13 @@ export interface ShadowingSentence {
 export interface ShadowingEvaluateResponse {
   accuracy_score: number
   fluency_score: number
-  user_transcript: string
-  words_detail: WordDetail[]
+  pronunciation_score?: number
+  overall_score?: number
+  recognized_text?: string
+  word_details?: WordDetail[]
+  general_feedback?: string
+  user_transcript?: string
+  words_detail?: WordDetail[]
   user_audio_url?: string
 }
 

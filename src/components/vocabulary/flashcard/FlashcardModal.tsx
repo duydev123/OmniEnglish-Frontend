@@ -39,6 +39,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
   const [isShuffled, setIsShuffled] = useState(false)
   const [startWithDefinition, setStartWithDefinition] = useState(false)
   const [speechRate, setSpeechRate] = useState(1.0)
+  const [endTime, setEndTime] = useState<number>(0)
 
   useEffect(() => {
     if (open && collection) {
@@ -48,6 +49,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
       setIsFlipped(startWithDefinition)
       setRatings({})
       setStartTime(Date.now())
+      setEndTime(0)
       setIsFinished(false)
       setShowExitConfirm(false)
     }
@@ -88,6 +90,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
       setIsFlipped(startWithDefinition)
       setTimeout(() => setCurrentIndex(prev => prev + 1), 200)
     } else {
+      setEndTime(Date.now())
       setIsFinished(true)
     }
   }, [currentIndex, words, collection, startWithDefinition])
@@ -190,7 +193,7 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
 
   // Finish summary view
   if (isFinished) {
-    const timeSpentSec = Math.floor((Date.now() - startTime) / 1000)
+    const timeSpentSec = Math.floor(((endTime || startTime) - startTime) / 1000)
     const mins = Math.floor(timeSpentSec / 60)
     const secs = timeSpentSec % 60
     const totalCount = words.length

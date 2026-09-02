@@ -38,7 +38,7 @@ export const WritingReviewPage: React.FC = () => {
       try {
         const data = await writingApi.getSubmissionById(sessionId);
         setReviewData(data);
-      } catch (err) {
+      } catch {
         showToast('Lỗi khi tải kết quả chấm bài', 'error');
       } finally {
         setLoading(false);

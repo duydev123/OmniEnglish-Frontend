@@ -36,7 +36,7 @@ function buildPassageData(session: ReadingSession): ReadingPassageData {
 function buildTasks(session: ReadingSession): QuestionTask[] {
   const tasks: QuestionTask[] = []
 
-  session.multiple_choices.forEach((mc) => {
+  session.multiple_choices?.forEach((mc) => {
     tasks.push({
       id: `mc-${mc.id}`,
       taskNumber: mc.order,
@@ -47,7 +47,7 @@ function buildTasks(session: ReadingSession): QuestionTask[] {
     })
   })
 
-  session.fill_blanks.forEach((fb, i) => {
+  session.fill_blanks?.forEach((fb, i) => {
     tasks.push({
       id: `fb-${i}`,
       taskNumber: fb.order,
@@ -75,7 +75,7 @@ function buildTasks(session: ReadingSession): QuestionTask[] {
     })
   }
 
-  session.true_false_not_given.forEach((tfng, i) => {
+  session.true_false_not_given?.forEach((tfng, i) => {
     tasks.push({
       id: `tfng-${i}`,
       taskNumber: tfng.order,

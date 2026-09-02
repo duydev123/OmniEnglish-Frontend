@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Search, Bell, HelpCircle, User as UserIcon } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { useUserStore } from '../../stores/user/useUserStore';
@@ -18,8 +18,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   searchQuery = '',
   onSearchChange,
 }) => {
+  const { user } = useUserStore();
   const adminName = user?.username || 'Admin';
   const adminRole = 'System Admin';
+  const avatarUrl = user?.avatar || user?.avarta;
 
   return (
     <div className="min-h-screen bg-slate-100/70 font-['Be_Vietnam_Pro'] flex text-slate-800">
@@ -68,8 +70,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
               {/* User Avatar Circle */}
               <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 border border-blue-200/80 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt="Admin Avatar" className="w-full h-full rounded-full object-cover" />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Admin Avatar" className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <UserIcon className="w-5 h-5 text-blue-600" />
                 )}

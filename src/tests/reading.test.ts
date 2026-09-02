@@ -30,6 +30,11 @@ describe('Reading Module Services & Utils', () => {
 
   it('should fetch reading passage details with questions', async () => {
     vi.spyOn(readingApi, 'getPassageDetail').mockResolvedValue({
+      id: 'reading-p1',
+      title: 'The Future of Renewable Energy',
+      content: 'Renewable energy is growing fast...',
+      time_limit_minutes: 20,
+      total_questions: 10,
       passage: {
         id: 'reading-p1',
         title: 'The Future of Renewable Energy',
@@ -51,8 +56,8 @@ describe('Reading Module Services & Utils', () => {
     });
 
     const detail = await readingApi.getPassageDetail('reading-p1');
-    expect(detail.passage.id).toBe('reading-p1');
-    expect(detail.multiple_choices.length).toBe(1);
+    expect(detail.passage?.id).toBe('reading-p1');
+    expect(detail.multiple_choices?.length).toBe(1);
   });
 
   it('should start a reading test session', async () => {
@@ -75,6 +80,7 @@ describe('Reading Module Services & Utils', () => {
   it('should submit reading test answers and calculate score', async () => {
     vi.spyOn(readingApi, 'submitReading').mockResolvedValue({
       session_id: 'session_read_101',
+      status: 'COMPLETED',
       score: 8,
       total_questions: 10,
       accuracy_rate: 80.0,
