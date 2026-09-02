@@ -365,6 +365,8 @@ export const useTextHighlight = (options: UseTextHighlightOptions) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [containerRefs]);
 
+    const selectedText = currentHighlightSpan ? (currentHighlightSpan.innerText || currentHighlightSpan.textContent || '').trim() : '';
+
     return {
         showToolbar,
         toolbarPos,
@@ -376,5 +378,6 @@ export const useTextHighlight = (options: UseTextHighlightOptions) => {
         applyAnnotation,
         isSelectionInEditor: false,
         lastColor,
+        selectedText,
     };
 };

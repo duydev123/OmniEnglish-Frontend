@@ -1,6 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { FileText, Type, Bookmark } from 'lucide-react'
 import type { ReadingPassageData } from '../../types/reading'
+import { useTextHighlight } from '../../hooks/useTextHighlight'
+import { HighlightToolbar } from '../common/HighlightToolbar'
+import { AddWordModal } from '../vocabulary/modals/AddWordModal'
+import { getMyCollections } from '../../services/vocabularyApi'
+import type { VocabularyCollection } from '../../types/vocabulary'
+import { useToast } from '../common/Toast'
 
 interface ReadingPassageCardProps {
   passage: ReadingPassageData
@@ -10,6 +16,64 @@ interface ReadingPassageCardProps {
 export const ReadingPassageCard: React.FC<ReadingPassageCardProps> = ({ passage, activeParagraphId }) => {
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg'>('base')
   const [isBookmarked, setIsBookmarked] = useState(false)
+  const passageRef = useRef<HTMLDivElement>(null)
+  const { showToast } = useToast()
+
+  // Vocab Modal state
+  const [isAddWordOpen, setIsAddWordOpen] = useState(false)
+  const [selectedWord, setSelectedWord] = useState('')
+  const [collections, setCollections] = useState<VocabularyCollection[]>([])
+
+  // Load My Vocabulary Collections ("Bộ từ vựng của tôi")
+  useEffect(() => {
+    getMyCollections()
+      .then((cols) => setCollections(cols))
+      .catch((err) => console.warn('Could not load user collections:', err))
+  }, [])
+
+  const {
+    showToolbar,
+    toolbarPos,
+    noteInputOpen,
+    noteText,
+    setNoteText,
+    setNoteInputOpen,
+    handleSelectionChange,
+    applyAnnotation,
+    selectedText,
+  } = useTextHighlight({
+    containerRefs: [passageRef],
+  })
+
+  // Handle mouseup for text selection
+  const handleMouseUp = () => {
+    handleSelectionChange()
+  }
+
+  const handleOpenAddVocabModal = () => {
+    let wordToAdd = selectedText.trim()
+    if (!wordToAdd) {
+      const sel = window.getSelection()
+      if (sel) {
+        wordToAdd = sel.toString().trim()
+      }
+    }
+    // Clean trailing punctuation
+    wordToAdd = wordToAdd.replace(/^[^\w]+|[^\w]+$/g, '')
+
+    if (!wordToAdd) {
+      showToast('Vui lòng bôi đen từ vựng trong bài đọc trước khi thêm!', 'warning')
+      return
+    }
+
+    // Refresh My Collections ("Bộ từ vựng của tôi")
+    getMyCollections()
+      .then((cols) => setCollections(cols))
+      .catch(() => {})
+
+    setSelectedWord(wordToAdd)
+    setIsAddWordOpen(true)
+  }
 
   const fontClasses = {
     sm: 'text-sm leading-relaxed',
@@ -24,7 +88,7 @@ export const ReadingPassageCard: React.FC<ReadingPassageCardProps> = ({ passage,
   }
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col gap-5 h-full">
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col gap-5 h-full relative">
       {/* Header Toolbar */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
@@ -57,8 +121,12 @@ export const ReadingPassageCard: React.FC<ReadingPassageCardProps> = ({ passage,
         </div>
       </div>
 
-      {/* Passage Paragraphs */}
-      <div className={`space-y-4 text-slate-700 font-normal ${fontClasses[fontSize]}`}>
+      {/* Passage Paragraphs container with Ref & Selection handler */}
+      <div
+        ref={passageRef}
+        onMouseUp={handleMouseUp}
+        className={`space-y-4 text-slate-700 font-normal ${fontClasses[fontSize]}`}
+      >
         {passage.paragraphs.map((p, idx) => {
           const isHighlighted = p.highlighted || activeParagraphId === p.id
 
@@ -88,6 +156,35 @@ export const ReadingPassageCard: React.FC<ReadingPassageCardProps> = ({ passage,
           )
         })}
       </div>
+
+      {/* Floating Highlight & Add Vocab Toolbar */}
+      <HighlightToolbar
+        show={showToolbar}
+        position={toolbarPos}
+        onHighlight={(color) => applyAnnotation('highlight', color)}
+        onStrikethrough={() => applyAnnotation('strikethrough')}
+        onClear={() => applyAnnotation('clear')}
+        onNote={(note) => applyAnnotation('note', undefined, note)}
+        noteInputOpen={noteInputOpen}
+        noteText={noteText}
+        setNoteText={setNoteText}
+        setNoteInputOpen={setNoteInputOpen}
+        showNoteButton={true}
+        showAddVocabButton={true}
+        onAddVocab={handleOpenAddVocabModal}
+      />
+
+      {/* Add Flashcard Vocabulary Modal */}
+      <AddWordModal
+        open={isAddWordOpen}
+        onClose={() => setIsAddWordOpen(false)}
+        collections={collections}
+        initialWord={selectedWord}
+        onWordAdded={() => {
+          showToast(`✨ Đã thêm từ "${selectedWord}" vào bộ từ vựng thành công!`, 'success')
+          setIsAddWordOpen(false)
+        }}
+      />
     </div>
   )
 }

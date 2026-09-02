@@ -20,6 +20,8 @@ export interface WritingPrompt {
   user_status?: string | null;
   draft_content?: string | null;
   time_spent_seconds?: number | null;
+  highest_score?: number | null;
+  question_category?: string | null;
 }
 
 export interface AIOutlineSection {
