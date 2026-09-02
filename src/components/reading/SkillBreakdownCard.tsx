@@ -41,7 +41,7 @@ export const SkillBreakdownCard: React.FC<SkillBreakdownCardProps> = ({ skill })
   const currentStyle = colorStyles[skill.color] || colorStyles.blue
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm flex flex-col justify-between h-full gap-4">
+    <div className="bg-white border border-slate-400/60 rounded-2xl p-5 shadow-glow-4side flex flex-col justify-between h-full gap-4">
       {/* Icon & Info */}
       <div className="space-y-3">
         <div className={`w-9 h-9 rounded-xl ${currentStyle.bgIcon} flex items-center justify-center shrink-0`}>
@@ -73,3 +73,4 @@ export const SkillBreakdownCard: React.FC<SkillBreakdownCardProps> = ({ skill })
 }
 
 export default SkillBreakdownCard
+

@@ -32,7 +32,7 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
-      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-5 sm:p-6 text-center animate-in zoom-in-95 duration-200 border border-slate-100">
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-glow-4side-lg p-5 sm:p-6 text-center animate-in zoom-in-95 duration-200 border border-slate-400/60">
         <div className="w-14 h-14 sm:w-16 sm:h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
           <Trash2 className="w-7 h-7 sm:w-8 sm:h-8" />
         </div>

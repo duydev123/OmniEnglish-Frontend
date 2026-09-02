@@ -20,7 +20,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   onStartFlashcard
 }) => {
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm w-full sticky top-24 select-none">
+    <div className="bg-white border border-slate-400/60 rounded-2xl p-5 shadow-glow-4side w-full sticky top-24 select-none">
       {/* ── Lọc theo trạng thái ── */}
       <div className="mb-6">
         <h3 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wider">Lọc theo trạng thái</h3>

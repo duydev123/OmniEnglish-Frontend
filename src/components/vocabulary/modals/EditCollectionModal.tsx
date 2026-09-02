@@ -53,7 +53,7 @@ export const EditCollectionModal: React.FC<EditCollectionModalProps> = ({
 
   const modalContent = (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl scale-100 animate-in zoom-in-95 duration-200 border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-glow-4side-lg scale-100 animate-in zoom-in-95 duration-200 border border-slate-400/60 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-white shrink-0">
           <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">Chỉnh sửa bộ từ vựng</h2>

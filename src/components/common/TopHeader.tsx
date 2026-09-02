@@ -22,19 +22,19 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs = [], onMenuCl
   const avatarUrl = user?.avatar || user?.avarta || defaultAvatar;
 
   return (
-    <header className="h-14 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between px-2.5 sm:px-6 font-['Be_Vietnam_Pro'] select-none w-full">
+    <header className="h-14 bg-white border-b border-slate-400/60 shadow-glow-4side sticky top-0 z-40 flex items-center justify-between px-2.5 sm:px-6 font-['Be_Vietnam_Pro'] select-none w-full">
       {/* Left: omniEnglish Logo (Hero style) */}
       <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
         <button
           onClick={onMenuClick}
-          className="p-1 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0 cursor-pointer"
+          className="p-1.5 text-[#1D4ED8] hover:bg-blue-50 rounded-lg transition-colors shrink-0 cursor-pointer"
           title="Toggle menu"
         >
-          <Menu size={20} />
+          <Menu size={20} className="text-[#1D4ED8]" />
         </button>
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 hover:opacity-90 transition-opacity">
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 hover:opacity-90 transition-opacity cursor-pointer">
           <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#1D4ED8] flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
             <GraduationCap className="w-4 h-4 text-white" />
           </div>
@@ -47,7 +47,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ breadcrumbs = [], onMenuCl
               <React.Fragment key={i}>
                 {i > 0 && <span>/</span>}
                 {b.href ? (
-                  <Link to={b.href} className="hover:text-blue-600 font-bold transition">
+                  <Link to={b.href} className="hover:text-blue-600 font-bold transition cursor-pointer">
                     {b.label}
                   </Link>
                 ) : (

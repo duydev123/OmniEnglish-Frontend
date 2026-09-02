@@ -26,7 +26,7 @@ export const SuggestionsSection: React.FC = () => {
       {/* Suggestion Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Card 1: Travel & Tourism */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-start gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-400/60 shadow-glow-4side hover:shadow-glow-4side-lg transition-all duration-300 flex items-start gap-4 cursor-pointer">
           <div className="w-12 h-12 rounded-2xl bg-blue-100/80 text-[#1D4ED8] flex items-center justify-center shrink-0">
             <MapPin size={22} />
           </div>
@@ -50,7 +50,7 @@ export const SuggestionsSection: React.FC = () => {
         </div>
 
         {/* Card 2: Oxford 3000™ */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-start gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-400/60 shadow-glow-4side hover:shadow-glow-4side-lg transition-all duration-300 flex items-start gap-4 cursor-pointer">
           <div className="w-12 h-12 rounded-2xl bg-blue-100/80 text-[#1D4ED8] flex items-center justify-center shrink-0">
             <BookOpen size={22} />
           </div>

@@ -33,7 +33,7 @@ export const LogoutModal: React.FC<LogoutModalProps> = ({
       />
 
       {/* Modal Container */}
-      <div className="relative bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl z-10 transform transition-all duration-300 scale-100 animate-scale-up font-sans">
+      <div className="relative bg-white border border-slate-400/60 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-glow-4side-lg z-10 transform transition-all duration-300 scale-100 animate-scale-up font-sans">
         {/* Close Button */}
         <button
           onClick={onClose}

@@ -237,7 +237,7 @@ export default function ReadingResultPage() {
 
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice' }, { label: 'READING' }, { label: 'KẾT QUẢ' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện đọc', href: '/practice-modules/reading' }, { label: 'Kết quả' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 size={40} className="text-blue-600 animate-spin" />
           <p className="text-slate-500 font-semibold">Đang tải kết quả...</p>
@@ -248,15 +248,15 @@ export default function ReadingResultPage() {
 
   if (error || !review) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULE', href: '/practice' }, { label: 'READING' }, { label: 'KẾT QUẢ' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện đọc', href: '/practice-modules/reading' }, { label: 'Kết quả' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <AlertCircle size={40} className="text-red-500" />
           <p className="text-slate-700 font-semibold">{error ?? 'Không tìm thấy kết quả'}</p>
           <button
-            onClick={() => navigate('/practice')}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition"
+            onClick={() => navigate('/practice-modules/reading')}
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition cursor-pointer"
           >
-            Quay lại Practice Hub
+            Quay lại Luyện đọc
           </button>
         </div>
       </AppLayout>
@@ -273,9 +273,9 @@ export default function ReadingResultPage() {
   return (<>
     <AppLayout
       breadcrumbs={[
-        { label: 'PRACTICE MODULE', href: '/practice' },
-        { label: 'READING', href: '/practice?tab=reading' },
-        { label: 'KẾT QUẢ' },
+        { label: 'Luyện tập', href: '/practice-modules' },
+        { label: 'Luyện đọc', href: '/practice-modules/reading' },
+        { label: 'Kết quả' },
       ]}
     >
       <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8">
@@ -346,7 +346,7 @@ export default function ReadingResultPage() {
 
           <div className="bg-slate-100/70 border border-slate-200/90 rounded-2xl p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left: Passage */}
-            <div className="bg-white border border-slate-200/90 rounded-xl p-5 sm:p-6 shadow-2xs space-y-4 max-h-[600px] overflow-y-auto">
+            <div className="bg-white border border-slate-400/60 rounded-xl p-5 sm:p-6 shadow-glow-4side space-y-4 max-h-[600px] overflow-y-auto">
               <h3 className="font-bold text-slate-900 text-lg sm:text-xl tracking-tight">
                 {passageData.passageTitle}
               </h3>
@@ -398,7 +398,7 @@ export default function ReadingResultPage() {
                 <div
                   key={mod.id}
                   onClick={() => navigate(mod.href)}
-                  className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer space-y-3 group"
+                  className="bg-white border border-slate-400/60 rounded-2xl p-5 shadow-glow-4side hover:shadow-glow-4side-lg hover:border-blue-400 transition-all cursor-pointer space-y-3 group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-blue-50 flex items-center justify-center transition-colors">
                     <Icon size={20} className={iconColor} />
@@ -539,3 +539,4 @@ export default function ReadingResultPage() {
     )}
   </>)
 }
+

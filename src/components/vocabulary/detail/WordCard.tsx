@@ -59,7 +59,7 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
 
   return (
     <>
-      <div className="group bg-white rounded-2xl border border-slate-200/90 p-5 hover:shadow-md hover:border-slate-300 transition-all select-none flex flex-col justify-between h-full relative">
+      <div className="group bg-white rounded-2xl border border-slate-400/60 p-5 shadow-glow-4side hover:shadow-glow-4side-lg hover:border-blue-400/80 transition-all duration-300 select-none flex flex-col justify-between h-full relative">
         <div>
           {/* Header row: Word Name + Edit icon + Status Badge */}
           <div className="flex justify-between items-start mb-1">
@@ -68,7 +68,7 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
               {!isOfficial && (
                 <button
                   onClick={handleEditClick}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#1D4ED8] hover:bg-blue-50 rounded-lg transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-[#1D4ED8] hover:bg-blue-50 rounded-lg transition-all cursor-pointer"
                   title="Chỉnh sửa từ vựng"
                 >
                   <Edit3 size={14} />
@@ -86,8 +86,8 @@ export const WordCard: React.FC<WordCardProps> = ({ word, showIPA, onWordUpdated
               <span>/{word.ipa.replace(/\//g, '')}/</span>
               <button
                 onClick={handleSpeak}
-                className="p-0.5 hover:text-blue-600 transition-colors"
-                title="Nghe âm"
+                className="p-0.5 hover:text-blue-600 transition-colors cursor-pointer"
+                title="Nghe phát âm"
               >
                 <Volume2 size={13} />
               </button>

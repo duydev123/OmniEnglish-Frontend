@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Plus, Search, SlidersHorizontal, LayoutGrid, List
+  Plus, Search, SlidersHorizontal, LayoutGrid, List, Sparkles, FolderHeart
 } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
 import CollectionCard from '../../components/vocabulary/collections/CollectionCard'
@@ -98,13 +98,18 @@ export default function VocabularyPage() {
     if (!col.words_list || col.words_list.length === 0) {
       try {
         const fullCol = await getCollection(col.id)
+        if (!fullCol.words_list || fullCol.words_list.length === 0) {
+          showToast('Bộ từ này chưa có từ vựng nào!', 'info')
+          return
+        }
         setFlashcardTarget(fullCol)
+        return
       } catch (err) {
-        showToast(getApiErrorMessage(err, 'Không thể tải danh sách từ vựng để luyện tập'), 'error')
+        showToast(getApiErrorMessage(err, 'Không thể tải bộ từ'), 'error')
+        return
       }
-    } else {
-      setFlashcardTarget(col)
     }
+    setFlashcardTarget(col)
   }, [showToast])
 
   const handleDeleteCollection = useCallback(async () => {
@@ -126,7 +131,7 @@ export default function VocabularyPage() {
     studyTimeSec: number
   ) => {
     if (!flashcardTarget) return
-    const total = flashcardTarget.words_list.length
+    const total = flashcardTarget.words_list?.length || 0
     const mastered = Object.values(ratings).filter(s => s === 'MASTERED').length
     const accuracy = total > 0 ? (mastered / total) * 100 : 0
     try {
@@ -137,7 +142,7 @@ export default function VocabularyPage() {
       })
       setMyCollections(prev => prev.map(c =>
         c.id === flashcardTarget.id
-          ? { ...c, accuracy_percentage: accuracy, study_time_seconds: c.study_time_seconds + studyTimeSec }
+          ? { ...c, accuracy_percentage: accuracy, study_time_seconds: (c.study_time_seconds || 0) + studyTimeSec }
           : c
       ))
       showToast(`🎉 Hoàn thành! Đã thuộc ${mastered}/${total} từ`, 'success')
@@ -169,14 +174,14 @@ export default function VocabularyPage() {
     })
 
   const sortLabels: Record<SortOrder, string> = {
-    newest: 'Date created',
+    newest: 'Mới nhất',
     oldest: 'Cũ nhất',
     az: 'A – Z',
   }
 
   return (
     <VocabLayout breadcrumbs={[
-      { label: 'Vocabulary', href: '/vocabulary' },
+      { label: 'Từ vựng', href: '/vocabulary' },
       { label: activeTab === 'default' ? 'Bộ từ vựng mặc định' : 'Bộ từ vựng của tôi' },
     ]}>
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto font-['Be_Vietnam_Pro'] select-none">
@@ -186,53 +191,68 @@ export default function VocabularyPage() {
         </h1>
 
         {/* Tab switch bar + Action buttons */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 min-h-[42px]">
-          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-200/60 rounded-2xl border border-slate-200/60 w-full sm:w-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100/90 border border-slate-300/80 rounded-2xl shadow-inner w-full md:max-w-lg">
             <button
               onClick={() => setActiveTab('default')}
-              className={`px-2 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all text-center flex items-center justify-center min-h-[36px] whitespace-nowrap
+              className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer select-none whitespace-nowrap
                 ${activeTab === 'default'
-                  ? 'bg-white text-[#1D4ED8] shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'}`}
+                  ? 'bg-white text-[#1D4ED8] shadow-glow-4side border border-slate-200/90 scale-[1.01]'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
             >
-              Bộ từ vựng mặc định
+              <Sparkles size={17} className={activeTab === 'default' ? 'text-[#1D4ED8]' : 'text-slate-400'} />
+              <span>Bộ từ vựng mặc định</span>
+              {officialCollections.length > 0 && (
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold transition-colors ${
+                  activeTab === 'default' ? 'bg-blue-50 text-[#1D4ED8]' : 'bg-slate-200/80 text-slate-500'
+                }`}>
+                  {officialCollections.length}
+                </span>
+              )}
             </button>
+
             <button
               onClick={() => setActiveTab('mine')}
-              className={`px-2 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all text-center flex items-center justify-center min-h-[36px] whitespace-nowrap
+              className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer select-none whitespace-nowrap
                 ${activeTab === 'mine'
-                  ? 'bg-white text-[#1D4ED8] shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'}`}
+                  ? 'bg-white text-[#1D4ED8] shadow-glow-4side border border-slate-200/90 scale-[1.01]'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
             >
-              Bộ từ vựng của tôi
+              <FolderHeart size={17} className={activeTab === 'mine' ? 'text-[#1D4ED8]' : 'text-slate-400'} />
+              <span>Bộ từ vựng của tôi</span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold transition-colors ${
+                activeTab === 'mine' ? 'bg-blue-50 text-[#1D4ED8]' : 'bg-slate-200/80 text-slate-500'
+              }`}>
+                {myCollections.filter(c => !c.is_official).length}
+              </span>
             </button>
           </div>
 
           {/* Action buttons on top right */}
           {activeTab === 'mine' && (
-            <div className="w-full sm:w-auto">
+            <div className="w-full md:w-auto shrink-0">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 text-xs font-extrabold text-white
-                  bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 text-xs sm:text-sm font-black text-white
+                  bg-[#1D4ED8] hover:bg-blue-800 rounded-xl transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-98"
               >
-                <Plus size={15} /> <span>Tạo bộ từ mới</span>
+                <Plus size={18} /> <span>Tạo bộ từ mới</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Outer White Box for Search & Filter Bar */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 shadow-xs">
-          <div className="relative flex-1 w-full max-w-md">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        {/* Outer White Box for Search & Filter Bar (Stepped Layout: wider than tab bar) */}
+        <div className="bg-white border border-slate-400/60 rounded-2xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 shadow-glow-4side">
+          <div className="relative flex-1 w-full max-w-2xl">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm bộ từ vựng..."
-              className="w-full pl-10 pr-4 py-2 text-xs font-medium border border-slate-200/80 rounded-xl bg-slate-50/80
-                focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium border border-slate-200/80 rounded-xl bg-slate-50/80
+                focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-2xs"
             />
           </div>
 

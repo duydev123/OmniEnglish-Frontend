@@ -238,7 +238,7 @@ export default function BulkAddPage() {
 
   return (
     <VocabLayout breadcrumbs={[
-      { label: 'Vocabulary', href: '/vocabulary' },
+      { label: 'Từ vựng', href: '/vocabulary' },
       { label: 'Bộ từ vựng của tôi', href: '/vocabulary' },
       { label: collectionTitle, href: `/vocabulary/${id}` },
       { label: 'Thêm hàng loạt' },

@@ -9,7 +9,10 @@ export const ProtectedRoute: React.FC = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const isAuthenticated = Boolean(token || user?.token || user?.id);
-  const isBlocked = user?.status?.toLowerCase() === "blocked" || user?.status?.toLowerCase() === "inactive";
+  const isBlocked =
+    user?.status?.toLowerCase() === "suspended" ||
+    user?.status?.toLowerCase() === "blocked" ||
+    user?.status?.toLowerCase() === "inactive";
 
   useEffect(() => {
     if (isAuthenticated && isBlocked) {
@@ -34,7 +37,10 @@ export const AdminRoute: React.FC = () => {
   const navigate = useNavigate();
   const isAuthenticated = Boolean(token || user?.token || user?.id);
   const isAdmin = user?.role?.toLowerCase() === "admin";
-  const isBlocked = user?.status?.toLowerCase() === "blocked" || user?.status?.toLowerCase() === "inactive";
+  const isBlocked =
+    user?.status?.toLowerCase() === "suspended" ||
+    user?.status?.toLowerCase() === "blocked" ||
+    user?.status?.toLowerCase() === "inactive";
 
   useEffect(() => {
     if (isAuthenticated && isBlocked) {

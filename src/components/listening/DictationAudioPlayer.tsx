@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import type { TranscriptSegment } from '../../services/listeningApi'
-import { ChevronDown, Globe, Pause, Play, RotateCcw, RotateCw } from 'lucide-react'
+import { ChevronDown, Pause, Play, RotateCcw, RotateCw } from 'lucide-react'
 
 interface DictationAudioPlayerProps {
   audioUrl?: string
@@ -30,7 +30,12 @@ export const DictationAudioPlayer = React.forwardRef<DictationAudioPlayerRef, Di
     const [playbackSpeed, setPlaybackSpeed] = useState('1.0x')
     const [showSpeedDropdown, setShowSpeedDropdown] = useState(false)
     const [repeatEnabled, setRepeatEnabled] = useState(false)
-    const [language] = useState('Vietnamese')
+    const repeatEnabledRef = useRef(repeatEnabled)
+
+    useEffect(() => {
+      repeatEnabledRef.current = repeatEnabled
+    }, [repeatEnabled])
+
     const audioRef = React.useRef<HTMLAudioElement | null>(null)
     const [currentTime, setCurrentTime] = useState(0)
     const [totalSeconds, setTotalSeconds] = useState(150)
@@ -49,14 +54,15 @@ export const DictationAudioPlayer = React.forwardRef<DictationAudioPlayerRef, Di
         audioRef.current.play().catch(() => {})
         setIsPlaying(true)
 
-        // Check continuously or set a timeout to pause
-        const durationMs = Math.max(100, (endSec - startSec) * 1000)
-        segmentTimeoutRef.current = setTimeout(() => {
-          if (audioRef.current) {
-            audioRef.current.pause()
-            setIsPlaying(false)
-          }
-        }, durationMs)
+        if (!repeatEnabledRef.current) {
+          const durationMs = Math.max(100, (endSec - startSec) * 1000)
+          segmentTimeoutRef.current = setTimeout(() => {
+            if (audioRef.current && !repeatEnabledRef.current) {
+              audioRef.current.pause()
+              setIsPlaying(false)
+            }
+          }, durationMs)
+        }
       }
     }))
 
@@ -85,10 +91,17 @@ export const DictationAudioPlayer = React.forwardRef<DictationAudioPlayerRef, Di
             audio.currentTime = startSec
             setCurrentTime(0)
           } else if (current >= endSec) {
-            audio.pause()
-            audio.currentTime = startSec
-            setIsPlaying(false)
-            setCurrentTime(0)
+            if (repeatEnabledRef.current) {
+              audio.currentTime = startSec
+              audio.play().catch(() => {})
+              setIsPlaying(true)
+              setCurrentTime(0)
+            } else {
+              audio.pause()
+              audio.currentTime = startSec
+              setIsPlaying(false)
+              setCurrentTime(0)
+            }
           } else {
             setCurrentTime(Math.floor(current - startSec))
           }
@@ -105,7 +118,20 @@ export const DictationAudioPlayer = React.forwardRef<DictationAudioPlayerRef, Di
           setTotalSeconds(Math.floor(audio.duration))
         }
       }
-      const onEnded = () => setIsPlaying(false)
+      const onEnded = () => {
+        if (repeatEnabledRef.current) {
+          if (activeSegment) {
+            const startSec = parseTimeToSeconds(activeSegment.start_time)
+            audio.currentTime = startSec
+          } else {
+            audio.currentTime = 0
+          }
+          audio.play().catch(() => {})
+          setIsPlaying(true)
+        } else {
+          setIsPlaying(false)
+        }
+      }
 
       audio.addEventListener('timeupdate', onTimeUpdate)
       audio.addEventListener('loadedmetadata', onLoadedMetadata)
@@ -198,7 +224,7 @@ export const DictationAudioPlayer = React.forwardRef<DictationAudioPlayerRef, Di
         <div className="flex items-center gap-4 text-xs font-bold">
           <button
             onClick={() => setActiveTab('dictation')}
-            className={`pb-1 transition-colors relative ${activeTab === 'dictation'
+            className={`pb-1 transition-colors relative cursor-pointer ${activeTab === 'dictation'
               ? 'text-[#1D4ED8] font-extrabold border-b-2 border-[#1D4ED8]'
               : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -207,7 +233,7 @@ export const DictationAudioPlayer = React.forwardRef<DictationAudioPlayerRef, Di
           </button>
           <button
             onClick={() => setActiveTab('transcript')}
-            className={`pb-1 transition-colors relative ${activeTab === 'transcript'
+            className={`pb-1 transition-colors relative cursor-pointer ${activeTab === 'transcript'
               ? 'text-[#1D4ED8] font-extrabold border-b-2 border-[#1D4ED8]'
               : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -216,27 +242,20 @@ export const DictationAudioPlayer = React.forwardRef<DictationAudioPlayerRef, Di
           </button>
         </div>
 
-        {/* Right Controls (Language + Repeat toggle) */}
-        <div className="flex items-center gap-4 text-xs font-semibold text-slate-600">
-          <div className="flex items-center gap-1.5 cursor-pointer hover:text-slate-900">
-            <Globe size={14} className="text-slate-400" />
-            <span>{language}</span>
-            <ChevronDown size={14} className="text-slate-400" />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 text-xs">Repeat</span>
-            <button
-              onClick={() => setRepeatEnabled(!repeatEnabled)}
-              className={`w-9 h-5 rounded-full p-0.5 transition-colors ${repeatEnabled ? 'bg-[#1D4ED8]' : 'bg-slate-300'
+        {/* Right Controls (Repeat toggle only - Vietnamese dropdown removed) */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+          <span className="text-slate-600 font-bold text-xs">Repeat</span>
+          <button
+            onClick={() => setRepeatEnabled(!repeatEnabled)}
+            className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${repeatEnabled ? 'bg-[#1D4ED8]' : 'bg-slate-300'
+              }`}
+            title={repeatEnabled ? 'Đang bật tự động lặp lại đoạn audio' : 'Nhấp để bật tự động lặp lại đoạn audio'}
+          >
+            <div
+              className={`w-4 h-4 bg-white rounded-full transition-transform ${repeatEnabled ? 'translate-x-4' : 'translate-x-0'
                 }`}
-            >
-              <div
-                className={`w-4 h-4 bg-white rounded-full transition-transform ${repeatEnabled ? 'translate-x-4' : 'translate-x-0'
-                  }`}
-              />
-            </button>
-          </div>
+            />
+          </button>
         </div>
       </div>
 

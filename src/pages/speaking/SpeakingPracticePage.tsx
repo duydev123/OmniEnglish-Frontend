@@ -423,10 +423,10 @@ export const SpeakingPracticePage: React.FC = () => {
             {isRecording
               ? `Max limit: ${formatTime(maxTime)}`
               : isPlayingLocalAudio
-              ? "Playing back recorded response..."
-              : hasRecorded
-              ? `Recorded response (${formatTime(recordingTime)})`
-              : `Time limit: ${formatTime(maxTime)}`}
+                ? "Playing back recorded response..."
+                : hasRecorded
+                  ? `Recorded response (${formatTime(recordingTime)})`
+                  : `Time limit: ${formatTime(maxTime)}`}
           </span>
         </div>
 
@@ -435,13 +435,12 @@ export const SpeakingPracticePage: React.FC = () => {
           {[40, 70, 30, 90, 50, 100, 60, 80, 40, 90, 30].map((h, i) => (
             <div
               key={i}
-              className={`w-1 rounded-full transition-all duration-300 ${
-                isRecording
+              className={`w-1 rounded-full transition-all duration-300 ${isRecording
                   ? "bg-rose-500 animate-pulse"
                   : isPlayingLocalAudio
-                  ? "bg-blue-600 animate-pulse"
-                  : "bg-slate-200"
-              }`}
+                    ? "bg-blue-600 animate-pulse"
+                    : "bg-slate-200"
+                }`}
               style={{
                 height: isRecording ? `${h}%` : isPlayingLocalAudio ? `${h * 0.7}%` : "20%"
               }}
@@ -541,10 +540,10 @@ export const SpeakingPracticePage: React.FC = () => {
           {isSubmitting
             ? "Analyzing speech with AI..."
             : isRecording
-            ? "Speaking response... Tap 'Stop Recording' when finished."
-            : hasRecorded
-            ? "Click 'Playback' to listen, 'Re-record' to try again, or 'Submit & Evaluate' for feedback."
-            : "Click 'Start Recording' to speak your response."}
+              ? "Speaking response... Tap 'Stop Recording' when finished."
+              : hasRecorded
+                ? "Click 'Playback' to listen, 'Re-record' to try again, or 'Submit & Evaluate' for feedback."
+                : "Click 'Start Recording' to speak your response."}
         </p>
       </div>
     )
@@ -552,10 +551,10 @@ export const SpeakingPracticePage: React.FC = () => {
 
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+      <AppLayout breadcrumbs={[{ label: "Luyện tập", href: "/practice-modules" }, { label: "Luyện nói", href: "/practice-modules/speaking" }, { label: "Luyện tập" }]}>
         <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-3">
           <Loader2 className="w-10 h-10 text-[#1e50e6] animate-spin" />
-          <p className="text-sm font-semibold text-slate-500">Loading Speaking Topic Questions List...</p>
+          <p className="text-sm font-semibold text-slate-500">Đang tải danh sách câu hỏi Speaking...</p>
         </div>
       </AppLayout>
     )
@@ -563,16 +562,16 @@ export const SpeakingPracticePage: React.FC = () => {
 
   if (loadError) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+      <AppLayout breadcrumbs={[{ label: "Luyện tập", href: "/practice-modules" }, { label: "Luyện nói", href: "/practice-modules/speaking" }, { label: "Luyện tập" }]}>
         <div className="p-8 text-center space-y-4 max-w-xl mx-auto my-12 bg-white border border-rose-200 rounded-3xl shadow-sm">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
           <h2 className="text-lg font-extrabold text-slate-900">Không thể tải bài tập Speaking</h2>
           <p className="text-xs text-rose-700 font-medium">{loadError}</p>
           <button
-            onClick={() => navigate("/practice-modules")}
+            onClick={() => navigate("/practice-modules/speaking")}
             className="px-6 py-2.5 bg-[#1e50e6] text-white font-bold rounded-xl text-xs hover:bg-blue-700 transition"
           >
-            Quay lại Practice Modules
+            Quay lại Luyện nói
           </button>
         </div>
       </AppLayout>
@@ -611,9 +610,9 @@ export const SpeakingPracticePage: React.FC = () => {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: "PRACTICE MODULE", href: "/practice-modules" },
-        { label: "SPEAKING", href: "/practice-modules" },
-        { label: mode === "TOPIC_OVERVIEW" ? "TOPIC QUESTIONS LIST" : currentPrompt?.part || "PRACTICE" }
+        { label: "Luyện tập", href: "/practice-modules" },
+        { label: "Luyện nói", href: "/practice-modules/speaking" },
+        { label: mode === "TOPIC_OVERVIEW" ? "Danh sách câu hỏi" : currentPrompt?.part || "Luyện tập" }
       ]}
     >
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -639,7 +638,7 @@ export const SpeakingPracticePage: React.FC = () => {
 
         {/* LOADING OVERLAY WHILE BACKEND API IS EVALUATING */}
         {isSubmitting && (
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-12 shadow-xs text-center space-y-5 my-8 min-h-[420px] flex flex-col items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-400/60 rounded-3xl p-12 shadow-glow-4side text-center space-y-5 my-8 min-h-[420px] flex flex-col items-center justify-center animate-in fade-in duration-200">
             <div className="relative flex items-center justify-center">
               <div className="w-20 h-20 rounded-full border-4 border-blue-100 border-t-[#1e50e6] animate-spin" />
               <Sparkles size={24} className="absolute text-[#1e50e6] animate-pulse" />
@@ -649,7 +648,7 @@ export const SpeakingPracticePage: React.FC = () => {
                 AI is analyzing...
               </h2>
               <p className="text-xs font-semibold text-slate-500 max-w-md mx-auto leading-relaxed">
-                 Hệ thống đang phân tích chi tiết phát âm, từ vựng, ngữ pháp và độ lưu loát.
+                Hệ thống đang phân tích chi tiết phát âm, từ vựng, ngữ pháp và độ lưu loát.
               </p>
             </div>
           </div>
@@ -699,7 +698,7 @@ export const SpeakingPracticePage: React.FC = () => {
                     <div
                       key={p.id}
                       onClick={() => handleSelectPromptToPractice(p)}
-                      className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer flex items-center justify-between gap-4 group"
+                      className="bg-white border border-slate-400/60 rounded-2xl p-5 shadow-glow-4side hover:shadow-glow-4side-lg hover:border-blue-400 transition-all cursor-pointer flex items-center justify-between gap-4 group"
                     >
                       <div className="space-y-1.5 flex-1">
                         <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">
@@ -746,7 +745,7 @@ export const SpeakingPracticePage: React.FC = () => {
                     <div
                       key={p.id}
                       onClick={() => handleSelectPromptToPractice(p)}
-                      className="bg-white border border-amber-200/80 rounded-3xl p-6 shadow-xs hover:shadow-lg hover:border-amber-400 transition-all cursor-pointer space-y-4 group"
+                      className="bg-white border border-amber-300 rounded-3xl p-6 shadow-glow-4side hover:shadow-glow-4side-lg hover:border-amber-400 transition-all cursor-pointer space-y-4 group"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -796,7 +795,7 @@ export const SpeakingPracticePage: React.FC = () => {
                     <div
                       key={p.id}
                       onClick={() => handleSelectPromptToPractice(p)}
-                      className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-emerald-300 transition-all cursor-pointer flex items-center justify-between gap-4 group"
+                      className="bg-white border border-slate-400/60 rounded-2xl p-5 shadow-glow-4side hover:shadow-glow-4side-lg hover:border-emerald-400 transition-all cursor-pointer flex items-center justify-between gap-4 group"
                     >
                       <div className="space-y-1.5 flex-1">
                         <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">
@@ -846,7 +845,7 @@ export const SpeakingPracticePage: React.FC = () => {
             {currentPrompt.part === "PART_1" && (
               /* PART 1 LAYOUT */
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-6">
+                <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-6">
                   <div className="space-y-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-[#1e50e6] rounded-lg text-xs font-bold uppercase tracking-wider">
                       <Mic size={14} />
@@ -866,12 +865,12 @@ export const SpeakingPracticePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-3xl p-8 shadow-xs flex flex-col items-center justify-center text-center space-y-6 min-h-[360px]">
+                <div className="lg:col-span-5 bg-white border border-slate-400/60 rounded-3xl p-8 shadow-glow-4side flex flex-col items-center justify-center text-center space-y-6 min-h-[360px]">
                   {renderRecordingControls()}
                 </div>
 
                 <div className="lg:col-span-3 space-y-6">
-                  <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+                  <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                       <BookOpen size={14} className="text-blue-600" />
                       <span>Useful Vocabulary</span>
@@ -910,7 +909,7 @@ export const SpeakingPracticePage: React.FC = () => {
               /* PART 2 LAYOUT */
               <div className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-5">
+                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-5">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                         <BookOpen size={16} className="text-blue-600" />
@@ -955,7 +954,7 @@ export const SpeakingPracticePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs flex flex-col items-center justify-between space-y-6 text-center">
+                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col items-center justify-between space-y-6 text-center">
                     <div className="w-full">
                       <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
                         PART 2 ACTIVE
@@ -978,18 +977,17 @@ export const SpeakingPracticePage: React.FC = () => {
                   </div>
 
                   {/* Takenote Textarea */}
-                  <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4">
+                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                         <Edit3 size={14} className="text-blue-600" />
                         <span>Note-taking</span>
                       </h3>
                       <span
-                        className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                          prepTime > 0
+                        className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${prepTime > 0
                             ? "bg-amber-100 text-amber-800 animate-pulse"
                             : "bg-rose-100 text-rose-700"
-                        }`}
+                          }`}
                       >
                         {prepTime > 0 ? `Prep time: ${formatTime(prepTime)}` : "Hết thời gian - Đã khóa note"}
                       </span>
@@ -1004,11 +1002,10 @@ export const SpeakingPracticePage: React.FC = () => {
                           ? "Soạn ghi chú của bạn trong 60s chuẩn bị... (VD: Intro: 'The Alchemist', When: 2 months ago)"
                           : "Hết thời gian chuẩn bị 60s. Không thể nhập thêm ghi chú."
                       }
-                      className={`w-full h-48 p-3 border rounded-2xl text-xs font-medium resize-none transition ${
-                        prepTime === 0
+                      className={`w-full h-48 p-3 border rounded-2xl text-xs font-medium resize-none transition ${prepTime === 0
                           ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none opacity-80"
                           : "bg-slate-50 text-slate-700 border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      }`}
+                        }`}
                     />
                   </div>
                 </div>
@@ -1029,7 +1026,7 @@ export const SpeakingPracticePage: React.FC = () => {
               /* PART 3 LAYOUT */
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-4 space-y-6">
-                  <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                  <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
                     <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold">
                       Part 3 Prompt
                     </span>
@@ -1049,12 +1046,12 @@ export const SpeakingPracticePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-6">
+                <div className="lg:col-span-5 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-6">
                   {renderRecordingControls()}
                 </div>
 
                 <div className="lg:col-span-3 space-y-6">
-                  <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+                  <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                       <BookOpen size={14} className="text-blue-600" />
                       <span>Advanced Vocabulary</span>
@@ -1103,7 +1100,7 @@ export const SpeakingPracticePage: React.FC = () => {
               </div>
 
               {/* Overall Performance Badge Top Right */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex items-center gap-4 self-start md:self-auto">
+              <div className="bg-white border border-slate-400/60 rounded-2xl p-4 shadow-glow-4side flex items-center gap-4 self-start md:self-auto">
                 <div className="text-right border-r border-slate-100 pr-4">
                   <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
                     OVERALL PERFORMANCE
@@ -1141,7 +1138,7 @@ export const SpeakingPracticePage: React.FC = () => {
               <div className="lg:col-span-7 space-y-6">
 
                 {/* Real User Audio Player from user_audio_url */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
+                <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side flex items-center justify-between gap-4">
                   <button
                     onClick={handleToggleResultAudio}
                     className="w-12 h-12 rounded-full bg-[#1e50e6] text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition cursor-pointer shrink-0"
@@ -1173,7 +1170,7 @@ export const SpeakingPracticePage: React.FC = () => {
                 </div>
 
                 {/* Highlight Legend Bar */}
-                <div className="flex items-center justify-center gap-6 text-xs font-bold bg-white border border-slate-200/80 rounded-2xl py-3 px-4 shadow-xs">
+                <div className="flex items-center justify-center gap-6 text-xs font-bold bg-white border border-slate-400/60 rounded-2xl py-3 px-4 shadow-glow-4side">
                   <div className="flex items-center gap-1.5 text-emerald-700">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                     <span>SỬ DỤNG TỐT</span>
@@ -1189,7 +1186,7 @@ export const SpeakingPracticePage: React.FC = () => {
                 </div>
 
                 {/* Question & Real Transcript Card */}
-                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-5">
+                <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-5">
                   <div className="flex items-start gap-3">
                     <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-xl text-xs font-black shrink-0">
                       Q1
@@ -1293,7 +1290,7 @@ export const SpeakingPracticePage: React.FC = () => {
                       </div>
 
                       {/* 1. Pronunciation Card */}
-                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                      <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-2">
                             <UserCheck size={16} className="text-blue-600" />
@@ -1349,7 +1346,7 @@ export const SpeakingPracticePage: React.FC = () => {
                       </div>
 
                       {/* 2. Grammar Card */}
-                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                      <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-2">
                             <Activity size={16} className="text-amber-500" />
@@ -1377,7 +1374,7 @@ export const SpeakingPracticePage: React.FC = () => {
                       </div>
 
                       {/* 3. Fluency & Coherence Card */}
-                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                      <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-2">
                             <Zap size={16} className="text-emerald-500" />
@@ -1418,7 +1415,7 @@ export const SpeakingPracticePage: React.FC = () => {
                       </div>
 
                       {/* 4. Vocabulary Card */}
-                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+                      <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-2">
                             <BookOpen size={16} className="text-indigo-600" />
@@ -1482,12 +1479,12 @@ export const SpeakingPracticePage: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <button className="py-3 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition cursor-pointer">
+                    <button className="py-3 bg-white border border-slate-400/60 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold text-xs shadow-glow-4side flex items-center justify-center gap-1.5 transition cursor-pointer">
                       <Share2 size={15} />
                       <span>Chia sẻ</span>
                     </button>
 
-                    <button className="py-3 bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition cursor-pointer">
+                    <button className="py-3 bg-white border border-slate-400/60 hover:bg-slate-50 text-slate-700 rounded-2xl font-bold text-xs shadow-glow-4side flex items-center justify-center gap-1.5 transition cursor-pointer">
                       <Bookmark size={15} />
                       <span>Lưu phân tích</span>
                     </button>
@@ -1515,7 +1512,7 @@ export const SpeakingPracticePage: React.FC = () => {
       {/* Interactive IPA Character Breakdown Modal Popover from Real API Data */}
       {selectedWord && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-glow-4side-lg border border-slate-400/60 space-y-5 animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
@@ -1523,11 +1520,10 @@ export const SpeakingPracticePage: React.FC = () => {
                   {selectedWord.word}
                 </h3>
                 <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                    selectedWord.error_type === "None" && (selectedWord.accuracy_score ?? 80) >= 75
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${selectedWord.error_type === "None" && (selectedWord.accuracy_score ?? 80) >= 75
                       ? "bg-emerald-100 text-emerald-800"
                       : "bg-rose-100 text-rose-800"
-                  }`}
+                    }`}
                 >
                   {selectedWord.accuracy_score ?? 70}% Accuracy
                 </span>
@@ -1574,17 +1570,15 @@ export const SpeakingPracticePage: React.FC = () => {
                     return (
                       <div
                         key={idx}
-                        className={`px-3.5 py-2 rounded-2xl border text-base font-mono font-black flex flex-col items-center min-w-[50px] shadow-2xs ${
-                          isGood
+                        className={`px-3.5 py-2 rounded-2xl border text-base font-mono font-black flex flex-col items-center min-w-[50px] shadow-2xs ${isGood
                             ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                             : "bg-rose-50 text-rose-700 border-rose-300"
-                        }`}
+                          }`}
                       >
                         <span className="text-lg">/{ph.phoneme}/</span>
                         <span
-                          className={`text-[10px] font-sans font-bold mt-0.5 ${
-                            isGood ? "text-emerald-600" : "text-rose-600"
-                          }`}
+                          className={`text-[10px] font-sans font-bold mt-0.5 ${isGood ? "text-emerald-600" : "text-rose-600"
+                            }`}
                         >
                           {ph.accuracy_score}%
                         </span>
@@ -1611,7 +1605,7 @@ export const SpeakingPracticePage: React.FC = () => {
       {/* TC-UC-18-UI03 / UI04: Short Recording Warning Modal */}
       {showShortWarningModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 border border-slate-100 text-center">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-glow-4side-lg border border-slate-400/60 space-y-5 text-center">
             <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
               <AlertCircle size={30} />
             </div>
@@ -1650,3 +1644,4 @@ export const SpeakingPracticePage: React.FC = () => {
 }
 
 export default SpeakingPracticePage
+

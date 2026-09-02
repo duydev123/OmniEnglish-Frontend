@@ -35,3 +35,41 @@ body {
   background: transparent !important;
   color: inherit !important;
 }
+
+
+.shadow-glow-4side {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.08),
+    0 3px 12px -2px rgba(15, 23, 42, 0.08),
+    0 1px 4px -1px rgba(15, 23, 42, 0.04);
+}
+
+.shadow-glow-4side:hover,
+.hover\:shadow-glow-4side-lg:hover {
+  box-shadow:
+    0 0 0 1px rgba(30, 80, 230, 0.20),
+    0 10px 28px -4px rgba(15, 23, 42, 0.12),
+    0 4px 12px -2px rgba(30, 80, 230, 0.08);
+}
+
+.shadow-soft-4side {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 8px -2px rgba(15, 23, 42, 0.06);
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+
+.shadow-soft-4side:hover,
+.hover\:shadow-soft-4side-lg:hover {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.12),
+    0 6px 20px -3px rgba(15, 23, 42, 0.10);
+}

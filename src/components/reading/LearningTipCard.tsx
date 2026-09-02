@@ -24,3 +24,4 @@ export const LearningTipCard: React.FC<LearningTipCardProps> = ({
 }
 
 export default LearningTipCard
+

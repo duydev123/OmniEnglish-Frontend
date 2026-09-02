@@ -134,3 +134,4 @@ export const DetailedReviewItem: React.FC<DetailedReviewItemProps> = ({
 }
 
 export default DetailedReviewItem
+
