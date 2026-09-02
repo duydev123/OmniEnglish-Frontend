@@ -256,7 +256,9 @@ const Home = () => {
   const writingProgressPercent = rawWriting > 0 ? Math.min(100, Math.round((rawWriting / 9.0) * 100)) : 0
 
   const scoresList = [rawReading, rawListening, rawSpeaking, rawWriting].filter(s => s > 0)
-  const avgBandScoreNum = scoresList.length > 0 ? scoresList.reduce((a, b) => a + b, 0) / scoresList.length : 0
+  const avgBandScoreNum = (user?.stats?.overall_score && user.stats.overall_score > 0)
+    ? user.stats.overall_score
+    : (scoresList.length > 0 ? scoresList.reduce((a, b) => a + b, 0) / scoresList.length : 0)
   const avgBandScore = avgBandScoreNum.toFixed(1)
   const mockTestsTaken = user?.stats?.total_words_learned ? Math.round(user.stats.total_words_learned / 10) : 0
   const avgImprovement = avgBandScoreNum > 0 ? `+${(avgBandScoreNum * 0.1).toFixed(1)}` : "0.0"
