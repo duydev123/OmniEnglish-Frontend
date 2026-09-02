@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/common/AppLayout';
 import { writingApi } from '../../services/writingApi';
 import { useToast } from '../../components/common/Toast';
@@ -30,6 +30,7 @@ import {
   Plus,
   User,
   Copy,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -46,6 +47,8 @@ interface ChatMessage {
 
 export const WritingEditorPage: React.FC = () => {
   const { promptId } = useParams<{ promptId: string }>();
+  const [searchParams] = useSearchParams();
+  const isResetMode = searchParams.get('mode') === 'reset' || searchParams.get('reset') === 'true';
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -93,17 +96,82 @@ export const WritingEditorPage: React.FC = () => {
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const taskDescContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Exit Confirmation Modal State
+  const [showExitModal, setShowExitModal] = useState<boolean>(false);
+  const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string>('/practice-modules');
+
+  const handleRequestExit = (targetUrl: string = '/practice-modules') => {
+    if (essayContent && essayContent.trim().length > 0) {
+      setPendingNavigationUrl(targetUrl);
+      setShowExitModal(true);
+    } else {
+      navigate(targetUrl);
+    }
+  };
+
+  const handleConfirmSaveAndExit = async () => {
+    if (!promptId) return;
+    if (!essayContent || !essayContent.trim()) {
+      setShowExitModal(false);
+      navigate(pendingNavigationUrl);
+      return;
+    }
+    setSavingDraft(true);
+    try {
+      await writingApi.saveDraft({
+        prompt_id: promptId,
+        essay_content: essayContent,
+        word_count: wordCount,
+        time_spent_seconds: timeSpentSeconds,
+      });
+      showToast('Đã lưu nháp bài viết thành công!', 'success');
+    } catch {
+      showToast('Lỗi khi lưu nháp bài viết', 'error');
+    } finally {
+      setSavingDraft(false);
+      setShowExitModal(false);
+      navigate(pendingNavigationUrl);
+    }
+  };
+
+  const handleConfirmExitWithoutSave = () => {
+    setShowExitModal(false);
+    navigate(pendingNavigationUrl);
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (essayContent && essayContent.trim().length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [essayContent]);
+
   // Initialize descriptionHtml & draft content when prompt changes
   useEffect(() => {
     if (prompt?.task_description) {
       setDescriptionHtml(prompt.task_description);
     }
-    if (!loadingPrompt && prompt?.draft_content && editorDivRef.current) {
-      if (!editorDivRef.current.innerText.trim()) {
+    if (!loadingPrompt && prompt && editorDivRef.current) {
+      if (isResetMode) {
+        editorDivRef.current.innerText = '';
+        setEssayContent('');
+        setWordCount(0);
+        setTimeSpentSeconds(0);
+      } else if (prompt.draft_content && !editorDivRef.current.innerText.trim()) {
         editorDivRef.current.innerText = prompt.draft_content;
+        setEssayContent(prompt.draft_content);
+        const count = prompt.draft_content.trim().split(/\s+/).filter(Boolean).length;
+        setWordCount(count);
+        if (prompt.time_spent_seconds) {
+          setTimeSpentSeconds(prompt.time_spent_seconds);
+        }
       }
     }
-  }, [prompt, loadingPrompt]);
+  }, [prompt, loadingPrompt, isResetMode]);
 
 
   // Handle text selection change — works in both task description and the editor
@@ -272,18 +340,41 @@ export const WritingEditorPage: React.FC = () => {
     fetchPrompt();
   }, [promptId]);
 
-  // Handle Content Input Change
+  // Handle Content Input Change with strict 300 words limit
+  const MAX_WORDS = 300;
   const handleEditorInput = () => {
     if (!editorDivRef.current) return;
     const text = editorDivRef.current.innerText || '';
+    const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean) : [];
+    
+    if (words.length > MAX_WORDS) {
+      showToast(`Bài viết đã đạt giới hạn tối đa ${MAX_WORDS} từ! Không thể nhập thêm.`, 'warning');
+      const truncatedText = words.slice(0, MAX_WORDS).join(' ');
+      editorDivRef.current.innerText = truncatedText;
+
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(editorDivRef.current);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+
+      setEssayContent(truncatedText);
+      setWordCount(MAX_WORDS);
+      return;
+    }
+
     setEssayContent(text);
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    setWordCount(words);
+    setWordCount(words.length);
   };
 
   // Save Draft
   const handleSaveDraft = async () => {
     if (!promptId) return;
+    if (!essayContent || !essayContent.trim()) {
+      showToast('Bài viết chưa có nội dung để lưu nháp!', 'warning');
+      return;
+    }
     setSavingDraft(true);
     try {
       await writingApi.saveDraft({
@@ -307,8 +398,20 @@ export const WritingEditorPage: React.FC = () => {
       showToast('Vui lòng nhập nội dung bài viết trước khi nộp!', 'warning');
       return;
     }
+    if (wordCount > MAX_WORDS) {
+      showToast(`Bài viết vượt quá giới hạn tối đa ${MAX_WORDS} từ. Vui lòng rút gọn trước khi nộp!`, 'error');
+      return;
+    }
     setSubmitting(true);
     try {
+      // Auto-save latest essay content to draft state before AI submission
+      await writingApi.saveDraft({
+        prompt_id: promptId,
+        essay_content: essayContent,
+        word_count: wordCount,
+        time_spent_seconds: timeSpentSeconds,
+      });
+
       const res = await writingApi.submitEssay({
         prompt_id: promptId,
         essay_content: essayContent,
@@ -383,13 +486,18 @@ export const WritingEditorPage: React.FC = () => {
     if (!promptId) return;
     const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     const labelMap = { OUTLINE: 'Dàn bài AI', COLLOCATIONS: 'Collocations', SAMPLE: 'Bài mẫu' };
+    const difficultyMap = {
+      easy: 'Band 6.0-7.0',
+      medium: 'Band 7.0-8.0',
+      advanced: 'Band 8.0-9.0',
+    };
 
     // User bubble
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
       type: 'text',
-      text: `Hãy tạo ${labelMap[action]} cho bài viết này`,
+      text: `Hãy tạo ${labelMap[action]} (${difficultyMap[difficulty]}) cho bài viết này`,
       timestamp: now,
     };
 
@@ -409,7 +517,9 @@ export const WritingEditorPage: React.FC = () => {
     try {
       const res = await writingApi.getAiAssistance(
         promptId,
-        action === 'SAMPLE' ? 'SAMPLE_ESSAY' : action
+        action === 'SAMPLE' ? 'SAMPLE_ESSAY' : action,
+        undefined,
+        difficulty
       );
 
       const aiMsg: ChatMessage = {
@@ -547,48 +657,47 @@ export const WritingEditorPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Reference Image Box (For Chart / Graph Tasks) */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-wider">
-                  REFERENCE IMAGE
-                </h2>
-                {prompt.ref_id && (
-                  <span className="text-[10px] font-mono font-bold text-slate-400">
-                    Ref ID: {prompt.ref_id}
-                  </span>
-                )}
+            {/* Reference Image Box (For Chart / Graph Tasks ONLY) */}
+            {prompt.task_type === 'WITH_GRAPH' && prompt.reference_image_url && (
+              <div className="bg-white rounded-3xl border border-slate-200/90 p-4 shadow-xs">
+                <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer">
+                  <img
+                    src={prompt.reference_image_url}
+                    alt="Reference Chart"
+                    className="w-full h-48 sm:h-56 object-cover transition-transform duration-300 group-hover:scale-105"
+                    onClick={() => setImageModalOpen(true)}
+                  />
+                  <button
+                    onClick={() => setImageModalOpen(true)}
+                    className="absolute bottom-3 right-3 px-3 py-1.5 bg-slate-900/80 text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold shadow-md"
+                    title="Phóng to ảnh"
+                  >
+                    <Maximize2 size={14} />
+                    <span>Xem ảnh đề bài</span>
+                  </button>
+                </div>
               </div>
-
-              <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer">
-                <img
-                  src={
-                    prompt.reference_image_url ||
-                    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80'
-                  }
-                  alt="Reference Chart"
-                  className="w-full h-48 sm:h-56 object-cover transition-transform duration-300 group-hover:scale-105"
-                  onClick={() => setImageModalOpen(true)}
-                />
-                <button
-                  onClick={() => setImageModalOpen(true)}
-                  className="absolute bottom-3 right-3 p-2 bg-slate-900/80 text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer"
-                  title="Phóng to ảnh"
-                >
-                  <Maximize2 size={14} />
-                </button>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* ================= CENTER COLUMN: Editor & Writing Controls (5 cols) ================= */}
           <div className={`space-y-4 transition-all duration-300 ${isAiAssistantOpen ? 'lg:col-span-5' : 'lg:col-span-9'}`}>
 
-            {/* Header Toolbar: Prompt Title + Timer + Analyze Button */}
+            {/* Header Toolbar: Back Button + Prompt Title + Timer + Analyze Button */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 flex items-center justify-between gap-3 shadow-xs">
-              <h1 className="font-extrabold text-sm sm:text-base text-blue-700 tracking-tight truncate flex-1">
-                Writing Prompt: {prompt.title}
-              </h1>
+              <div className="flex items-center gap-2.5 truncate flex-1">
+                <button
+                  onClick={() => handleRequestExit('/practice-modules')}
+                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
+                  title="Quay lại danh sách bài tập"
+                >
+                  <ArrowLeft size={14} />
+                  <span className="hidden sm:inline">Quay lại</span>
+                </button>
+                <h1 className="font-extrabold text-sm sm:text-base text-blue-700 tracking-tight truncate">
+                  Writing Prompt: {prompt.title}
+                </h1>
+              </div>
 
               <div className="flex items-center gap-3 shrink-0">
                 {/* AI Toggle Button */}
@@ -683,13 +792,13 @@ export const WritingEditorPage: React.FC = () => {
               <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between text-xs font-extrabold text-slate-600">
                 <div className="flex items-center gap-3">
                   <span>
-                    WORDS: <strong className="text-[#1D4ED8]">{wordCount}</strong> / {prompt.word_count_target}
+                    WORDS: <strong className={wordCount >= 300 ? "text-red-600 font-black" : wordCount >= 250 ? "text-emerald-600 font-black" : "text-[#1D4ED8]"}>{wordCount}</strong> / 300 (MAX)
                   </span>
-                  <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
+                  <div className="w-28 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block">
                     <div
-                      className="h-full bg-[#1D4ED8] rounded-full transition-all duration-300"
+                      className={`h-full rounded-full transition-all duration-300 ${wordCount >= 300 ? "bg-red-500" : wordCount >= 250 ? "bg-emerald-500" : "bg-[#1D4ED8]"}`}
                       style={{
-                        width: `${Math.min(100, (wordCount / prompt.word_count_target) * 100)}%`,
+                        width: `${Math.min(100, (wordCount / 300) * 100)}%`,
                       }}
                     />
                   </div>
@@ -815,7 +924,7 @@ export const WritingEditorPage: React.FC = () => {
                             <div className="space-y-3.5 min-w-[260px] max-w-md">
                               <div className="border-b border-emerald-100 pb-2 mb-2 flex items-center justify-between">
                                 <h4 className="font-black text-xs text-emerald-900 uppercase tracking-wide flex items-center gap-1.5">
-                                  <FileText size={13} className="text-emerald-600" /> AI Band 9.0 Essay
+                                  <FileText size={13} className="text-emerald-600" /> AI Model Essay ({difficulty === 'easy' ? 'Band 6.0-7.0' : difficulty === 'medium' ? 'Band 7.0-8.0' : 'Band 8.0-9.0'})
                                 </h4>
                                 <button
                                   onClick={() => {
@@ -1149,6 +1258,44 @@ export const WritingEditorPage: React.FC = () => {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Exit Confirmation Modal */}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1D4ED8] flex items-center justify-center mb-4">
+              <Save size={24} />
+            </div>
+            <h3 className="text-base font-black text-slate-800 mb-2">Lưu bản nháp trước khi thoát?</h3>
+            <p className="text-xs font-medium text-slate-600 leading-relaxed mb-6">
+              Bạn đang có nội dung bài viết chưa nộp. Bạn có muốn lưu lại bản nháp này trước khi rời khỏi trang không?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="px-4 py-2 text-xs font-extrabold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmExitWithoutSave}
+                className="px-4 py-2 text-xs font-extrabold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+              >
+                Không lưu
+              </button>
+              <button
+                onClick={handleConfirmSaveAndExit}
+                disabled={savingDraft}
+                className="px-5 py-2 text-xs font-black bg-[#1D4ED8] hover:bg-blue-800 text-white rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {savingDraft ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>Lưu & Thoát</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AppLayout>

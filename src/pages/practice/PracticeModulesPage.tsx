@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   Headphones, BookOpen, Mic, PenTool, SlidersHorizontal,
   ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight,
-  FileEdit, Clock, HelpCircle, Zap, Loader2, FileText
+  FileEdit, Zap, Loader2, FileText, Trophy, RotateCcw
 } from 'lucide-react'
 import AppLayout from '../../components/common/AppLayout'
 import { useUserStore, initialUser } from '../../stores/user/useUserStore'
@@ -45,7 +45,6 @@ export default function PracticeModulesPage() {
   const [readingError, setReadingError] = useState<string | null>(null)
   const [readingMeta, setReadingMeta] = useState({ page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, total_pages: 1 })
   const [draftMap, setDraftMap] = useState<Record<string, UserHistoryItem>>({})
-  const [draftLoading, setDraftLoading] = useState(false)
 
   // Listening state
   const [listeningPassages, setListeningPassages] = useState<ListeningPassageSummary[]>([])
@@ -120,22 +119,40 @@ export default function PracticeModulesPage() {
     setCurrentPage(1)
   }, [activeTab, selectedQuestionType, pageSize, speakingSubTab])
 
-  // Fetch Reading Passages
+  // Fetch Reading Passages, Drafts, and History in Parallel
   useEffect(() => {
     if (activeTab !== 'reading') return
     let cancelled = false
-    setReadingLoading(true)
+    if (readingPassages.length === 0) setReadingLoading(true)
     setReadingError(null)
 
-    getPassages({
+    const fetchPassagesPromise = getPassages({
       page: currentPage,
       limit: pageSize,
       question_type: selectedQuestionType === 'All' ? undefined : selectedQuestionType
     })
-      .then((res) => {
+
+    const fetchDraftsPromise = userId ? getInProgressSessions(userId).catch(() => []) : Promise.resolve([])
+    const fetchHistoryPromise = userId ? getUserHistory(userId, { status: 'COMPLETED', limit: 100 }).catch(() => ({ items: [] })) : Promise.resolve({ items: [] })
+
+    Promise.all([fetchPassagesPromise, fetchDraftsPromise, fetchHistoryPromise])
+      .then(([passagesRes, sessions, historyRes]) => {
         if (cancelled) return
-        setReadingPassages(res.items)
-        setReadingMeta({ page: res.page, limit: res.limit, total: res.total, total_pages: res.total_pages })
+        setReadingPassages(passagesRes.items)
+        setReadingMeta({ page: passagesRes.page, limit: passagesRes.limit, total: passagesRes.total, total_pages: passagesRes.total_pages })
+
+        const draftMapObj: Record<string, UserHistoryItem> = {}
+        sessions.forEach((s) => { draftMapObj[s.passage_id] = s })
+        setDraftMap(draftMapObj)
+
+        const historyMapObj: Record<string, UserHistoryItem> = {}
+        historyRes.items.forEach((s: UserHistoryItem) => {
+          const existing = historyMapObj[s.passage_id]
+          if (!existing || s.score > existing.score) {
+            historyMapObj[s.passage_id] = s
+          }
+        })
+        setReadingHistoryMap(historyMapObj)
       })
       .catch((err) => {
         if (cancelled) return
@@ -144,66 +161,57 @@ export default function PracticeModulesPage() {
       .finally(() => { if (!cancelled) setReadingLoading(false) })
 
     return () => { cancelled = true }
-  }, [activeTab, currentPage, pageSize, selectedQuestionType])
+  }, [activeTab, currentPage, pageSize, selectedQuestionType, userId])
 
-  // Fetch Reading In-progress drafts and completed history
-  useEffect(() => {
-    if (activeTab !== 'reading' || !userId) return
-    let cancelled = false
-    setDraftLoading(true)
-
-    getInProgressSessions(userId)
-      .then((sessions) => {
-        if (cancelled) return
-        const map: Record<string, UserHistoryItem> = {}
-        sessions.forEach((s) => { map[s.passage_id] = s })
-        setDraftMap(map)
-      })
-      .catch(() => { /* silent - draft info is optional */ })
-      .finally(() => { if (!cancelled) setDraftLoading(false) })
-
-    getUserHistory(userId, { status: 'COMPLETED', limit: 100 })
-      .then((res) => {
-        if (cancelled) return
-        const map: Record<string, UserHistoryItem> = {}
-        res.items.forEach((s: UserHistoryItem) => {
-          const existing = map[s.passage_id]
-          if (!existing || s.score > existing.score) {
-            map[s.passage_id] = s
-          }
-        })
-        setReadingHistoryMap(map)
-      })
-      .catch(() => {})
-
-    return () => { cancelled = true }
-  }, [activeTab, userId])
-
-  // Fetch Listening Passages
+  // Fetch Listening Passages, Drafts, and History in Parallel
   useEffect(() => {
     if (activeTab !== 'listening') return
     let cancelled = false
-    setListeningLoading(true)
+    if (listeningPassages.length === 0) setListeningLoading(true)
     setListeningError(null)
 
     const cardsPerPassage = (selectedQuestionType && selectedQuestionType !== 'All') ? 1 : 2
     const limitForPassages = Math.ceil(pageSize / cardsPerPassage)
 
-    getListeningPassages({
+    const fetchPassagesPromise = getListeningPassages({
       page: currentPage,
       limit: limitForPassages,
       question_type: selectedQuestionType === 'All' ? undefined : selectedQuestionType
     })
-      .then((res) => {
+
+    const fetchDraftsPromise = userId ? getInProgressListeningSessions(userId).catch(() => []) : Promise.resolve([])
+    const fetchHistoryPromise = userId ? getListeningHistory(userId, { status: 'COMPLETED', limit: 100 }).catch(() => ({ items: [] })) : Promise.resolve({ items: [] })
+
+    Promise.all([fetchPassagesPromise, fetchDraftsPromise, fetchHistoryPromise])
+      .then(([passagesRes, sessions, historyRes]) => {
         if (cancelled) return
-        setListeningPassages(res.items)
-        const totalCards = res.total * cardsPerPassage
+        setListeningPassages(passagesRes.items)
+        const totalCards = passagesRes.total * cardsPerPassage
         setListeningMeta({
           page: currentPage,
           limit: pageSize,
           total: totalCards,
           total_pages: Math.max(1, Math.ceil(totalCards / pageSize)),
         })
+
+        const draftMapObj: Record<string, any> = {}
+        sessions.forEach((s) => {
+          const key = `${s.passage_id}-${s.session_type.toLowerCase()}`
+          draftMapObj[key] = s
+        })
+        setListeningDraftMap(draftMapObj)
+
+        const historyMapObj: Record<string, any> = {}
+        historyRes.items.forEach((s: any) => {
+          const key = `${s.passage_id}-${s.session_type.toLowerCase()}`
+          const existing = historyMapObj[key]
+          const scoreVal = s.score || s.accuracy_rate || 0
+          const existingScore = existing ? (existing.score || existing.accuracy_rate || 0) : 0
+          if (!existing || scoreVal > existingScore) {
+            historyMapObj[key] = s
+          }
+        })
+        setListeningHistoryMap(historyMapObj)
       })
       .catch((err) => {
         if (cancelled) return
@@ -212,58 +220,23 @@ export default function PracticeModulesPage() {
       .finally(() => { if (!cancelled) setListeningLoading(false) })
 
     return () => { cancelled = true }
-  }, [activeTab, currentPage, pageSize, selectedQuestionType])
-
-  // Fetch Listening In-progress drafts and completed history
-  useEffect(() => {
-    if (activeTab !== 'listening' || !userId) return
-    let cancelled = false
-    setDraftLoading(true)
-
-    getInProgressListeningSessions(userId)
-      .then((sessions) => {
-        if (cancelled) return
-        const map: Record<string, any> = {}
-        sessions.forEach((s) => {
-          const key = `${s.passage_id}-${s.session_type.toLowerCase()}`
-          map[key] = s
-        })
-        setListeningDraftMap(map)
-      })
-      .catch(() => { /* silent */ })
-      .finally(() => { if (!cancelled) setDraftLoading(false) })
-
-    getListeningHistory(userId, { status: 'COMPLETED', limit: 100 })
-      .then((res) => {
-        if (cancelled) return
-        const map: Record<string, any> = {}
-        res.items.forEach((s: any) => {
-          const key = `${s.passage_id}-${s.session_type.toLowerCase()}`
-          const existing = map[key]
-          const scoreVal = s.score || s.accuracy_rate || 0
-          const existingScore = existing ? (existing.score || existing.accuracy_rate || 0) : 0
-          if (!existing || scoreVal > existingScore) {
-            map[key] = s
-          }
-        })
-        setListeningHistoryMap(map)
-      })
-      .catch(() => {})
-
-    return () => { cancelled = true }
-  }, [activeTab, userId])
+  }, [activeTab, currentPage, pageSize, selectedQuestionType, userId])
 
   // Fetch Writing Prompts
   useEffect(() => {
     if (activeTab !== 'writing') return
     let cancelled = false
-    setWritingLoading(true)
+    if (writingItems.length === 0) setWritingLoading(true)
     setWritingError(null)
 
-    writingApi.getPrompts()
+    const taskTypeParam = 
+      selectedQuestionType.startsWith('Task 1') ? 'WITH_GRAPH' :
+      selectedQuestionType.startsWith('Task 2') ? 'WITHOUT_GRAPH' :
+      undefined;
+
+    writingApi.getPrompts(taskTypeParam)
       .then((res) => {
         if (cancelled) return
-        // writingApi doesn't support backend pagination metadata currently, mock it locally
         const startIndex = (currentPage - 1) * pageSize
         const sliced = res.slice(startIndex, startIndex + pageSize)
         setWritingItems(sliced)
@@ -281,13 +254,13 @@ export default function PracticeModulesPage() {
       .finally(() => { if (!cancelled) setWritingLoading(false) })
 
     return () => { cancelled = true }
-  }, [activeTab, currentPage, pageSize])
+  }, [activeTab, currentPage, pageSize, selectedQuestionType])
 
   // Fetch Speaking Topics & Shadowing
   useEffect(() => {
     if (activeTab !== 'speaking') return
     let cancelled = false
-    setSpeakingLoading(true)
+    if (speakingTopics.length === 0) setSpeakingLoading(true)
     setSpeakingError(null)
 
     if (speakingSubTab === 'ielts') {
@@ -404,7 +377,7 @@ export default function PracticeModulesPage() {
   }
 
   const activeMeta = getActiveMeta()
-  const activeLoading = readingLoading || listeningLoading || writingLoading || speakingLoading || draftLoading
+  const activeLoading = readingLoading || listeningLoading || writingLoading || speakingLoading
 
   const pageNumbers = Array.from({ length: Math.max(1, Math.min(5, activeMeta.total_pages)) }, (_, index) => {
     const startPage = Math.max(1, Math.min(currentPage - 2, Math.max(1, activeMeta.total_pages - 4)))
@@ -448,8 +421,8 @@ export default function PracticeModulesPage() {
             ))}
           </div>
 
-          {/* Filter Dropdown (Only for listening & reading) */}
-          {(activeTab === 'reading' || activeTab === 'listening') && (
+          {/* Filter Dropdown (For listening, reading & writing) */}
+          {(activeTab === 'reading' || activeTab === 'listening' || activeTab === 'writing') && (
             <div className="relative shrink-0" ref={typeDropdownRef}>
               <div
                 onClick={() => setShowTypeDropdown(!showTypeDropdown)}
@@ -462,19 +435,31 @@ export default function PracticeModulesPage() {
                 <ChevronDown size={16} className="text-slate-400 transition-transform duration-200" style={{ transform: showTypeDropdown ? 'rotate(180deg)' : 'none' }} />
               </div>
               {showTypeDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-lg z-50 py-1.5 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-lg z-50 py-1.5 overflow-hidden">
                   {(activeTab === 'reading'
                     ? ['All', 'Multiple Choice', 'Heading Matching', 'Fill Blank', 'T/F/NG']
-                    : ['All', 'Multiple Choice', 'Fill Blank', 'Dictation']
+                    : activeTab === 'listening'
+                    ? ['All', 'Multiple Choice', 'Fill Blank', 'Dictation']
+                    : [
+                        'All',
+                        'Task 1 (All)',
+                        'Task 1: Chart / Graph',
+                        'Task 1: Process Diagram',
+                        'Task 1: Map',
+                        'Task 2 (All)',
+                        'Task 2: Opinion',
+                        'Task 2: Discussion',
+                        'Task 2: Problem & Solution'
+                      ]
                   ).map((type) => (
                     <button
                       key={type}
                       onClick={() => { setSelectedQuestionType(type); setShowTypeDropdown(false) }}
-                      className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between ${selectedQuestionType === type ? 'bg-blue-50 text-[#1D4ED8]' : 'text-slate-700 hover:bg-slate-50'
+                      className={`w-full text-left px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-between ${selectedQuestionType === type ? 'bg-purple-50 text-purple-700 font-extrabold' : 'text-slate-700 hover:bg-slate-50'
                         }`}
                     >
                       <span>{type}</span>
-                      {selectedQuestionType === type && <Check size={14} className="text-[#1D4ED8] stroke-[2.5]" />}
+                      {selectedQuestionType === type && <Check size={14} className="text-purple-700 stroke-[2.5]" />}
                     </button>
                   ))}
                 </div>
@@ -483,8 +468,8 @@ export default function PracticeModulesPage() {
           )}
         </div>
 
-        {/* Loading Indicator */}
-        {activeLoading && (
+        {/* Loading Indicator for Initial Fetch */}
+        {activeLoading && (activeTab === 'reading' ? readingPassages.length === 0 : activeTab === 'listening' ? listeningPassages.length === 0 : activeTab === 'writing' ? writingItems.length === 0 : (speakingTopics.length + shadowingSentences.length) === 0) && (
           <div className="flex flex-col items-center justify-center py-16 space-y-3">
             <Loader2 className="w-8 h-8 text-[#1D4ED8] animate-spin" />
             <span className="text-xs font-semibold text-slate-500">
@@ -516,8 +501,6 @@ export default function PracticeModulesPage() {
         )}
 
         {/* Cards Grid */}
-        {!activeLoading && (
-          <>
             {activeTab === 'reading' && (
               readingPassages.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -822,71 +805,168 @@ export default function PracticeModulesPage() {
               )
             )}
 
-            {activeTab === 'writing' && (
-              writingItems.length > 0 ? (
+            {activeTab === 'writing' && (() => {
+              const filteredWritingItems = writingItems.filter((item) => {
+                if (!selectedQuestionType || selectedQuestionType === 'All') return true;
+                if (selectedQuestionType === 'Task 1 (All)') return item.task_type === 'WITH_GRAPH';
+                if (selectedQuestionType === 'Task 2 (All)') return item.task_type === 'WITHOUT_GRAPH';
+
+                const titleLower = item.title.toLowerCase();
+                const descLower = (item.task_description || '').toLowerCase();
+
+                if (selectedQuestionType === 'Task 1: Chart / Graph') {
+                  return item.task_type === 'WITH_GRAPH' && (
+                    titleLower.includes('chart') || titleLower.includes('graph') || titleLower.includes('fuel') || titleLower.includes('subjects')
+                  );
+                }
+                if (selectedQuestionType === 'Task 1: Process Diagram') {
+                  return item.task_type === 'WITH_GRAPH' && (
+                    titleLower.includes('process') || titleLower.includes('recycle') || titleLower.includes('collection') || descLower.includes('diagram')
+                  );
+                }
+                if (selectedQuestionType === 'Task 1: Map') {
+                  return item.task_type === 'WITH_GRAPH' && (
+                    titleLower.includes('map') || titleLower.includes('redevelopment') || titleLower.includes('layout') || descLower.includes('map')
+                  );
+                }
+
+                if (selectedQuestionType === 'Task 2: Opinion') {
+                  return item.task_type === 'WITHOUT_GRAPH' && (
+                    descLower.includes('agree or disagree') || titleLower.includes('intelligence') || titleLower.includes('diagnostics')
+                  );
+                }
+                if (selectedQuestionType === 'Task 2: Discussion') {
+                  return item.task_type === 'WITHOUT_GRAPH' && (
+                    descLower.includes('discuss both views') || titleLower.includes('budget') || titleLower.includes('space')
+                  );
+                }
+                if (selectedQuestionType === 'Task 2: Problem & Solution') {
+                  return item.task_type === 'WITHOUT_GRAPH' && (
+                    descLower.includes('causes') || descLower.includes('measures') || titleLower.includes('urban') || titleLower.includes('gridlock')
+                  );
+                }
+
+                return true;
+              });
+
+              return filteredWritingItems.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {writingItems.map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => navigate(`/writing/editor/${item.id}`)}
-                      className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-lg hover:border-purple-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-purple-100/80 text-purple-700 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-                            <FileText className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 block">
-                                {item.task_type === 'WITH_GRAPH' ? 'TASK 1 • CHART' : 'TASK 2 • ESSAY'}
+                  {filteredWritingItems.map((item) => {
+                    const isCompleted = item.user_status === 'REVIEWED' || item.highest_score != null;
+                    const isDraft = !isCompleted && item.user_status === 'DRAFT' && !!(item.draft_content && item.draft_content.trim().length > 0);
+                    const categoryLabel = item.question_category || (item.task_type === 'WITH_GRAPH' ? 'TASK 1 • CHART' : 'TASK 2 • ESSAY');
+
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => navigate(`/writing/editor/${item.id}`)}
+                        className={`bg-white border rounded-2xl p-5 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 relative overflow-hidden group ${
+                          isCompleted
+                            ? 'border-emerald-200 hover:border-emerald-400'
+                            : isDraft
+                            ? 'border-amber-200 hover:border-amber-400'
+                            : 'border-slate-200/90 hover:border-purple-300'
+                        }`}
+                      >
+                        {/* Top-Right Badges: COMPLETED / DRAFT & LÀM LẠI Button */}
+                        <div className="absolute top-0 right-0 flex items-center gap-1 z-10">
+                          {(isCompleted || isDraft) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/writing/editor/${item.id}?mode=reset`);
+                              }}
+                              title="Viết lại bài mới từ đầu"
+                              className="bg-purple-600 hover:bg-purple-700 text-white text-[9px] font-black tracking-wider px-2.5 py-1 rounded-bl-xl shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <RotateCcw size={10} className="stroke-[2.5]" />
+                              LÀM LẠI
+                            </button>
+                          )}
+
+                          {isCompleted ? (
+                            <div className="bg-emerald-500 text-white text-[9px] font-black tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl flex items-center gap-1">
+                              <Check size={10} className="stroke-[3]" />
+                              COMPLETED
+                            </div>
+                          ) : isDraft ? (
+                            <div className="bg-amber-400 text-amber-900 text-[9px] font-black tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl flex items-center gap-1">
+                              <FileEdit size={10} />
+                              DRAFT
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3.5">
+                            <div
+                              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                                isCompleted
+                                  ? 'bg-emerald-50 text-emerald-600'
+                                  : isDraft
+                                  ? 'bg-amber-50 text-amber-600'
+                                  : 'bg-purple-50 text-purple-700'
+                              }`}
+                            >
+                              {isCompleted ? <Check size={20} className="stroke-[3]" /> : <FileText size={20} />}
+                            </div>
+
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 block">
+                                {categoryLabel}
                               </span>
-                              {item.user_status === 'DRAFT' && (
-                                <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-extrabold rounded-md uppercase tracking-wider">
-                                  Draft
+                              <h3 className={`font-bold text-slate-900 text-base leading-snug transition-colors ${
+                                isCompleted
+                                  ? 'group-hover:text-emerald-600'
+                                  : isDraft
+                                  ? 'group-hover:text-amber-600'
+                                  : 'group-hover:text-purple-700'
+                              }`}>
+                                {item.title}
+                              </h3>
+                              <p className="text-xs text-slate-500 font-normal">
+                                Target: {item.word_count_target}+ từ • Thời gian: {item.time_limit_minutes} phút
+                              </p>
+
+                              {/* Question Type Tag */}
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                <span className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md text-[9px] font-black tracking-wider uppercase">
+                                  {categoryLabel.replace('TASK 1 • ', '').replace('TASK 2 • ', '')}
                                 </span>
+                              </div>
+
+                              {/* Highest Score Info */}
+                              {isCompleted && (
+                                <p className="text-[10px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
+                                  <Trophy size={10} className="text-amber-600 fill-amber-400 shrink-0" />
+                                  Highest Score: {item.highest_score ? `${item.highest_score.toFixed(1)} / 9.0 Band` : 'Reviewed'}
+                                </p>
                               )}
-                              {item.user_status === 'REVIEWED' && (
-                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-extrabold rounded-md uppercase tracking-wider">
-                                  Reviewed
-                                </span>
+
+                              {isDraft && (
+                                <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1">
+                                  <FileEdit size={9} />
+                                  Tiếp tục bài viết dở dang
+                                </p>
                               )}
                             </div>
-                            <span className="text-[11px] font-semibold text-slate-400">
-                              {item.ref_id || 'Academic'}
-                            </span>
+                          </div>
+
+                          <div className="shrink-0">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                              isCompleted
+                                ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                : isDraft
+                                ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                            }`}>
+                              <ArrowRight size={16} />
+                            </div>
                           </div>
                         </div>
-
-                        <button
-                          aria-label="Start Writing"
-                          className="w-9 h-9 rounded-full bg-purple-50 text-purple-700 group-hover:bg-[#1e50e6] group-hover:text-white flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-xs"
-                        >
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
                       </div>
-
-                      <h3 className="text-base font-extrabold text-slate-900 group-hover:text-purple-700 transition-colors leading-snug line-clamp-2">
-                        {item.title}
-                      </h3>
-
-                      <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2">
-                        {item.task_description}
-                      </p>
-
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{item.word_count_target}+ Words</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{item.time_limit_minutes} Mins</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-3">
@@ -894,8 +974,8 @@ export default function PracticeModulesPage() {
                   <h3 className="text-sm font-bold text-slate-700">Chưa có bài viết nào</h3>
                   <p className="text-xs text-slate-400">Hệ thống chưa tìm thấy dữ liệu bài Writing.</p>
                 </div>
-              )
-            )}
+              );
+            })()}
 
             {activeTab === 'speaking' && (
               <div className="space-y-4">
@@ -1034,8 +1114,6 @@ export default function PracticeModulesPage() {
                 )}
               </div>
             )}
-          </>
-        )}
 
         {/* Pagination Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">

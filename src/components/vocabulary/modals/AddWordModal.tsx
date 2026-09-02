@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Loader2, Image as ImageIcon, Sparkles } from 'lucide-react'
 import type { VocabularyCollection, AddWordPayload } from '../../../types/vocabulary'
-import { addWord, fetchWordDetails } from '../../../services/vocabularyApi'
+import { addWord, fetchWordDetails, createCollection } from '../../../services/vocabularyApi'
 import { useToast } from '../../common/Toast'
 import CustomSelect from '../../common/CustomSelect'
 
@@ -11,6 +11,7 @@ interface AddWordModalProps {
   onClose: () => void
   collections: VocabularyCollection[]
   preselectedCollectionId?: string
+  initialWord?: string
   onWordAdded: (collectionId: string) => void
 }
 
@@ -31,18 +32,24 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
   onClose,
   collections,
   preselectedCollectionId,
+  initialWord,
   onWordAdded,
 }) => {
   const { showToast } = useToast()
   const [selectedCollectionId, setSelectedCollectionId] = useState(
     preselectedCollectionId || (collections[0]?.id ?? '')
   )
+  const [isCreatingNewCol, setIsCreatingNewCol] = useState(collections.length === 0)
+  const [newColTitle, setNewColTitle] = useState('Từ vựng Reading')
 
   useEffect(() => {
     if (preselectedCollectionId) {
       setSelectedCollectionId(preselectedCollectionId)
     } else if (collections.length > 0 && !selectedCollectionId) {
       setSelectedCollectionId(collections[0].id)
+    }
+    if (collections.length === 0) {
+      setIsCreatingNewCol(true)
     }
   }, [preselectedCollectionId, collections, selectedCollectionId])
 
@@ -68,8 +75,14 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
   useEffect(() => {
     if (!open) {
       resetForm()
+    } else if (initialWord) {
+      const cleanWord = initialWord.trim()
+      setWord(cleanWord)
+      if (cleanWord && /[a-zA-Z]/.test(cleanWord)) {
+        handleAutoFetchIPA(cleanWord)
+      }
     }
-  }, [open])
+  }, [open, initialWord])
 
   const handleClose = () => {
     resetForm()
@@ -134,8 +147,7 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const targetId = preselectedCollectionId || selectedCollectionId
-    if (!targetId || !word.trim() || !meaning.trim()) return
+    if (!word.trim() || !meaning.trim()) return
 
     const letters = word.trim().match(/[a-zA-Z]/g) || []
     if (letters.length < 2) {
@@ -145,6 +157,17 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
 
     try {
       setIsSubmitting(true)
+      let targetId = preselectedCollectionId || selectedCollectionId
+
+      if (!targetId || isCreatingNewCol || collections.length === 0) {
+        const created = await createCollection({
+          title: newColTitle.trim() || 'Từ vựng Reading',
+          description: 'Bộ từ vựng được tạo từ bài đọc',
+          language: 'Anh-Mỹ',
+        })
+        targetId = created.id
+      }
+
       const payload: AddWordPayload = {
         word: word.trim(),
         word_type: (wordType || 'noun').trim(),
@@ -173,7 +196,10 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
     }
   }
 
-  const collectionOptions = collections.map(col => ({ value: col.id, label: col.title }))
+  const collectionOptions = collections.map(col => ({
+    value: col.id,
+    label: col.title
+  }))
 
   const modalContent = (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/25 backdrop-blur-[2px] font-['Be_Vietnam_Pro'] select-none">
@@ -189,17 +215,45 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
         </div>
 
         <form id="add-word-form" onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
-          {!preselectedCollectionId && collections.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="block text-xs sm:text-sm font-bold text-slate-700">
-                Bộ từ vựng <span className="text-red-500">*</span>
-              </label>
-              <CustomSelect
-                value={selectedCollectionId}
-                onChange={setSelectedCollectionId}
-                options={collectionOptions}
-                placeholder="Chọn bộ từ vựng..."
-              />
+          {!preselectedCollectionId && (
+            <div className="space-y-1.5 bg-blue-50/50 p-3 rounded-2xl border border-blue-100/80">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs sm:text-sm font-extrabold text-slate-800">
+                  Bộ từ vựng <span className="text-red-500">*</span>
+                </label>
+                {collections.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingNewCol(!isCreatingNewCol)}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline transition"
+                  >
+                    {isCreatingNewCol ? '← Chọn bộ sẵn có' : '+ Tạo bộ từ mới'}
+                  </button>
+                )}
+              </div>
+
+              {isCreatingNewCol || collections.length === 0 ? (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={newColTitle}
+                    onChange={(e) => setNewColTitle(e.target.value)}
+                    placeholder="Nhập tên bộ từ vựng mới (Vd: Từ vựng Reading)..."
+                    className="w-full px-3.5 py-2 text-xs sm:text-sm border border-blue-200 bg-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-800"
+                    required
+                  />
+                  <p className="text-[11px] text-slate-500 font-medium italic">
+                    ✨ Hệ thống sẽ tự động tạo bộ từ vựng mới này và lưu từ vào cho bạn.
+                  </p>
+                </div>
+              ) : (
+                <CustomSelect
+                  value={selectedCollectionId}
+                  onChange={setSelectedCollectionId}
+                  options={collectionOptions}
+                  placeholder="Chọn bộ từ vựng..."
+                />
+              )}
             </div>
           )}
 

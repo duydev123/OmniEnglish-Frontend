@@ -186,6 +186,22 @@ export async function getOfficialCollections(): Promise<VocabularyCollection[]> 
   return []
 }
 
+export async function getAllAvailableCollections(): Promise<VocabularyCollection[]> {
+  try {
+    const [myCols, officialCols] = await Promise.all([
+      getMyCollections().catch(() => []),
+      getOfficialCollections().catch(() => [])
+    ])
+    const combined = [...myCols, ...officialCols]
+    if (combined.length > 0) {
+      return combined
+    }
+  } catch (err) {
+    console.warn('Error fetching all collections:', err)
+  }
+  return getCachedCollections()
+}
+
 export async function createCollection(payload: CreateCollectionPayload): Promise<VocabularyCollection> {
   try {
     const created = await apiFetch<VocabularyCollection>('/collections/my-collections', {
@@ -420,8 +436,30 @@ export interface WordDetailsResult {
   example_sentence?: string
 }
 
+export function isBlockedOrNonsenseWord(word: string): boolean {
+  const clean = word.toLowerCase().trim();
+  if (!clean) return true;
+  if (clean.length === 1 && clean !== 'a' && clean !== 'i') return true;
+  
+  if (clean.length >= 4 && clean.length % 2 === 0) {
+    const half = clean.length / 2;
+    if (clean.substring(0, half) === clean.substring(half) && !['bulk', 'team', 'couscous', 'murmur'].includes(clean)) {
+      return true;
+    }
+  }
+
+  const blocked = new Set([
+    'asdf', 'qwerty', 'zxcv', 'asdfghjk', 'qwertyuiop', 'zxcvbnm',
+    'lmao', 'xyz', 'skibidi', 'hihi', 'haha', 'hehe', 'huhu', 'hoho', 'kaka', 'gogo',
+    'megaman', 'pokemon', 'goku', 'naruto', 'pikachu', 'sonic', 'mario', 'batman', 'superman'
+  ]);
+  return blocked.has(clean);
+}
+
 export async function fetchWordDetails(word: string): Promise<WordDetailsResult> {
-  if (!word || !word.trim()) return { ipa: '', word_type: 'noun', meaning: '', example_sentence: '' }
+  if (!word || !word.trim() || isBlockedOrNonsenseWord(word)) {
+    return { ipa: '', word_type: 'noun', meaning: '', example_sentence: '' }
+  }
   const cleanWord = word.trim()
 
   // 1. Query backend endpoint via Axios (Backend returns ipa, word_type, meaning, example_sentence)
@@ -441,7 +479,58 @@ export async function fetchWordDetails(word: string): Promise<WordDetailsResult>
     // Backend API offline/unreachable - proceed to fallback
   }
 
-  // 2. Client-side fallback via Axios through CORS proxy
+  // 2. Client-side fallback via Datamuse API (CORS friendly) & Dictionary API proxy
+  try {
+    const datamuseUrl = `https://api.datamuse.com/words?sp=${encodeURIComponent(cleanWord.toLowerCase())}&md=rd`
+    const res = await axios.get(datamuseUrl)
+    if (res.status === 200 && Array.isArray(res.data) && res.data[0]) {
+      const item = res.data[0]
+      let foundIpa = ''
+      let foundType = 'noun'
+      let foundMeaning = ''
+
+      if (item.tags && Array.isArray(item.tags)) {
+        const pronTag = item.tags.find((t: string) => t.startsWith('pron:'))
+        if (pronTag) {
+          const rawPron = pronTag.substring(5).trim().split(/\s+/)
+          const arpabetMap: Record<string, string> = {
+            AA: 'ɑ', AA0: 'ɑ', AA1: 'ˈɑ', AA2: 'ˌɑ', AE: 'æ', AE0: 'æ', AE1: 'ˈæ', AE2: 'ˌæ',
+            AH: 'ʌ', AH0: 'ə', AH1: 'ˈʌ', AH2: 'ˌʌ', AO: 'ɔ', AO0: 'ɔ', AO1: 'ˈɔ', AO2: 'ˌɔ',
+            AW: 'aʊ', AW0: 'aʊ', AW1: 'ˈaʊ', AW2: 'ˌaʊ', AY: 'aɪ', AY0: 'aɪ', AY1: 'ˈaɪ', AY2: 'ˌaɪ',
+            B: 'b', CH: 'tʃ', D: 'd', DH: 'ð', EH: 'ɛ', EH0: 'ɛ', EH1: 'ˈɛ', EH2: 'ˌɛ',
+            ER: 'ɝ', ER0: 'ər', ER1: 'ˈɝ', ER2: 'ˌɝ', EY: 'eɪ', EY0: 'eɪ', EY1: 'ˈeɪ', EY2: 'ˌeɪ',
+            F: 'f', G: 'ɡ', HH: 'h', IH: 'ɪ', IH0: 'ɪ', IH1: 'ˈɪ', IH2: 'ˌɪ', IY: 'i', IY0: 'i', IY1: 'ˈi', IY2: 'ˌi',
+            JH: 'dʒ', K: 'k', L: 'l', M: 'm', N: 'n', NG: 'ŋ', OW: 'oʊ', OW0: 'oʊ', OW1: 'ˈoʊ', OW2: 'ˌoʊ',
+            OY: 'ɔɪ', OY0: 'ɔɪ', OY1: 'ˈɔɪ', OY2: 'ˌOY2', P: 'p', R: 'ɹ', S: 's', SH: 'ʃ', T: 't', TH: 'θ',
+            UH: 'ʊ', UH0: 'ʊ', UH1: 'ˈʊ', UH2: 'ˌʊ', UW: 'u', UW0: 'u', UW1: 'ˈu', UW2: 'ˌu',
+            V: 'v', W: 'w', Y: 'j', Z: 'z', ZH: 'ʒ'
+          }
+          const converted = rawPron.map((p: string) => arpabetMap[p] || p.toLowerCase()).join('')
+          foundIpa = `/${converted}/`
+        }
+      }
+
+      if (item.defs && Array.isArray(item.defs) && item.defs[0]) {
+        const parts = item.defs[0].split('\t')
+        if (parts.length >= 2) {
+          const typeLetter = parts[0]
+          foundMeaning = parts[1]
+          if (typeLetter === 'n') foundType = 'noun'
+          else if (typeLetter === 'v') foundType = 'verb'
+          else if (typeLetter === 'adj') foundType = 'adjective'
+          else if (typeLetter === 'adv') foundType = 'adverb'
+        }
+      }
+
+      if (foundIpa) {
+        return { ipa: foundIpa, word_type: foundType, meaning: foundMeaning, example_sentence: '' }
+      }
+    }
+  } catch {
+    // Datamuse error
+  }
+
+  // 3. Last-resort CORS proxy fallback
   try {
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord.toLowerCase())}`)}`
     const res = await axios.get(proxyUrl, { validateStatus: status => status === 200 })
