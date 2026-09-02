@@ -92,6 +92,9 @@ export const SpeakingResultPage: React.FC = () => {
     } catch (e) {
       // Not JSON format
     }
+    return { raw_text: raw }
+  }
+
   const getScoreLevelText = (score: number) => {
     if (score >= 8.5) return "Excellent"
     if (score >= 7.5) return "Very Good"
