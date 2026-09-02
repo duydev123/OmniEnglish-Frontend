@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/common/AppLayout';
 import { writingApi } from '../../services/writingApi';
 import { useToast } from '../../components/common/Toast';
+import { getApiErrorMessage } from '../../utils/error';
 import type {
   WritingSubmitResponse,
   ImprovedEssaySampleResponse,
@@ -38,8 +39,8 @@ export const WritingReviewPage: React.FC = () => {
       try {
         const data = await writingApi.getSubmissionById(sessionId);
         setReviewData(data);
-      } catch {
-        showToast('Lỗi khi tải kết quả chấm bài', 'error');
+      } catch (err) {
+        showToast(getApiErrorMessage(err, 'Lỗi khi tải kết quả chấm bài'), 'error');
       } finally {
         setLoading(false);
       }
@@ -57,8 +58,8 @@ export const WritingReviewPage: React.FC = () => {
     try {
       const res = await writingApi.getImprovedEssaySample(sessionId);
       setImprovedData(res);
-    } catch {
-      showToast('Lỗi khi tải bài viết nâng cấp', 'error');
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Lỗi khi tải bài viết nâng cấp'), 'error');
     } finally {
       setLoadingImproved(false);
     }
@@ -82,8 +83,8 @@ export const WritingReviewPage: React.FC = () => {
       });
       showToast('Đã áp dụng bản nâng cấp AI làm bài nháp mới!', 'success');
       navigate(`/writing/editor/${reviewData.prompt_id}`);
-    } catch {
-      showToast('Lỗi khi áp dụng bài viết nâng cấp', 'error');
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Lỗi khi áp dụng bài viết nâng cấp'), 'error');
     } finally {
       setApplyingRevision(false);
     }
@@ -343,7 +344,13 @@ export const WritingReviewPage: React.FC = () => {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Fully addresses all parts of the task with a clear position.
+                    {reviewData.task_achievement_score >= 8.0
+                      ? 'Fully & persuasively addresses all parts of the prompt with well-developed ideas.'
+                      : reviewData.task_achievement_score >= 7.0
+                      ? 'Addresses all parts of the task with clear main ideas and relevant supporting points.'
+                      : reviewData.task_achievement_score >= 6.0
+                      ? 'Addresses the main requirements of the task, though some points could be expanded.'
+                      : 'Presents a limited response to the prompt; needs deeper explanation and main idea focus.'}
                   </p>
                 </div>
 
@@ -360,7 +367,13 @@ export const WritingReviewPage: React.FC = () => {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Information and ideas are logically organized with smooth progression.
+                    {reviewData.coherence_cohesion_score >= 8.0
+                      ? 'Sequences information and ideas logically with seamless paragraph cohesion.'
+                      : reviewData.coherence_cohesion_score >= 7.0
+                      ? 'Organizes information and ideas logically with clear progression throughout.'
+                      : reviewData.coherence_cohesion_score >= 6.0
+                      ? 'Arranges ideas coherently with effective paragraphing and basic cohesive devices.'
+                      : 'Cohesion between sentences and paragraphs may be mechanical or inconsistent.'}
                   </p>
                 </div>
 
@@ -377,7 +390,13 @@ export const WritingReviewPage: React.FC = () => {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Uses a sufficient range of vocabulary to allow some flexibility and precision.
+                    {reviewData.lexical_resource_score >= 8.0
+                      ? 'Uses a wide range of vocabulary fluently and flexibly with sophisticated collocations.'
+                      : reviewData.lexical_resource_score >= 7.0
+                      ? 'Uses a sufficient range of vocabulary with flexibility and awareness of collocation.'
+                      : reviewData.lexical_resource_score >= 6.0
+                      ? 'Uses an adequate range of vocabulary for the task with general clarity.'
+                      : 'Uses a limited range of vocabulary; contains noticeable errors in word choice or spelling.'}
                   </p>
                 </div>
 
@@ -394,7 +413,13 @@ export const WritingReviewPage: React.FC = () => {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Uses a variety of complex structures with frequent error-free sentences.
+                    {reviewData.grammar_accuracy_score >= 8.0
+                      ? 'Uses a wide range of structures with full flexibility and high accuracy.'
+                      : reviewData.grammar_accuracy_score >= 7.0
+                      ? 'Uses a variety of complex structures with frequent error-free sentences.'
+                      : reviewData.grammar_accuracy_score >= 6.0
+                      ? 'Uses a mix of simple and complex sentence forms with good overall control.'
+                      : 'Attempts complex sentences but contains frequent grammatical errors and punctuation slips.'}
                   </p>
                 </div>
               </div>

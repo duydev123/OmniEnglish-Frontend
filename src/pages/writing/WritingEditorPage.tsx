@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/common/AppLayout';
 import { writingApi } from '../../services/writingApi';
 import { useToast } from '../../components/common/Toast';
+import { getApiErrorMessage } from '../../utils/error';
 import type {
   WritingPrompt,
   AIOutlineResponse,
@@ -331,8 +332,8 @@ export const WritingEditorPage: React.FC = () => {
         if (data.time_spent_seconds) {
           setTimeSpentSeconds(data.time_spent_seconds);
         }
-      } catch {
-        showToast('Lỗi khi tải đề bài writing', 'error');
+      } catch (err) {
+        showToast(getApiErrorMessage(err, 'Lỗi khi tải đề bài writing'), 'error');
       } finally {
         setLoadingPrompt(false);
       }
@@ -346,7 +347,7 @@ export const WritingEditorPage: React.FC = () => {
     if (!editorDivRef.current) return;
     const text = editorDivRef.current.innerText || '';
     const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean) : [];
-    
+
     if (words.length > MAX_WORDS) {
       showToast(`Bài viết đã đạt giới hạn tối đa ${MAX_WORDS} từ! Không thể nhập thêm.`, 'warning');
       const truncatedText = words.slice(0, MAX_WORDS).join(' ');
@@ -384,8 +385,8 @@ export const WritingEditorPage: React.FC = () => {
         time_spent_seconds: timeSpentSeconds,
       });
       showToast('Đã lưu nháp bài viết thành công!', 'success');
-    } catch {
-      showToast('Lỗi khi lưu nháp bài viết', 'error');
+    } catch (err) {
+      showToast(getApiErrorMessage(err, 'Lỗi khi lưu nháp bài viết'), 'error');
     } finally {
       setSavingDraft(false);
     }
@@ -421,7 +422,7 @@ export const WritingEditorPage: React.FC = () => {
       showToast('Nộp bài thành công! Đang chuyển tới trang đánh giá AI...', 'success');
       navigate(`/writing/review/${res.session_id}`);
     } catch (err: any) {
-      showToast(err.message || 'Lỗi khi nộp bài essay', 'error');
+      showToast(getApiErrorMessage(err, 'Lỗi khi nộp bài essay'), 'error');
     } finally {
       setSubmitting(false);
     }

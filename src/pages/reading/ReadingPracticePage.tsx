@@ -9,6 +9,7 @@ import HeadingMatchingTask from '../../components/reading/HeadingMatchingTask'
 import TrueFalseNotGivenTask from '../../components/reading/TrueFalseNotGivenTask'
 import LearningTipCard from '../../components/reading/LearningTipCard'
 import { useToast } from '../../components/common/Toast'
+import { getApiErrorMessage } from '../../utils/error'
 import type { ReadingPassageData, QuestionTask } from '../../types/reading'
 import {
   getPassages,
@@ -141,12 +142,7 @@ export default function ReadingPracticePage() {
         setUserAnswers(s.user_answers || {})
       } catch (err: unknown) {
         if (cancelled) return
-        const errorMessage =
-          (err as { response?: { data?: { message?: string; detail?: string } }; message?: string })?.response?.data?.message ??
-          (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-          (err as { message?: string })?.message ??
-          'Không thể tải bài đọc'
-        setError(errorMessage)
+        setError(getApiErrorMessage(err, 'Không thể tải bài đọc'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -188,10 +184,7 @@ export default function ReadingPracticePage() {
       }
     } catch (err: unknown) {
       if (!silent) {
-        const msg =
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          'Lưu nháp thất bại, vui lòng thử lại'
-        showToast(msg, 'error')
+        showToast(getApiErrorMessage(err, 'Lưu nháp thất bại, vui lòng thử lại'), 'error')
       }
       // silent auto-save: do nothing on error
     } finally {
@@ -220,11 +213,7 @@ export default function ReadingPracticePage() {
       showToast(`Nộp bài thành công! Điểm: ${result.score}/${result.total_questions}`, 'success')
       navigate(`/reading/result?session_id=${session.session_id}`)
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string; detail?: string } } })?.response?.data?.message ??
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        'Nộp bài thất bại, vui lòng thử lại'
-      showToast(msg, 'error')
+      showToast(getApiErrorMessage(err, 'Nộp bài thất bại, vui lòng thử lại'), 'error')
     } finally {
       setSubmitting(false)
     }

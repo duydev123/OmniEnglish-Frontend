@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { useParams, useLocation } from "react-router-dom"
 import { AppLayout } from "../../components/common/AppLayout"
 import { speakingApi } from "../../services/speakingApi"
+import { getApiErrorMessage } from "../../utils/error"
 import type { ShadowingSentence, ShadowingEvaluateResponse, WordDetail } from "../../types/speaking"
 import {
   Volume2,
@@ -210,7 +211,7 @@ export const SpeakingShadowingPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Evaluation error:", err)
-      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || "Đã xảy ra lỗi khi máy chủ chấm điểm shadowing. Vui lòng thử lại sau."
+      const msg = getApiErrorMessage(err, "Đã xảy ra lỗi khi máy chủ chấm điểm shadowing. Vui lòng thử lại sau.")
       setEvaluationError(msg)
     } finally {
       setIsEvaluating(false)
@@ -233,7 +234,7 @@ export const SpeakingShadowingPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error getting AI feedback:", err)
-      const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || "Không thể lấy feedback từ AI. Vui lòng thử lại sau!"
+      const msg = getApiErrorMessage(err, "Không thể lấy feedback từ AI. Vui lòng thử lại sau!")
       setFeedbackError(msg)
     } finally {
       setIsFetchingFeedback(false)

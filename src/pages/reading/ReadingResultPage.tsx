@@ -23,23 +23,33 @@ function buildPassageData(review: ReadingSessionReview): ReadingPassageData {
 }
 
 function scoreToIELTS(score: number, total: number): number {
-  if (total === 0) return 0
+  if (total <= 0 || score <= 0) return 0.0
   const pct = score / total
-  if (pct >= 0.9) return 9
-  if (pct >= 0.8) return 8
-  if (pct >= 0.7) return 7
-  if (pct >= 0.6) return 6
-  if (pct >= 0.5) return 5
-  return 4
+  if (pct >= 0.9) return 9.0
+  if (pct >= 0.85) return 8.5
+  if (pct >= 0.8) return 8.0
+  if (pct >= 0.75) return 7.5
+  if (pct >= 0.7) return 7.0
+  if (pct >= 0.65) return 6.5
+  if (pct >= 0.6) return 6.0
+  if (pct >= 0.55) return 5.5
+  if (pct >= 0.5) return 5.0
+  if (pct >= 0.4) return 4.5
+  if (pct >= 0.3) return 4.0
+  if (pct >= 0.2) return 3.5
+  if (pct >= 0.1) return 2.5
+  return 1.0
 }
 
 function levelFromScore(score: number): string {
   if (score >= 8.5) return 'C2'
   if (score >= 7.5) return 'C1'
-  if (score >= 6) return 'B2+'
-  if (score >= 5) return 'B2'
-  if (score >= 4) return 'B1'
-  return 'A2'
+  if (score >= 6.0) return 'B2+'
+  if (score >= 5.0) return 'B2'
+  if (score >= 4.0) return 'B1'
+  if (score >= 3.0) return 'A2'
+  if (score > 0) return 'A1'
+  return 'N/A'
 }
 
 function messageFromScore(score: number): string {
@@ -47,7 +57,8 @@ function messageFromScore(score: number): string {
   if (score >= 7) return 'Rất tốt! Bạn đang ở mức thành thạo.'
   if (score >= 6) return 'Tốt! Tiếp tục luyện tập để cải thiện.'
   if (score >= 5) return 'Được! Hãy ôn luyện thêm những phần còn yếu.'
-  return 'Cần cố gắng thêm. Hãy xem lại bài kỹ hơn nhé!'
+  if (score >= 3) return 'Bạn đã hoàn thành bài thi. Cần cố gắng ôn tập thêm!'
+  return 'Cần cố gắng thêm. Hãy xem lại bài đọc và kiểm tra đáp án kỹ hơn nhé!'
 }
 
 function buildReviews(review: ReadingSessionReview): ReviewQuestionItem[] {

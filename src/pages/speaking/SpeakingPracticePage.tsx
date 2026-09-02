@@ -927,10 +927,26 @@ export const SpeakingPracticePage: React.FC = () => {
                     <div className="space-y-2 text-xs font-medium text-slate-700">
                       <p className="font-bold text-slate-800">You should say:</p>
                       <ul className="space-y-1.5 pl-2">
-                        <li>• What it is</li>
-                        <li>• When you read / experienced it</li>
-                        <li>• What it is about</li>
-                        <li className="font-bold text-slate-900">• And explain why you liked it.</li>
+                        {currentPrompt.response_structure && currentPrompt.response_structure.length > 0 ? (
+                          currentPrompt.response_structure.map((item: any, i: number) => {
+                            const text = typeof item === 'string'
+                              ? item
+                              : (item.point || item.guide || item.section || item.text || JSON.stringify(item))
+                            const isLast = i === currentPrompt.response_structure.length - 1
+                            return (
+                              <li key={i} className={isLast ? "font-bold text-slate-900" : ""}>
+                                • {text}
+                              </li>
+                            )
+                          })
+                        ) : (
+                          <>
+                            <li>• What it is</li>
+                            <li>• When you read / experienced it</li>
+                            <li>• What it is about</li>
+                            <li className="font-bold text-slate-900">• And explain why you liked it.</li>
+                          </>
+                        )}
                       </ul>
                     </div>
 

@@ -4,6 +4,7 @@ import { Lightbulb, Loader2, AlertCircle, ArrowLeft, Save, CheckCircle2, Chevron
 import AppLayout from '../../components/common/AppLayout'
 import DictationAudioPlayer, { type DictationAudioPlayerRef } from '../../components/listening/DictationAudioPlayer'
 import { useToast } from '../../components/common/Toast'
+import { getApiErrorMessage } from '../../utils/error'
 import {
   getListeningPassages,
   saveListeningDraft,
@@ -85,11 +86,7 @@ export default function ListeningDictationPage() {
         setSession(startedSession)
       } catch (err: unknown) {
         if (cancelled) return
-        const message =
-          (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-          (err as { message?: string })?.message ??
-          'Không thể tải bài nghe'
-        setError(message)
+        setError(getApiErrorMessage(err, 'Không thể tải bài nghe'))
       } finally {
         if (!cancelled) setLoading(false)
       }

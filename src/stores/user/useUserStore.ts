@@ -32,6 +32,7 @@ export const initialUser: User = {
     avg_listening_score: 0,
     avg_speaking_score: 0,
     avg_writing_score: 0,
+    overall_score: 0,
   },
 };
 
