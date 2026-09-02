@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { AppLayout } from "../../components/common/AppLayout"
 import { speakingApi } from "../../services/speakingApi"
@@ -57,7 +57,7 @@ export const SpeakingResultPage: React.FC = () => {
       audioRef.current.pause()
       setIsPlaying(false)
     } else {
-      audioRef.current.play().catch((e) => console.error("Result audio play error:", e))
+      audioRef.current.play().catch((e: unknown) => console.error("Result audio play error:", e))
       setIsPlaying(true)
     }
   }

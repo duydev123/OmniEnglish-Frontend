@@ -55,8 +55,9 @@ describe('Speaking Module Services & Utils', () => {
       general_feedback: 'Great pronunciation!',
     });
 
-    const evalResult = await speakingApi.evaluateShadowing('sentence_1', 'I live in a small beautiful town.');
-    expect(evalResult.overall_score).toBe(88);
-    expect(evalResult.recognized_text).toContain('small beautiful town');
+    const dummyBlob = new Blob(['audio content'], { type: 'audio/webm' });
+    const evalResult = await speakingApi.evaluateShadowing('sentence_1', dummyBlob);
+    expect(evalResult?.overall_score).toBe(88);
+    expect(evalResult?.recognized_text).toContain('small beautiful town');
   });
 });

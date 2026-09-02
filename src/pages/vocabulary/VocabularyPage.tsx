@@ -58,20 +58,6 @@ export default function VocabularyPage() {
 
   const sortMenuRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    loadAllCollections()
-  }, [])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
-        setShowSortMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
   async function loadAllCollections() {
     try {
       const [officialResult, mineResult] = await Promise.allSettled([
@@ -92,6 +78,20 @@ export default function VocabularyPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadAllCollections()
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
+        setShowSortMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const handleStartPractice = useCallback(async (col: VocabularyCollection) => {
     if (!col.words_list || col.words_list.length === 0) {

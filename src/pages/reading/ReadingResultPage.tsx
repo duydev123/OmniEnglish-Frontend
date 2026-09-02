@@ -63,7 +63,7 @@ function buildReviews(review: ReadingSessionReview): ReviewQuestionItem[] {
       typeLabel = 'Heading Matching'
     }
 
-    let explanationParts: string[] = []
+    const explanationParts: string[] = []
     if (result.excerpt) {
       explanationParts.push(`📍 Đoạn trích: "${result.excerpt}"`)
     }
