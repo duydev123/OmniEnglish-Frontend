@@ -843,9 +843,9 @@ export const SpeakingPracticePage: React.FC = () => {
             </div>
 
             {currentPrompt.part === "PART_1" && (
-              /* PART 1 LAYOUT */
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-6">
+              /* PART 1 LAYOUT - 3 EQUAL-HEIGHT COLUMNS */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch min-h-[380px]">
+                <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-6 h-full min-h-[380px]">
                   <div className="space-y-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-[#1e50e6] rounded-lg text-xs font-bold uppercase tracking-wider">
                       <Mic size={14} />
@@ -865,12 +865,12 @@ export const SpeakingPracticePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 bg-white border border-slate-400/60 rounded-3xl p-8 shadow-glow-4side flex flex-col items-center justify-center text-center space-y-6 min-h-[360px]">
+                <div className="lg:col-span-5 bg-white border border-slate-400/60 rounded-3xl p-8 shadow-glow-4side flex flex-col items-center justify-center text-center space-y-6 h-full min-h-[380px]">
                   {renderRecordingControls()}
                 </div>
 
-                <div className="lg:col-span-3 space-y-6">
-                  <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
+                <div className="lg:col-span-3 flex flex-col justify-between space-y-6 h-full min-h-[380px]">
+                  <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3 flex-1">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                       <BookOpen size={14} className="text-blue-600" />
                       <span>Useful Vocabulary</span>
@@ -887,7 +887,7 @@ export const SpeakingPracticePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="bg-blue-50/60 border border-blue-100 rounded-3xl p-5 shadow-xs space-y-3">
+                  <div className="bg-blue-50/60 border border-blue-100 rounded-3xl p-5 shadow-xs space-y-3 shrink-0">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-blue-700 flex items-center gap-2">
                       <Sparkles size={14} />
                       <span>Tips</span>
@@ -906,81 +906,91 @@ export const SpeakingPracticePage: React.FC = () => {
             )}
 
             {currentPrompt.part === "PART_2" && (
-              /* PART 2 LAYOUT */
+              /* PART 2 LAYOUT - 3 EQUAL-HEIGHT COLUMNS */
               <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-5">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                        <BookOpen size={16} className="text-blue-600" />
-                        <span>Candidate Card</span>
-                      </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch min-h-[380px]">
+                  {/* COLUMN 1: CANDIDATE CARD */}
+                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-5 h-full min-h-[380px]">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                          <BookOpen size={15} className="text-blue-600" />
+                          <span>Candidate Card</span>
+                        </h3>
+                        <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-extrabold">
+                          1-2 mins
+                        </span>
+                      </div>
+
+                      <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-2xl">
+                        <h2 className="text-sm sm:text-base font-extrabold text-blue-900 leading-snug">
+                          "{currentPrompt.question_text}"
+                        </h2>
+                      </div>
+
+                      <div className="space-y-2 text-xs font-medium text-slate-700">
+                        <p className="font-bold text-slate-800">You should say:</p>
+                        <ul className="space-y-1.5 pl-2">
+                          {currentPrompt.response_structure && currentPrompt.response_structure.length > 0 ? (
+                            currentPrompt.response_structure.map((item: any, i: number) => {
+                              const text = typeof item === 'string'
+                                ? item
+                                : (item.point || item.guide || item.section || item.text || JSON.stringify(item))
+                              const isLast = i === currentPrompt.response_structure.length - 1
+                              return (
+                                <li key={i} className={`flex items-start gap-1.5 ${isLast ? "font-bold text-slate-900" : ""}`}>
+                                  <span className="text-blue-600 font-bold">•</span>
+                                  <span>{text}</span>
+                                </li>
+                              )
+                            })
+                          ) : (
+                            <>
+                              <li className="flex items-start gap-1.5"><span className="text-blue-600 font-bold">•</span><span>What it is</span></li>
+                              <li className="flex items-start gap-1.5"><span className="text-blue-600 font-bold">•</span><span>When you read / experienced it</span></li>
+                              <li className="flex items-start gap-1.5"><span className="text-blue-600 font-bold">•</span><span>What it is about</span></li>
+                              <li className="flex items-start gap-1.5 font-bold text-slate-900"><span className="text-blue-600 font-bold">•</span><span>And explain why you liked it.</span></li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
                     </div>
 
-                    <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-2xl">
-                      <h2 className="text-base font-extrabold text-blue-900 leading-snug">
-                        "{currentPrompt.question_text}"
-                      </h2>
-                    </div>
-
-                    <div className="space-y-2 text-xs font-medium text-slate-700">
-                      <p className="font-bold text-slate-800">You should say:</p>
-                      <ul className="space-y-1.5 pl-2">
-                        {currentPrompt.response_structure && currentPrompt.response_structure.length > 0 ? (
-                          currentPrompt.response_structure.map((item: any, i: number) => {
-                            const text = typeof item === 'string'
-                              ? item
-                              : (item.point || item.guide || item.section || item.text || JSON.stringify(item))
-                            const isLast = i === currentPrompt.response_structure.length - 1
-                            return (
-                              <li key={i} className={isLast ? "font-bold text-slate-900" : ""}>
-                                • {text}
-                              </li>
-                            )
-                          })
-                        ) : (
-                          <>
-                            <li>• What it is</li>
-                            <li>• When you read / experienced it</li>
-                            <li>• What it is about</li>
-                            <li className="font-bold text-slate-900">• And explain why you liked it.</li>
-                          </>
-                        )}
-                      </ul>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 font-semibold">
+                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500 font-semibold shrink-0">
                       Note: You must speak for 1-2 minutes.
                     </div>
                   </div>
 
-                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col items-center justify-between space-y-6 text-center">
-                    <div className="w-full">
+                  {/* COLUMN 2: NOW SPEAKING & CONTROLS */}
+                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-6 text-center h-full min-h-[380px]">
+                    <div className="w-full shrink-0">
                       <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
                         PART 2 ACTIVE
                       </span>
                       <h3 className="text-lg font-extrabold text-slate-800 mt-2">Now Speaking</h3>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 w-full">
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                        <span className="text-[10px] font-bold text-slate-400 block uppercase">PREP TIME</span>
-                        <span className="text-xl font-black text-slate-800 font-mono">{formatTime(prepTime)}</span>
+                    <div className="grid grid-cols-2 gap-3 w-full shrink-0">
+                      <div className="p-3 bg-amber-50/70 rounded-2xl border border-amber-200/60">
+                        <span className="text-[10px] font-bold text-amber-700 block uppercase">PREP TIME</span>
+                        <span className="text-xl font-black text-amber-900 font-mono">{formatTime(prepTime)}</span>
                       </div>
-                      <div className="p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                      <div className="p-3 bg-blue-50/70 rounded-2xl border border-blue-200/60">
                         <span className="text-[10px] font-bold text-blue-600 block uppercase">SPEAKING</span>
                         <span className="text-xl font-black text-blue-700 font-mono">{formatTime(recordingTime)}</span>
                       </div>
                     </div>
 
-                    {renderRecordingControls()}
+                    <div className="my-auto flex flex-col items-center justify-center shrink-0">
+                      {renderRecordingControls()}
+                    </div>
                   </div>
 
-                  {/* Takenote Textarea */}
-                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  {/* COLUMN 3: NOTE-TAKING PAD (EQUAL HEIGHT, FLEX-1 TEXTAREA) */}
+                  <div className="lg:col-span-4 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-4 h-full min-h-[380px]">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                        <Edit3 size={14} className="text-blue-600" />
+                        <Edit3 size={15} className="text-blue-600" />
                         <span>Note-taking</span>
                       </h3>
                       <span
@@ -989,24 +999,30 @@ export const SpeakingPracticePage: React.FC = () => {
                             : "bg-rose-100 text-rose-700"
                           }`}
                       >
-                        {prepTime > 0 ? `Prep time: ${formatTime(prepTime)}` : "Hết thời gian - Đã khóa note"}
+                        {prepTime > 0 ? `Prep time: ${formatTime(prepTime)}` : "Đã khóa note"}
                       </span>
                     </div>
 
-                    <textarea
-                      value={candidateNotes}
-                      onChange={(e) => setCandidateNotes(e.target.value)}
-                      disabled={prepTime === 0}
-                      placeholder={
-                        prepTime > 0
-                          ? "Soạn ghi chú của bạn trong 60s chuẩn bị... (VD: Intro: 'The Alchemist', When: 2 months ago)"
-                          : "Hết thời gian chuẩn bị 60s. Không thể nhập thêm ghi chú."
-                      }
-                      className={`w-full h-48 p-3 border rounded-2xl text-xs font-medium resize-none transition ${prepTime === 0
-                          ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none opacity-80"
-                          : "bg-slate-50 text-slate-700 border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        }`}
-                    />
+                    <div className="flex-1 flex flex-col min-h-0 space-y-2">
+                      <textarea
+                        value={candidateNotes}
+                        onChange={(e) => setCandidateNotes(e.target.value)}
+                        disabled={prepTime === 0}
+                        placeholder={
+                          prepTime > 0
+                            ? "Soạn ghi chú của bạn trong 60s chuẩn bị...\n\n(VD: Intro: 'The Alchemist', When: 2 months ago)"
+                            : "Hết thời gian chuẩn bị 60s. Không thể nhập thêm ghi chú."
+                        }
+                        className={`w-full flex-1 h-full min-h-[260px] p-4 border rounded-2xl text-xs sm:text-sm font-medium leading-relaxed resize-none transition ${prepTime === 0
+                            ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed select-none opacity-80"
+                            : "bg-slate-50 text-slate-700 border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          }`}
+                      />
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold px-1 shrink-0">
+                        <span>{candidateNotes.trim() ? candidateNotes.trim().split(/\s+/).length : 0} từ</span>
+                        <span>{candidateNotes.length} ký tự</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1023,11 +1039,11 @@ export const SpeakingPracticePage: React.FC = () => {
             )}
 
             {currentPrompt.part === "PART_3" && (
-              /* PART 3 LAYOUT */
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-4 space-y-6">
-                  <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
-                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold">
+              /* PART 3 LAYOUT - 3 EQUAL-HEIGHT COLUMNS */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch min-h-[380px]">
+                <div className="lg:col-span-4 flex flex-col justify-between space-y-6 h-full min-h-[380px]">
+                  <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4 shrink-0">
+                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase">
                       Part 3 Prompt
                     </span>
                     <h2 className="text-base font-extrabold text-slate-900 leading-snug">
@@ -1035,7 +1051,7 @@ export const SpeakingPracticePage: React.FC = () => {
                     </h2>
                   </div>
 
-                  <div className="bg-emerald-50/70 border border-emerald-100 rounded-3xl p-5 shadow-xs space-y-2">
+                  <div className="bg-emerald-50/70 border border-emerald-100 rounded-3xl p-5 shadow-xs space-y-2 flex-1">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-2">
                       <Sparkles size={14} />
                       <span>Examiner Tip</span>
@@ -1046,12 +1062,12 @@ export const SpeakingPracticePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col justify-between space-y-6">
+                <div className="lg:col-span-5 bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side flex flex-col items-center justify-center text-center space-y-6 h-full min-h-[380px]">
                   {renderRecordingControls()}
                 </div>
 
-                <div className="lg:col-span-3 space-y-6">
-                  <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
+                <div className="lg:col-span-3 space-y-6 h-full min-h-[380px]">
+                  <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3 h-full min-h-[380px]">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                       <BookOpen size={14} className="text-blue-600" />
                       <span>Advanced Vocabulary</span>

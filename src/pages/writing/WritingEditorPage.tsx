@@ -4,6 +4,7 @@ import { AppLayout } from '../../components/common/AppLayout';
 import { writingApi } from '../../services/writingApi';
 import { useToast } from '../../components/common/Toast';
 import { getApiErrorMessage } from '../../utils/error';
+import { cleanHtmlToText } from '../../utils/text';
 import type {
   WritingPrompt,
   AIOutlineResponse,
@@ -154,9 +155,10 @@ export const WritingEditorPage: React.FC = () => {
         setWordCount(0);
         setTimeSpentSeconds(0);
       } else if (prompt.draft_content && !editorDivRef.current.innerText.trim()) {
-        editorDivRef.current.innerHTML = prompt.draft_content;
-        setEssayContent(prompt.draft_content);
-        const count = prompt.draft_content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+        const cleanedDraft = cleanHtmlToText(prompt.draft_content);
+        editorDivRef.current.innerText = cleanedDraft;
+        setEssayContent(cleanedDraft);
+        const count = cleanedDraft.trim() ? cleanedDraft.trim().split(/\s+/).filter(Boolean).length : 0;
         setWordCount(count);
         if (prompt.time_spent_seconds) {
           setTimeSpentSeconds(prompt.time_spent_seconds);
@@ -210,8 +212,9 @@ export const WritingEditorPage: React.FC = () => {
         const data = await writingApi.getPromptById(promptId);
         setPrompt(data);
         if (data.draft_content) {
-          setEssayContent(data.draft_content);
-          const words = data.draft_content.trim() ? data.draft_content.trim().split(/\s+/).length : 0;
+          const cleanedDraft = cleanHtmlToText(data.draft_content);
+          setEssayContent(cleanedDraft);
+          const words = cleanedDraft.trim() ? cleanedDraft.trim().split(/\s+/).filter(Boolean).length : 0;
           setWordCount(words);
         }
         if (data.time_spent_seconds) {
@@ -252,7 +255,8 @@ export const WritingEditorPage: React.FC = () => {
       return;
     }
 
-    setEssayContent(html);
+    const cleanText = cleanHtmlToText(html);
+    setEssayContent(cleanText);
     setWordCount(words.length);
     checkActiveFormats();
   };
@@ -528,14 +532,14 @@ export const WritingEditorPage: React.FC = () => {
       <div className="p-3 sm:p-6 max-w-[1600px] mx-auto font-['Be_Vietnam_Pro']">
 
         {/* 3-Column Layout Matching Screenshot 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
           {/* ================= LEFT COLUMN: Task Description & Reference Image (3 cols) ================= */}
-          <div className="lg:col-span-3 flex flex-col space-y-4">
+          <div className="lg:col-span-3 flex flex-col h-[720px]">
             {/* Task Description Box */}
-            <div className="bg-white rounded-3xl border border-slate-400/60 p-5 shadow-glow-4side flex-1 flex flex-col justify-between min-h-[220px]">
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="bg-white rounded-3xl border border-slate-400/60 p-5 shadow-glow-4side flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
                   <span className="text-[10px] font-black text-[#1D4ED8] bg-blue-50 px-2.5 py-1 rounded-lg uppercase tracking-wider border border-blue-100">
                     {prompt.task_type === 'WITH_GRAPH' ? 'IELTS Writing Task 1' : 'IELTS Writing Task 2'}
                   </span>
@@ -543,43 +547,43 @@ export const WritingEditorPage: React.FC = () => {
                     Task Description
                   </span>
                 </div>
-                <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug mb-3 tracking-tight">
+                <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug mb-3 tracking-tight shrink-0">
                   {prompt.title}
                 </h2>
                 <div
                   ref={taskDescContainerRef}
-                  className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-sm sm:text-base font-semibold text-slate-800 leading-relaxed font-['Be_Vietnam_Pro'] overflow-y-auto max-h-[500px]"
+                  className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-sm sm:text-base font-semibold text-slate-800 leading-relaxed font-['Be_Vietnam_Pro'] flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-3"
                 >
-                  &ldquo;<span dangerouslySetInnerHTML={{ __html: descriptionHtml }} />&rdquo;
+                  {/* Reference Image Box (For Chart / Graph Tasks ONLY) - Placed RIGHT ABOVE the task description text */}
+                  {prompt.task_type === 'WITH_GRAPH' && prompt.reference_image_url && (
+                    <div className="relative group rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs mb-3 cursor-pointer">
+                      <img
+                        src={prompt.reference_image_url}
+                        alt="Reference Chart"
+                        className="w-full h-44 sm:h-52 object-cover transition-transform duration-300 group-hover:scale-105"
+                        onClick={() => setImageModalOpen(true)}
+                      />
+                      <button
+                        onClick={() => setImageModalOpen(true)}
+                        className="absolute bottom-2.5 right-2.5 px-2.5 py-1 bg-slate-900/80 text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-md"
+                        title="Phóng to ảnh"
+                      >
+                        <Maximize2 size={12} />
+                        <span>Xem ảnh đề bài</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div>
+                    &ldquo;<span dangerouslySetInnerHTML={{ __html: descriptionHtml }} />&rdquo;
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Reference Image Box (For Chart / Graph Tasks ONLY) */}
-            {prompt.task_type === 'WITH_GRAPH' && prompt.reference_image_url && (
-              <div className="bg-white rounded-3xl border border-slate-400/60 p-4 shadow-glow-4side shrink-0">
-                <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer">
-                  <img
-                    src={prompt.reference_image_url}
-                    alt="Reference Chart"
-                    className="w-full h-48 sm:h-56 object-cover transition-transform duration-300 group-hover:scale-105"
-                    onClick={() => setImageModalOpen(true)}
-                  />
-                  <button
-                    onClick={() => setImageModalOpen(true)}
-                    className="absolute bottom-3 right-3 px-3 py-1.5 bg-slate-900/80 text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold shadow-md"
-                    title="Phóng to ảnh"
-                  >
-                    <Maximize2 size={14} />
-                    <span>Xem ảnh đề bài</span>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* ================= CENTER COLUMN: Editor & Writing Controls (5 cols) ================= */}
-          <div className={`flex flex-col space-y-4 justify-between transition-all duration-300 ${isAiAssistantOpen ? 'lg:col-span-5' : 'lg:col-span-9'}`}>
+          <div className={`flex flex-col space-y-4 h-[720px] transition-all duration-300 ${isAiAssistantOpen ? 'lg:col-span-5' : 'lg:col-span-9'}`}>
 
             {/* Header Toolbar: Back Button + Prompt Title + Timer + Analyze Button */}
             <div className="bg-white rounded-2xl border border-slate-400/60 p-3 sm:p-4 flex items-center justify-between gap-3 shadow-glow-4side shrink-0">
@@ -631,10 +635,10 @@ export const WritingEditorPage: React.FC = () => {
             </div>
 
             {/* Rich Text Editor Container */}
-            <div className="bg-white rounded-3xl border border-slate-400/60 shadow-glow-4side overflow-hidden flex flex-col flex-1 min-h-[580px]">
+            <div className="bg-white rounded-3xl border border-slate-400/60 shadow-glow-4side overflow-hidden flex flex-col flex-1 min-h-0">
 
               {/* Formatting Toolbar */}
-              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2 text-slate-600">
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2 text-slate-600 shrink-0">
                 <button
                   type="button"
                   className={`p-1.5 rounded-lg font-extrabold cursor-pointer transition-colors ${activeFormats.bold ? "bg-blue-100 text-[#1D4ED8] ring-1 ring-blue-300" : "hover:bg-slate-200 hover:text-slate-900"}`}
@@ -685,7 +689,7 @@ export const WritingEditorPage: React.FC = () => {
                 onInput={() => { handleEditorInput(); checkActiveFormats(); }}
                 onMouseUp={checkActiveFormats}
                 onKeyUp={checkActiveFormats}
-                className="w-full flex-1 p-5 text-sm sm:text-base text-slate-800 outline-none leading-relaxed font-['Be_Vietnam_Pro'] min-h-[460px] overflow-y-auto cursor-text select-text [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2 [&_li]:my-1"
+                className="w-full flex-1 p-5 text-sm sm:text-base text-slate-800 outline-none leading-relaxed font-['Be_Vietnam_Pro'] min-h-0 overflow-y-auto custom-scrollbar cursor-text select-text [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2 [&_li]:my-1"
               />
 
               {/* Footer Status Bar: Word Count & Save Draft */}
@@ -718,8 +722,8 @@ export const WritingEditorPage: React.FC = () => {
 
           {/* ================= RIGHT COLUMN: Writing Assistant Chat Drawer ================= */}
           {isAiAssistantOpen && (
-            <div className="lg:col-span-4 flex flex-col">
-              <div className="bg-white rounded-3xl border border-slate-400/60 shadow-glow-4side flex flex-col h-full min-h-[660px] overflow-hidden">
+            <div className="lg:col-span-4 flex flex-col h-[720px]">
+              <div className="bg-white rounded-3xl border border-slate-400/60 shadow-glow-4side flex flex-col h-full overflow-hidden">
                 <div className="px-4 py-3 bg-[#1D4ED8] text-white flex items-center justify-between shadow-xs shrink-0">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
@@ -736,7 +740,7 @@ export const WritingEditorPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div ref={chatScrollRef} className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/60">
+                <div ref={chatScrollRef} className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar space-y-4 bg-slate-50/60">
                   {chatMessages.map((msg) => (
                     <div
                       key={msg.id}
@@ -868,7 +872,7 @@ export const WritingEditorPage: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-slate-500">Độ khó:</span>
                     <select

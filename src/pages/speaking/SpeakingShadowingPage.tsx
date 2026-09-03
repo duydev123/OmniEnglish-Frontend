@@ -312,7 +312,8 @@ export const SpeakingShadowingPage: React.FC = () => {
     const parseInline = (str: string) => {
       const parts: React.ReactNode[] = []
       let lastIndex = 0
-      const regex = /(\*\*(.*?)\*\*|`(.*?)`|\/([^\/\s]+)\/)/g
+      // Match **bold**, *emphasis/word*, `code`, /IPA/
+      const regex = /(\*\*(.*?)\*\*|\*(.*?)\*|`(.*?)`|\/([^\/\n]{1,30})\/)/g
       let match: RegExpExecArray | null
 
       while ((match = regex.exec(str)) !== null) {
@@ -328,17 +329,24 @@ export const SpeakingShadowingPage: React.FC = () => {
             </strong>
           )
         } else if (match[3] !== undefined) {
-          // `code`
+          // *emphasis / highlighted word*
           parts.push(
-            <code key={match.index} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-mono font-bold rounded text-[11px]">
+            <span key={match.index} className="font-extrabold text-[#1e50e6] bg-blue-50/90 px-1.5 py-0.5 rounded-md text-[11px] border border-blue-100/80">
               {match[3]}
-            </code>
+            </span>
           )
         } else if (match[4] !== undefined) {
+          // `code`
+          parts.push(
+            <code key={match.index} className="px-1.5 py-0.5 bg-slate-100 text-slate-800 font-mono font-bold rounded text-[11px]">
+              {match[4]}
+            </code>
+          )
+        } else if (match[5] !== undefined) {
           // /IPA/
           parts.push(
-            <span key={match.index} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-mono font-bold rounded text-xs border border-blue-100/80">
-              /{match[4]}/
+            <span key={match.index} className="px-1.5 py-0.5 bg-emerald-50 text-emerald-800 font-mono font-bold rounded-md text-xs border border-emerald-200/80 inline-flex items-center gap-1">
+              /{match[5]}/
             </span>
           )
         }
@@ -361,52 +369,77 @@ export const SpeakingShadowingPage: React.FC = () => {
         return
       }
 
-      if (trimmed === "---") {
+      if (trimmed === "---" || trimmed === "***") {
         flushList()
         elements.push(<hr key={index} className="my-3.5 border-slate-200" />)
         return
       }
 
-      if (trimmed.startsWith("### ")) {
+      // Blockquotes starting with >
+      if (trimmed.startsWith(">")) {
         flushList()
+        const content = trimmed.replace(/^>\s*/, "")
         elements.push(
-          <div key={index} className="mt-4 mb-2 pb-1 border-b border-blue-100 flex items-center gap-2">
-            <span className="w-2 h-4 bg-[#1e50e6] rounded-full shrink-0" />
-            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wide">
-              {parseInline(trimmed.replace(/^###\s+/, ""))}
-            </h3>
+          <div key={index} className="my-1.5 p-2.5 bg-blue-50/80 border-l-3 border-[#1e50e6] rounded-r-xl text-xs text-slate-800 font-medium leading-relaxed shadow-2xs">
+            {parseInline(content)}
           </div>
         )
         return
       }
 
-      if (trimmed.startsWith("#### ")) {
+      // Headers #, ##, ###, ####
+      if (/^#{1,4}\s+/.test(trimmed)) {
         flushList()
+        const content = trimmed.replace(/^#{1,4}\s+/, "")
         elements.push(
-          <div key={index} className="mt-3 mb-1.5 p-2.5 bg-blue-50/80 border border-blue-100 rounded-xl font-extrabold text-xs text-blue-900 flex items-center justify-between shadow-2xs">
-            <span>{parseInline(trimmed.replace(/^####\s+/, ""))}</span>
+          <div key={index} className="mt-3 mb-1.5 pb-1 border-b border-blue-100 flex items-center gap-2">
+            <span className="w-2 h-3.5 bg-[#1e50e6] rounded-full shrink-0" />
+            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide">
+              {parseInline(content)}
+            </h4>
           </div>
         )
         return
       }
 
-      if (trimmed.startsWith("* ") || trimmed.startsWith("- ") || /^\d+\.\s+/.test(trimmed)) {
-        const content = trimmed.replace(/^(\*|-|\d+\.)\s+/, "")
+      // Numbered section headers (e.g. 1. TỪ: "EVERYONE'S"...)
+      if (/^\d+\.\s+/.test(trimmed)) {
+        flushList()
+        const numMatch = trimmed.match(/^(\d+)\.\s*(.*)/)
+        const num = numMatch ? numMatch[1] : "1"
+        const content = numMatch ? numMatch[2] : trimmed
+
+        elements.push(
+          <div key={index} className="mt-3 mb-1.5 p-2.5 bg-white border border-blue-200/90 rounded-xl font-bold text-xs text-blue-950 flex items-start gap-2.5 shadow-2xs">
+            <span className="w-5 h-5 rounded-full bg-[#1e50e6] text-white font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+              {num}
+            </span>
+            <div className="flex-1 leading-snug">{parseInline(content)}</div>
+          </div>
+        )
+        return
+      }
+
+      // Bullet lists (* or -)
+      if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+        const content = trimmed.replace(/^(\*|-)\s+/, "")
         listBuffer.push(
           <li key={index} className="text-xs text-slate-700 font-medium leading-relaxed flex items-start gap-2">
             <span className="text-[#1e50e6] font-extrabold shrink-0 mt-0.5">•</span>
-            <div>{parseInline(content)}</div>
+            <div className="flex-1">{parseInline(content)}</div>
           </li>
         )
         return
       }
 
-      if (trimmed.startsWith("*Mẹo nhỏ:*") || trimmed.startsWith("Mẹo nhỏ:") || trimmed.startsWith("_Mẹo nhỏ:_")) {
+      // Tips & Callouts
+      if (trimmed.startsWith("*Mẹo nhỏ:*") || trimmed.startsWith("Mẹo nhỏ:") || trimmed.startsWith("_Mẹo nhỏ:_") || trimmed.startsWith("💡")) {
         flushList()
+        const content = trimmed.replace(/^(💡|\*Mẹo nhỏ:\*|Mẹo nhỏ:|_Mẹo nhỏ:_)\s*/, "")
         elements.push(
           <div key={index} className="mt-3 p-3 bg-amber-50/90 border border-amber-200/90 rounded-xl text-xs text-amber-950 font-medium leading-relaxed flex items-start gap-2">
             <span className="text-amber-600 font-bold shrink-0 mt-0.5">💡</span>
-            <div>{parseInline(trimmed)}</div>
+            <div className="flex-1">{parseInline(content)}</div>
           </div>
         )
         return
@@ -447,7 +480,7 @@ export const SpeakingShadowingPage: React.FC = () => {
         { label: "Shadowing" }
       ]}
     >
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      <div className="p-3 sm:p-5 max-w-7xl mx-auto space-y-4">
         {/* EVALUATION ERROR BANNER */}
         {evaluationError && (
           <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 flex items-center justify-between gap-4 animate-in fade-in">
@@ -487,11 +520,11 @@ export const SpeakingShadowingPage: React.FC = () => {
         </div>
 
         {/* Main 2-Column Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
           {/* Left Column (Sentence Card, Recorded Audio Player, Transcript) */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-8 space-y-4">
             {/* Main Shadowing Sentence Card */}
-            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 sm:p-8 shadow-glow-4side space-y-6 flex flex-col justify-between min-h-[420px]">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-5 sm:p-6 shadow-glow-4side space-y-4 flex flex-col justify-between min-h-[350px]">
               {/* Card Top Action Row */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -705,7 +738,7 @@ export const SpeakingShadowingPage: React.FC = () => {
 
             {/* Recorded User Audio Player Card */}
             {userAudioUrl && (
-              <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
+              <div className="bg-white border border-slate-400/60 rounded-3xl p-4 sm:p-5 shadow-glow-4side space-y-2.5">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
                     <Music size={16} className="text-blue-600" />
@@ -760,9 +793,9 @@ export const SpeakingShadowingPage: React.FC = () => {
           </div>
 
           {/* Right Column (Analysis, AI Tips, History) */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-4 space-y-4">
             {/* Real-time Analysis Scores */}
-            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-5">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-4 sm:p-5 shadow-glow-4side space-y-3.5">
               <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">
                 Shadowing Scores (Kết quả chấm điểm)
               </h3>
@@ -803,13 +836,13 @@ export const SpeakingShadowingPage: React.FC = () => {
             </div>
 
             {/* ENGLISH AI TIPS */}
-            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-4 sm:p-5 shadow-glow-4side space-y-3">
               <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                 <Sparkles size={14} className="text-blue-600" />
                 <span>AI PHÂN TÍCH LỖI (AI TIPS)</span>
               </h3>
 
-              <div className="p-4 bg-blue-50/70 border border-blue-100/80 rounded-2xl space-y-2">
+              <div className="p-4 bg-blue-50/70 border border-blue-100/80 rounded-2xl space-y-2 max-h-[250px] sm:max-h-[280px] overflow-y-auto custom-scrollbar pr-2">
                 {evaluation ? (
                   (() => {
                     const wordsList = evaluation.words_detail || []
