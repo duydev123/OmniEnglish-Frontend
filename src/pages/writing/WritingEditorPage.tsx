@@ -26,9 +26,6 @@ import {
   BookOpen,
   FileText,
   Loader2,
-  Trash2,
-  Pencil,
-  Plus,
   User,
   Copy,
   ArrowLeft,
@@ -76,13 +73,7 @@ export const WritingEditorPage: React.FC = () => {
 
   const editorDivRef = useRef<HTMLDivElement>(null);
 
-  // Selection Highlight Toolbar states
-  const [showToolbar, setShowToolbar] = useState<boolean>(false);
-  const [toolbarPos, setToolbarPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const [noteInputOpen, setNoteInputOpen] = useState<boolean>(false);
-  const [noteText, setNoteText] = useState<string>('');
   const [descriptionHtml, setDescriptionHtml] = useState<string>('');
-  const [isSelectionInEditor, setIsSelectionInEditor] = useState<boolean>(false);
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState<boolean>(true);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'advanced'>('medium');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -197,135 +188,7 @@ export const WritingEditorPage: React.FC = () => {
   };
 
 
-  // Handle text selection change — works in both task description and the editor
-  const handleSelectionChange = () => {
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
-      setShowToolbar(false);
-      setNoteInputOpen(false);
-      return;
-    }
 
-    const range = selection.getRangeAt(0);
-    const inTaskDesc = taskDescContainerRef.current?.contains(range.commonAncestorContainer);
-    const inEditor = editorDivRef.current?.contains(range.commonAncestorContainer);
-
-    if (!inTaskDesc && !inEditor) {
-      setShowToolbar(false);
-      setNoteInputOpen(false);
-      return;
-    }
-
-    if (selection.toString().trim() === '') {
-      setShowToolbar(false);
-      setNoteInputOpen(false);
-      return;
-    }
-
-    setIsSelectionInEditor(!!inEditor);
-
-    const rect = range.getBoundingClientRect();
-    setToolbarPos({
-      top: rect.top - 44,
-      left: rect.left + rect.width / 2,
-    });
-    setShowToolbar(true);
-  };
-
-  // Close toolbar when clicking outside
-  useEffect(() => {
-    const handleDocumentClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        taskDescContainerRef.current?.contains(target) ||
-        editorDivRef.current?.contains(target) ||
-        target.closest('.highlight-toolbar-container')
-      ) {
-        return;
-      }
-      setShowToolbar(false);
-      setNoteInputOpen(false);
-    };
-
-    document.addEventListener('mousedown', handleDocumentClick);
-    return () => {
-      document.removeEventListener('mousedown', handleDocumentClick);
-    };
-  }, []);
-
-  // Apply highlight / strikethrough / note or clear
-
-  const applyAnnotation = (type: 'highlight' | 'strikethrough' | 'clear' | 'note', color?: string, noteValue?: string) => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
-
-    // For the contentEditable editor — use native execCommand
-    if (isSelectionInEditor && editorDivRef.current?.contains(range.commonAncestorContainer)) {
-      if (type === 'highlight') {
-        document.execCommand('hiliteColor', false, color || '#fef08a');
-      } else if (type === 'strikethrough') {
-        document.execCommand('strikeThrough', false);
-      } else if (type === 'clear') {
-        document.execCommand('removeFormat', false);
-      }
-      setShowToolbar(false);
-      return;
-    }
-
-    // For task description — DOM-based annotation
-    if (!taskDescContainerRef.current || !taskDescContainerRef.current.contains(range.commonAncestorContainer)) {
-      return;
-    }
-
-    if (type === 'clear') {
-      const spans = taskDescContainerRef.current.querySelectorAll('span[data-annotation]');
-      spans.forEach((span) => {
-        if (range.intersectsNode(span)) {
-          const parent = span.parentNode;
-          if (parent) {
-            while (span.firstChild) parent.insertBefore(span.firstChild, span);
-            parent.removeChild(span);
-          }
-        }
-      });
-      taskDescContainerRef.current.normalize();
-      selection.removeAllRanges();
-      setShowToolbar(false);
-      return;
-    }
-
-    const span = document.createElement('span');
-    span.setAttribute('data-annotation', 'true');
-
-    if (type === 'highlight') {
-      span.style.backgroundColor = color || '#fef08a';
-      span.className = 'px-0.5 rounded';
-    } else if (type === 'strikethrough') {
-      span.style.textDecoration = 'line-through';
-      span.style.textDecorationColor = '#ef4444';
-      span.style.textDecorationThickness = '2px';
-      span.style.color = 'inherit';
-      span.className = 'px-0.5';
-    } else if (type === 'note' && noteValue) {
-      span.setAttribute('data-note', noteValue);
-      span.title = noteValue;
-      span.className = 'border-b-2 border-dashed border-indigo-500 bg-indigo-50/50 cursor-help px-0.5 rounded';
-    }
-
-    try {
-      const clonedContents = range.extractContents();
-      span.appendChild(clonedContents);
-      range.insertNode(span);
-    } catch (err) {
-      console.error('Failed to apply annotation:', err);
-    }
-
-    selection.removeAllRanges();
-    setShowToolbar(false);
-    setNoteInputOpen(false);
-    setNoteText('');
-  };
 
   // Timer Effect
   useEffect(() => {
@@ -685,8 +548,6 @@ export const WritingEditorPage: React.FC = () => {
                 </h2>
                 <div
                   ref={taskDescContainerRef}
-                  onMouseUp={handleSelectionChange}
-                  onKeyUp={handleSelectionChange}
                   className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-sm sm:text-base font-semibold text-slate-800 leading-relaxed font-['Be_Vietnam_Pro'] overflow-y-auto max-h-[500px]"
                 >
                   &ldquo;<span dangerouslySetInnerHTML={{ __html: descriptionHtml }} />&rdquo;
@@ -822,8 +683,8 @@ export const WritingEditorPage: React.FC = () => {
                 ref={editorDivRef}
                 contentEditable
                 onInput={() => { handleEditorInput(); checkActiveFormats(); }}
-                onMouseUp={() => { handleSelectionChange(); checkActiveFormats(); }}
-                onKeyUp={() => { handleSelectionChange(); checkActiveFormats(); }}
+                onMouseUp={checkActiveFormats}
+                onKeyUp={checkActiveFormats}
                 className="w-full flex-1 p-5 text-sm sm:text-base text-slate-800 outline-none leading-relaxed font-['Be_Vietnam_Pro'] min-h-[460px] overflow-y-auto cursor-text select-text [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2 [&_li]:my-1"
               />
 
@@ -1205,100 +1066,7 @@ export const WritingEditorPage: React.FC = () => {
         </div>
       )}
 
-      {/* Floating Highlight / Annotation Toolbar */}
-      {showToolbar && (
-        <div
-          className="highlight-toolbar-container fixed z-50 flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg shadow-lg border border-slate-700/80 -translate-x-1/2 select-none"
-          style={{
-            top: `${toolbarPos.top}px`,
-            left: `${toolbarPos.left}px`,
-          }}
-          onMouseDown={(e) => {
-            if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault();
-          }}
-        >
-          {!noteInputOpen ? (
-            <>
-              {/* Trash/Clear */}
-              <button
-                onClick={() => applyAnnotation('clear')}
-                className="p-1 hover:bg-slate-700 rounded-md text-slate-300 hover:text-red-400 transition cursor-pointer"
-                title="Xóa highlight"
-              >
-                <Trash2 size={13} />
-              </button>
 
-              {/* Pencil (note) — only for task description */}
-              {!isSelectionInEditor && (
-                <button
-                  onClick={() => setNoteInputOpen(true)}
-                  className="p-1 hover:bg-slate-700 rounded-md text-slate-300 hover:text-white transition cursor-pointer"
-                  title="Thêm ghi chú"
-                >
-                  <Pencil size={13} />
-                </button>
-              )}
-
-              <div className="h-3.5 w-[1px] bg-slate-600 mx-0.5" />
-
-              {/* Color dots */}
-              <button onClick={() => applyAnnotation('highlight', '#bae6fd')} className="w-3.5 h-3.5 rounded-full bg-[#bae6fd] border border-white/20 hover:scale-110 transition cursor-pointer" title="Xanh dương" />
-              <button onClick={() => applyAnnotation('highlight', '#fbcfe8')} className="w-3.5 h-3.5 rounded-full bg-[#fbcfe8] border border-white/20 hover:scale-110 transition cursor-pointer" title="Hồng" />
-              <button onClick={() => applyAnnotation('highlight', '#bbf7d0')} className="w-3.5 h-3.5 rounded-full bg-[#bbf7d0] border border-white/20 hover:scale-110 transition cursor-pointer" title="Xanh lá" />
-              <button onClick={() => applyAnnotation('highlight', '#fef08a')} className="w-3.5 h-3.5 rounded-full bg-[#fef08a] border border-white/20 hover:scale-110 transition cursor-pointer" title="Vàng" />
-
-              <div className="h-3.5 w-[1px] bg-slate-600 mx-0.5" />
-
-              {/* Strikethrough */}
-              <button
-                onClick={() => applyAnnotation('strikethrough')}
-                className="px-1.5 py-0.5 hover:bg-slate-700 rounded-md text-[10px] font-bold text-slate-100 line-through decoration-red-500 decoration-2 cursor-pointer transition"
-                title="Gạch giữa chữ"
-              >
-                abc
-              </button>
-
-              {/* Plus (note) — only for task description */}
-              {!isSelectionInEditor && (
-                <button
-                  onClick={() => setNoteInputOpen(true)}
-                  className="p-1 hover:bg-slate-700 rounded-md text-slate-300 hover:text-white transition cursor-pointer"
-                  title="Thêm ghi chú nhanh"
-                >
-                  <Plus size={13} />
-                </button>
-              )}
-            </>
-          ) : (
-            <div className="flex items-center gap-1 p-0.5">
-              <input
-                type="text"
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Ghi chú..."
-                className="bg-slate-700 text-white text-[11px] px-1.5 py-0.5 rounded border border-slate-600 outline-none w-28"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') applyAnnotation('note', undefined, noteText);
-                  else if (e.key === 'Escape') setNoteInputOpen(false);
-                }}
-              />
-              <button
-                onClick={() => applyAnnotation('note', undefined, noteText)}
-                className="bg-[#1D4ED8] hover:bg-blue-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded transition cursor-pointer"
-              >
-                Lưu
-              </button>
-              <button
-                onClick={() => setNoteInputOpen(false)}
-                className="bg-slate-600 text-slate-300 text-[9px] font-black px-1.5 py-0.5 rounded transition cursor-pointer"
-              >
-                Hủy
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Exit Confirmation Modal */}
       {showExitModal && (

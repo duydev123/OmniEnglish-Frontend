@@ -1269,7 +1269,7 @@ export const SpeakingPracticePage: React.FC = () => {
               </div>
 
               {/* RIGHT COLUMN: AI INSIGHTS & DETAILED CRITERIA CARDS */}
-              <div className="lg:col-span-5 space-y-6">
+              <div className="lg:col-span-5 space-y-6 lg:max-h-[calc(100vh-180px)] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
                 {(() => {
                   const fb = parseSpeakingFeedback(activeResult.realtime_feedback)
 
@@ -1297,7 +1297,7 @@ export const SpeakingPracticePage: React.FC = () => {
                             <h3 className="text-sm font-extrabold text-slate-800">1. Phát âm (Pronunciation)</h3>
                           </div>
                           <span className="text-sm font-black text-blue-600">
-                            {activeResult.pronunciation_score ?? 0}/10
+                            {activeResult.pronunciation_score ?? 0}/9
                           </span>
                         </div>
 
@@ -1353,7 +1353,7 @@ export const SpeakingPracticePage: React.FC = () => {
                             <h3 className="text-sm font-extrabold text-slate-800">2. Ngữ pháp (Grammar)</h3>
                           </div>
                           <span className="text-sm font-black text-amber-600">
-                            {activeResult.grammar_score ?? 0}/10
+                            {activeResult.grammar_score ?? 0}/9
                           </span>
                         </div>
 
@@ -1381,7 +1381,7 @@ export const SpeakingPracticePage: React.FC = () => {
                             <h3 className="text-sm font-extrabold text-slate-800">3. Trôi chảy &amp; Mạch lạc (Fluency &amp; Coherence)</h3>
                           </div>
                           <span className="text-sm font-black text-emerald-600">
-                            {activeResult.fluency_score ?? 0}/10
+                            {activeResult.fluency_score ?? 0}/9
                           </span>
                         </div>
 
@@ -1422,7 +1422,7 @@ export const SpeakingPracticePage: React.FC = () => {
                             <h3 className="text-sm font-extrabold text-slate-800">4. Từ vựng (Lexical Resource)</h3>
                           </div>
                           <span className="text-sm font-black text-indigo-600">
-                            {activeResult.lexical_score ?? 0}/10
+                            {activeResult.lexical_score ?? 0}/9
                           </span>
                         </div>
 

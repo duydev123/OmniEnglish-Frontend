@@ -109,28 +109,28 @@ export const FlashcardModal: React.FC<FlashcardModalProps> = ({
 
     if (currentIndex < words.length - 1) {
       setIsFlipped(startWithDefinition)
-      setTimeout(() => setCurrentIndex(prev => prev + 1), 200)
+      setTimeout(() => setCurrentIndex(prev => prev + 1), 350)
     } else {
       setEndTime(Date.now())
       setIsFinished(true)
     }
   }, [currentIndex, words, collection, startWithDefinition, showToast])
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
       setIsFlipped(startWithDefinition)
       setCurrentIndex(prev => prev - 1)
     }
-  }
+  }, [currentIndex, startWithDefinition])
 
-  const handleNextOnly = () => {
+  const handleNextOnly = useCallback(() => {
     if (currentIndex < words.length - 1) {
       setIsFlipped(startWithDefinition)
       setCurrentIndex(prev => prev + 1)
     } else {
       setIsFinished(true)
     }
-  }
+  }, [currentIndex, words.length, startWithDefinition])
 
   const handleFinish = () => {
     const timeSpent = Math.floor((Date.now() - startTime) / 1000)
