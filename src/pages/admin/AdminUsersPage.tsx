@@ -14,6 +14,7 @@ import {
 import { AppLayout } from '../../components/common/AppLayout';
 import { useToast } from '../../components/common/Toast';
 import { adminApi } from '../../services/adminApi';
+import { useUserStore } from '../../stores/user/useUserStore';
 
 export interface UserRow {
   id: string;
@@ -32,6 +33,7 @@ export const AdminUsersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const { showToast } = useToast();
+  const { user: currentUser, setUser: setCurrentUser } = useUserStore();
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,11 +98,23 @@ export const AdminUsersPage: React.FC = () => {
         proficiency_level: editingUser.proficiency_level,
         status: editingUser.status,
       });
-      setUsers(prev => prev.map(u => (u.id === editingUser.id ? updated : u)));
-      showToast(`Đã cập nhật tài khoản "${updated.username}" thành công!`, 'success');
+      setUsers(prev => prev.map(u => (u.id === editingUser.id ? (updated.id ? updated : { ...editingUser, ...updated }) : u)));
+      
+      // If updating currently logged in user, update local store state
+      if (currentUser && (currentUser.id === editingUser.id || currentUser.email === editingUser.email)) {
+        setCurrentUser({
+          ...currentUser,
+          role: editingUser.role === 'Admin' ? 'admin' : 'user',
+          username: editingUser.username,
+          email: editingUser.email,
+        });
+      }
+
+      showToast(`✅ Đã cập nhật tài khoản "${editingUser.username}" sang vai trò ${editingUser.role}!`, 'success');
+      fetchUsers();
     } catch (err: any) {
-      setUsers(prev => prev.map(u => (u.id === editingUser.id ? editingUser : u)));
-      showToast(`Đã lưu thay đổi cho "${editingUser.username}"!`, 'info');
+      console.error('Update user error:', err);
+      showToast(`Lỗi khi cập nhật tài khoản: ${err?.response?.data?.detail || err.message}`, 'error');
     } finally {
       setEditingUser(null);
     }
@@ -113,59 +127,146 @@ export const AdminUsersPage: React.FC = () => {
     const nextStatus = target.status === 'Active' ? 'Suspended' : 'Active';
     try {
       const updated = await adminApi.updateUser(id, { status: nextStatus });
-      setUsers(prev => prev.map(u => (u.id === id ? updated : u)));
-      showToast(`Đã chuyển trạng thái tài khoản "${target.username}" sang ${nextStatus}!`, 'info');
-    } catch (err) {
-      setUsers(prev =>
-        prev.map(u => (u.id === id ? { ...u, status: nextStatus } : u))
-      );
-      showToast(`Đã chuyển trạng thái sang ${nextStatus}!`, 'info');
+      setUsers(prev => prev.map(u => (u.id === id ? (updated.id ? updated : { ...u, status: nextStatus }) : u)));
+      showToast(`🔒 Đã chuyển trạng thái tài khoản "${target.username}" sang ${nextStatus}!`, 'success');
+      fetchUsers();
+    } catch (err: any) {
+      console.error('Toggle status error:', err);
+      showToast(`Lỗi khi chuyển trạng thái: ${err?.response?.data?.detail || err.message}`, 'error');
     }
   };
 
   // Delete User
   const handleDeleteUser = async (id: string) => {
     const target = users.find(u => u.id === id);
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản "${target?.username || id}" khỏi CSDL MongoDB không?`)) {
+      return;
+    }
     try {
       await adminApi.deleteUser(id);
       setUsers(prev => prev.filter(u => u.id !== id));
-      showToast(`Đã xóa tài khoản "${target?.username || ''}" khỏi MongoDB!`, 'warning');
-    } catch (err) {
-      setUsers(prev => prev.filter(u => u.id !== id));
-      showToast('Đã xóa tài khoản khỏi danh sách!', 'warning');
+      showToast(`🗑️ Đã xóa vĩnh viễn tài khoản "${target?.username || ''}" khỏi MongoDB!`, 'warning');
+      fetchUsers();
+    } catch (err: any) {
+      console.error('Delete user error:', err);
+      showToast(`Lỗi khi xóa tài khoản: ${err?.response?.data?.detail || err.message}`, 'error');
     } finally {
       setEditingUser(null);
+    }
+  };
+
+  // Bulk Delete
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn ${selectedIds.length} tài khoản đã chọn khỏi MongoDB không?`)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await Promise.all(selectedIds.map(id => adminApi.deleteUser(id)));
+      showToast(`🗑️ Đã xóa thành công ${selectedIds.length} tài khoản khỏi MongoDB!`, 'success');
+      setSelectedIds([]);
+      fetchUsers();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      showToast('Lỗi khi xóa hàng loạt tài khoản!', 'error');
+      fetchUsers();
+    }
+  };
+
+  // Bulk Status Change
+  const handleBulkStatusChange = async (nextStatus: 'Active' | 'Suspended') => {
+    if (selectedIds.length === 0) return;
+    const actionName = nextStatus === 'Active' ? 'mở khóa' : 'tạm khóa';
+    if (!window.confirm(`Bạn có chắc chắn muốn ${actionName} ${selectedIds.length} tài khoản đã chọn không?`)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await Promise.all(selectedIds.map(id => adminApi.updateUser(id, { status: nextStatus })));
+      showToast(`🔒 Đã ${actionName} thành công ${selectedIds.length} tài khoản!`, 'success');
+      setSelectedIds([]);
+      fetchUsers();
+    } catch (err: any) {
+      console.error('Bulk status change error:', err);
+      showToast(`Lỗi khi ${actionName} hàng loạt tài khoản!`, 'error');
+      fetchUsers();
     }
   };
 
   const totalUsersCount = users.length;
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'Admin' }, { label: 'Users' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Quản trị' }, { label: 'Quản lý người dùng' }]}>
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 select-none font-['Be_Vietnam_Pro'] max-w-7xl mx-auto">
         {/* Header Row: Title */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            User Management
+            Quản Lý Người Dùng
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Organize students and administrative staff across the platform.
+            Quản lý danh sách học viên và ban quản trị trên hệ thống.
           </p>
         </div>
 
+        {/* Bulk Actions Toolbar Banner */}
+        {selectedIds.length > 0 && (
+          <div className="bg-white border border-blue-200/80 rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-slate-800">
+              <span className="bg-[#1D4ED8] text-white px-2.5 py-0.5 rounded-full text-xs font-black">
+                {selectedIds.length}
+              </span>
+              <span>người dùng đã được chọn</span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => handleBulkStatusChange('Active')}
+                className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <Unlock size={14} />
+                <span>Mở khóa hàng loạt</span>
+              </button>
+
+              <button
+                onClick={() => handleBulkStatusChange('Suspended')}
+                className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <Lock size={14} />
+                <span>Khóa hàng loạt</span>
+              </button>
+
+              <button
+                onClick={handleBulkDelete}
+                className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <Trash2 size={14} />
+                <span>Xóa hàng loạt</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedIds([])}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Bỏ chọn
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Filter Bar Box */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+        <div className="bg-white border border-slate-400/60 rounded-2xl p-4 sm:p-5 shadow-glow-4side hover:shadow-glow-4side-lg transition-all duration-300">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search Input */}
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
-                Search
+                Tìm kiếm
               </label>
               <div className="relative flex items-center">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Name or email..."
+                  placeholder="Tên hoặc email..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full bg-slate-50/60 hover:bg-slate-100 focus:bg-white text-slate-800 text-xs sm:text-sm pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all font-medium"
@@ -176,7 +277,7 @@ export const AdminUsersPage: React.FC = () => {
             {/* Role Filter */}
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
-                Role
+                Vai trò
               </label>
               <div className="relative">
                 <select
@@ -184,9 +285,9 @@ export const AdminUsersPage: React.FC = () => {
                   onChange={e => setSelectedRole(e.target.value as any)}
                   className="w-full appearance-none bg-slate-50/60 hover:bg-slate-100 focus:bg-white text-slate-800 text-xs sm:text-sm px-3.5 py-2.5 pr-8 rounded-xl border border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all font-medium cursor-pointer"
                 >
-                  <option value="All Roles">All Roles</option>
-                  <option value="Student">Student</option>
-                  <option value="Admin">Admin</option>
+                  <option value="All Roles">Tất cả vai trò</option>
+                  <option value="Student">Học viên</option>
+                  <option value="Admin">Quản trị viên</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
               </div>
@@ -195,7 +296,7 @@ export const AdminUsersPage: React.FC = () => {
             {/* Status Filter */}
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
-                Status
+                Trạng thái
               </label>
               <div className="relative">
                 <select
@@ -203,9 +304,9 @@ export const AdminUsersPage: React.FC = () => {
                   onChange={e => setSelectedStatus(e.target.value as any)}
                   className="w-full appearance-none bg-slate-50/60 hover:bg-slate-100 focus:bg-white text-slate-800 text-xs sm:text-sm px-3.5 py-2.5 pr-8 rounded-xl border border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all font-medium cursor-pointer"
                 >
-                  <option value="All Statuses">All Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Suspended">Suspended</option>
+                  <option value="All Statuses">Tất cả trạng thái</option>
+                  <option value="Active">Hoạt động</option>
+                  <option value="Suspended">Tạm khóa</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
               </div>
@@ -214,7 +315,7 @@ export const AdminUsersPage: React.FC = () => {
             {/* Proficiency Filter */}
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
-                Proficiency
+                Trình độ tiếng Anh
               </label>
               <div className="relative">
                 <select
@@ -222,13 +323,13 @@ export const AdminUsersPage: React.FC = () => {
                   onChange={e => setSelectedProficiency(e.target.value)}
                   className="w-full appearance-none bg-slate-50/60 hover:bg-slate-100 focus:bg-white text-slate-800 text-xs sm:text-sm px-3.5 py-2.5 pr-8 rounded-xl border border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all font-medium cursor-pointer"
                 >
-                  <option value="All Levels">All Levels</option>
-                  <option value="A1">A1 Beginner</option>
-                  <option value="A2">A2 Elementary</option>
-                  <option value="B1">B1 Intermediate</option>
-                  <option value="B2">B2 Upper Int.</option>
-                  <option value="C1">C1 Advanced</option>
-                  <option value="C2">C2 Mastery</option>
+                  <option value="All Levels">Tất cả trình độ</option>
+                  <option value="A1">A1 - Sơ cấp</option>
+                  <option value="A2">A2 - Cơ bản</option>
+                  <option value="B1">B1 - Trung cấp</option>
+                  <option value="B2">B2 - Trung cao cấp</option>
+                  <option value="C1">C1 - Cao cấp</option>
+                  <option value="C2">C2 - Thành thục</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
               </div>
@@ -237,7 +338,7 @@ export const AdminUsersPage: React.FC = () => {
         </div>
 
         {/* User Table Container */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-2xs overflow-hidden">
+        <div className="bg-white border border-slate-400/60 rounded-2xl shadow-glow-4side hover:shadow-glow-4side-lg transition-all duration-300 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -250,12 +351,12 @@ export const AdminUsersPage: React.FC = () => {
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                     />
                   </th>
-                  <th className="py-4 px-4 sm:px-6">USER</th>
-                  <th className="py-4 px-4 sm:px-6">ROLE</th>
-                  <th className="py-4 px-4 sm:px-6">PROFICIENCY</th>
-                  <th className="py-4 px-4 sm:px-6">STATUS</th>
-                  <th className="py-4 px-4 sm:px-6">JOINED DATE</th>
-                  <th className="py-4 px-4 sm:px-6 text-right">ACTIONS</th>
+                  <th className="py-4 px-4 sm:px-6">NGƯỜI DÙNG</th>
+                  <th className="py-4 px-4 sm:px-6">VAI TRÒ</th>
+                  <th className="py-4 px-4 sm:px-6">TRÌNH ĐỘ</th>
+                  <th className="py-4 px-4 sm:px-6">TRẠNG THÁI</th>
+                  <th className="py-4 px-4 sm:px-6">NGÀY THAM GIA</th>
+                  <th className="py-4 px-4 sm:px-6 text-right">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs sm:text-sm font-medium text-slate-700">
@@ -403,7 +504,7 @@ export const AdminUsersPage: React.FC = () => {
           {/* Table Footer / Pagination */}
           <div className="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500">
             <div>
-              Showing 1–{users.length} of {totalUsersCount.toLocaleString()} users
+              Hiển thị 1–{users.length} trong tổng số {totalUsersCount.toLocaleString()} người dùng
             </div>
 
             <div className="flex items-center gap-1">
@@ -415,7 +516,7 @@ export const AdminUsersPage: React.FC = () => {
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <button className="w-8 h-8 rounded-lg bg-[#1e50e6] text-white flex items-center justify-center font-bold">
+              <button className="w-8 h-8 rounded-lg bg-[#1e50e6] text-white flex items-center justify-center font-bold cursor-pointer">
                 1
               </button>
               <button className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-700 flex items-center justify-center cursor-pointer">
@@ -445,7 +546,7 @@ export const AdminUsersPage: React.FC = () => {
       {/* EDIT USER MODAL */}
       {editingUser && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-glow-4side-lg space-y-5 border border-slate-400/60 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-extrabold text-slate-900">Chỉnh Sửa Người Dùng</h3>
               <button
@@ -486,15 +587,15 @@ export const AdminUsersPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
-                    Vai trò (Role)
+                    Vai trò
                   </label>
                   <select
                     value={editingUser.role}
                     onChange={e => setEditingUser({ ...editingUser, role: e.target.value as any })}
                     className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 cursor-pointer"
                   >
-                    <option value="Student">Student</option>
-                    <option value="Admin">Admin</option>
+                    <option value="Student">Học viên</option>
+                    <option value="Admin">Quản trị viên</option>
                   </select>
                 </div>
 
@@ -507,8 +608,8 @@ export const AdminUsersPage: React.FC = () => {
                     onChange={e => setEditingUser({ ...editingUser, status: e.target.value as any })}
                     className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 cursor-pointer"
                   >
-                    <option value="Active">Active</option>
-                    <option value="Suspended">Suspended</option>
+                    <option value="Active">Hoạt động</option>
+                    <option value="Suspended">Tạm khóa</option>
                   </select>
                 </div>
               </div>

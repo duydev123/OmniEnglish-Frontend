@@ -34,6 +34,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const isVocabActive = location.pathname.startsWith('/vocabulary')
   const isProfileActive = location.pathname.startsWith('/profile')
   const isHomeActive = location.pathname === '/'
+  const isPracticeActive = location.pathname.startsWith('/practice') ||
+    location.pathname.startsWith('/listening') ||
+    location.pathname.startsWith('/reading') ||
+    location.pathname.startsWith('/writing') ||
+    location.pathname.startsWith('/speaking')
+  const isCMSActive = location.pathname === '/admin' || location.pathname.startsWith('/admin/content-cms')
+  const isUsersActive = location.pathname.startsWith('/admin/users')
 
   const navContent = (
     <div className="flex flex-col h-full select-none justify-between">
@@ -47,8 +54,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
         >
-          <House size={18} />
-          <span>Home</span>
+          <House size={18} className={isHomeActive ? 'text-white' : 'text-[#1D4ED8]'} />
+          <span>Trang chủ</span>
         </button>
 
         {/* Vocabulary Link */}
@@ -59,24 +66,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
         >
-          <BookOpen size={18} />
-          <span>Vocabulary</span>
+          <BookOpen size={18} className={isVocabActive ? 'text-white' : 'text-[#1D4ED8]'} />
+          <span>Từ vựng</span>
         </button>
 
         {/* Practice Module */}
         <button
-          onClick={() => { navigate('/practice-modules'); onClose?.() }}
-          className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all cursor-pointer ${location.pathname.startsWith('/practice') ||
-              location.pathname.startsWith('/listening') ||
-              location.pathname.startsWith('/reading') ||
-              location.pathname.startsWith('/writing') ||
-              location.pathname.startsWith('/speaking')
+          onClick={() => { navigate('/practice-modules/listening'); onClose?.() }}
+          className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all cursor-pointer ${isPracticeActive
               ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
         >
-          <Clock size={18} />
-          <span>Practice Module</span>
+          <Clock size={18} className={isPracticeActive ? 'text-white' : 'text-[#1D4ED8]'} />
+          <span>Luyện tập</span>
         </button>
 
         {/* Profile */}
@@ -87,8 +90,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
         >
-          <User size={18} />
-          <span>Profile</span>
+          <User size={18} className={isProfileActive ? 'text-white' : 'text-[#1D4ED8]'} />
+          <span>Hồ sơ cá nhân</span>
         </button>
 
         {/* Admin Section (Collapsible - Only visible to Admin role) */}
@@ -100,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
             >
               <div className="flex items-center gap-3.5">
                 <ShieldCheck size={18} className="text-[#1D4ED8]" />
-                <span>Admin</span>
+                <span>Quản trị</span>
               </div>
               <ChevronDown
                 size={16}
@@ -112,24 +115,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
               <div className="ml-5 pl-3 border-l-2 border-slate-200/80 my-1 space-y-1">
                 <button
                   onClick={() => { navigate('/admin/content-cms'); onClose?.() }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${location.pathname === '/admin' || location.pathname.startsWith('/admin/content-cms')
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${isCMSActive
                       ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                 >
-                  <FileText size={16} />
-                  <span>Content</span>
+                  <FileText size={16} className={isCMSActive ? 'text-white' : 'text-[#1D4ED8]'} />
+                  <span>Quản lý nội dung</span>
                 </button>
 
                 <button
                   onClick={() => { navigate('/admin/users'); onClose?.() }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${location.pathname.startsWith('/admin/users')
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold ${isUsersActive
                       ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/20 font-bold'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                 >
-                  <UsersIcon size={16} />
-                  <span>Users</span>
+                  <UsersIcon size={16} className={isUsersActive ? 'text-white' : 'text-[#1D4ED8]'} />
+                  <span>Quản lý người dùng</span>
                 </button>
               </div>
             )}
@@ -142,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold transition-all cursor-pointer"
         >
           <LogOut size={18} />
-          <span>Sign Out</span>
+          <span>Đăng xuất</span>
         </button>
       </div>
     </div>
@@ -150,10 +153,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
   return (
     <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 top-14 z-20 bg-slate-900/30 backdrop-blur-xs lg:hidden transition-opacity duration-300 animate-in fade-in cursor-pointer"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar Container */}
       <aside
-        className={`fixed lg:sticky top-16 z-30 h-[calc(100vh-4rem)] bg-white border-r border-slate-200/80
-          transition-all duration-300 ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full lg:w-0 lg:border-r-0 overflow-hidden'
-          }`}
+        className={`fixed lg:sticky top-14 z-30 h-[calc(100vh-3.5rem)] bg-white border-r border-slate-400/60 shadow-glow-4side transition-[width,transform] duration-300 ease-in-out overflow-hidden ${
+          isOpen
+            ? 'w-64 translate-x-0'
+            : 'w-0 -translate-x-full lg:translate-x-0 lg:w-0 border-r-0 pointer-events-none'
+        }`}
       >
         <div className="w-64 h-full shrink-0">
           {navContent}

@@ -131,7 +131,7 @@ export const Forgot = ({
         // STEP 1: Enter Email
         <form
           onSubmit={handleSendOTP}
-          className="w-full flex flex-col gap-3 border border-slate-200/90 px-8 sm:px-10 py-9 rounded-3xl bg-white shadow-xl shadow-slate-200/50 font-sans animate-fade-in"
+          className="w-full flex flex-col gap-3 border border-slate-400/60 shadow-glow-4side px-8 sm:px-10 py-9 rounded-3xl bg-white shadow-xl shadow-slate-200/50 font-sans animate-fade-in"
         >
           <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight">Quên mật khẩu?</h1>
           <p className="mb-4 text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
@@ -186,7 +186,7 @@ export const Forgot = ({
         // STEP 2: Input 6-digit OTP & New Password
         <form
           onSubmit={handleResetPassword}
-          className="w-full flex flex-col gap-3 border border-slate-200/90 px-8 sm:px-10 py-9 rounded-3xl bg-white shadow-xl shadow-slate-200/50 font-sans animate-fade-in"
+          className="w-full flex flex-col gap-3 border border-slate-400/60 shadow-glow-4side px-8 sm:px-10 py-9 rounded-3xl bg-white shadow-xl shadow-slate-200/50 font-sans animate-fade-in"
         >
           <div className="flex items-center justify-between">
             <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight">Xác thực OTP</h1>

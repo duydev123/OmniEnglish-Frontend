@@ -167,9 +167,9 @@ export default function ListeningResultPage() {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: 'PRACTICE MODULE', href: '/practice' },
-        { label: 'LISTENING', href: '/practice' },
-        { label: 'SESSION REVIEW' },
+        { label: 'Luyện tập', href: '/practice-modules' },
+        { label: 'Luyện nghe', href: '/practice-modules/listening' },
+        { label: 'Kết quả làm bài' },
       ]}
     >
       <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8">
@@ -209,7 +209,7 @@ export default function ListeningResultPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center text-center gap-3">
+              <div className="bg-white border border-slate-400/60 rounded-2xl p-6 shadow-glow-4side flex flex-col items-center justify-center text-center gap-3">
                 <div className="relative w-36 h-36 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
                     <circle cx="60" cy="60" r="52" className="text-blue-100" strokeWidth="9" stroke="currentColor" fill="transparent" />
@@ -358,7 +358,7 @@ export default function ListeningResultPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-3">
+              <div className="bg-white border border-slate-400/60 rounded-2xl p-6 shadow-glow-4side space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">ACCURACY RATE</span>
                   <div className="w-6 h-6 rounded-full bg-blue-50 text-[#1D4ED8] flex items-center justify-center"><Check size={14} className="stroke-[3]" /></div>
@@ -372,7 +372,7 @@ export default function ListeningResultPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-3">
+              <div className="bg-white border border-slate-400/60 rounded-2xl p-6 shadow-glow-4side space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">WORD COUNT</span>
                   <div className="w-6 h-6 rounded-full bg-blue-50 text-[#1D4ED8] flex items-center justify-center"><FileText size={14} /></div>
@@ -499,3 +499,4 @@ export default function ListeningResultPage() {
     </AppLayout>
   )
 }
+

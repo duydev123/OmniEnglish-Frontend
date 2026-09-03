@@ -18,7 +18,7 @@ export const ReadingScoreGauge: React.FC<ReadingScoreGaugeProps> = ({
   const strokeDashoffset = circumference - (percentage / 100) * circumference
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center text-center gap-4 h-full">
+    <div className="bg-white border border-slate-400/60 rounded-2xl p-6 shadow-glow-4side flex flex-col items-center justify-center text-center gap-4 h-full">
       {/* Circle Ring */}
       <div className="relative w-36 h-36 flex items-center justify-center">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
@@ -65,3 +65,4 @@ export const ReadingScoreGauge: React.FC<ReadingScoreGaugeProps> = ({
 }
 
 export default ReadingScoreGauge
+

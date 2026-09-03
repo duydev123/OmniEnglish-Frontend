@@ -132,10 +132,10 @@ export const SpeakingResultPage: React.FC = () => {
 
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+      <AppLayout breadcrumbs={[{ label: "Luyện tập", href: "/practice-modules" }, { label: "Luyện nói", href: "/practice-modules/speaking" }, { label: "Kết quả" }]}>
         <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-3">
           <Loader2 className="w-10 h-10 text-[#1e50e6] animate-spin" />
-          <p className="text-sm font-semibold text-slate-500">Generating AI Performance Analysis...</p>
+          <p className="text-sm font-semibold text-slate-500">Đang phân tích điểm Speaking AI...</p>
         </div>
       </AppLayout>
     )
@@ -143,16 +143,16 @@ export const SpeakingResultPage: React.FC = () => {
 
   if (!result || error) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+      <AppLayout breadcrumbs={[{ label: "Luyện tập", href: "/practice-modules" }, { label: "Luyện nói", href: "/practice-modules/speaking" }, { label: "Kết quả" }]}>
         <div className="p-8 text-center space-y-4 max-w-xl mx-auto my-12 bg-white border border-rose-200 rounded-3xl shadow-xs">
           <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto" />
           <h2 className="text-lg font-extrabold text-slate-900">Không thể tải kết quả Speaking</h2>
           <p className="text-xs font-semibold text-rose-700">{error || "Không tìm thấy dữ liệu kết quả lượt làm bài từ máy chủ."}</p>
           <button
-            onClick={() => navigate("/practice-modules")}
+            onClick={() => navigate("/practice-modules/speaking")}
             className="px-6 py-2.5 bg-[#1e50e6] text-white font-bold rounded-xl text-xs hover:bg-blue-700 transition cursor-pointer"
           >
-            Quay lại Practice Modules
+            Quay lại Luyện nói
           </button>
         </div>
       </AppLayout>
@@ -162,9 +162,9 @@ export const SpeakingResultPage: React.FC = () => {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: "PRACTICE MODULE", href: "/practice-modules" },
-        { label: "SPEAKING", href: "/practice-modules" },
-        { label: `PART 1 - ${result.title.toUpperCase()}` }
+        { label: "Luyện tập", href: "/practice-modules" },
+        { label: "Luyện nói", href: "/practice-modules/speaking" },
+        { label: `KẾT QUẢ - ${result.title.toUpperCase()}` }
       ]}
     >
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-7">
@@ -199,11 +199,11 @@ export const SpeakingResultPage: React.FC = () => {
               <ArrowRight size={15} />
             </button>
 
-            <button className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl transition cursor-pointer shadow-2xs">
+            <button className="p-2.5 bg-white border border-slate-400/60 hover:bg-slate-50 text-slate-600 rounded-2xl transition cursor-pointer shadow-glow-4side">
               <Share2 size={16} />
             </button>
 
-            <button className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl transition cursor-pointer shadow-2xs">
+            <button className="p-2.5 bg-white border border-slate-400/60 hover:bg-slate-50 text-slate-600 rounded-2xl transition cursor-pointer shadow-glow-4side">
               <Bookmark size={16} />
             </button>
           </div>
@@ -212,7 +212,7 @@ export const SpeakingResultPage: React.FC = () => {
         {/* Top Metrics Cards Row matching Figma */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {/* Overall Score */}
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs flex flex-col justify-between space-y-2 col-span-2 sm:col-span-1">
+          <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side flex flex-col justify-between space-y-2 col-span-2 sm:col-span-1">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
               OVERALL PERFORMANCE
             </span>
@@ -229,7 +229,7 @@ export const SpeakingResultPage: React.FC = () => {
           </div>
 
           {/* Pronunciation */}
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+          <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Pronunciation
@@ -243,7 +243,7 @@ export const SpeakingResultPage: React.FC = () => {
           </div>
 
           {/* Fluency */}
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+          <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Fluency
@@ -257,7 +257,7 @@ export const SpeakingResultPage: React.FC = () => {
           </div>
 
           {/* Vocabulary */}
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+          <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Vocabulary
@@ -271,7 +271,7 @@ export const SpeakingResultPage: React.FC = () => {
           </div>
 
           {/* Grammar */}
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3">
+          <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                 Grammar
@@ -290,7 +290,7 @@ export const SpeakingResultPage: React.FC = () => {
           {/* Left Main Column */}
           <div className="lg:col-span-8 space-y-6">
             {/* Audio Player Card */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-5 shadow-glow-4side flex items-center justify-between gap-4">
               <button
                 onClick={handleToggleAudio}
                 className="w-12 h-12 rounded-full bg-[#1e50e6] text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition cursor-pointer shrink-0"
@@ -324,7 +324,7 @@ export const SpeakingResultPage: React.FC = () => {
             </div>
 
             {/* Transcript Legend & Questions Breakdown */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-6">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-6">
               {/* Legend bar */}
               <div className="flex items-center gap-4 text-xs font-bold border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-1.5 text-emerald-700">
@@ -399,7 +399,7 @@ export const SpeakingResultPage: React.FC = () => {
 
                   {/* Pronunciation Feedback */}
                   {fb.pronunciation_feedback && typeof fb.pronunciation_feedback === "object" && (
-                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                    <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
                       <h3 className="text-xs font-extrabold uppercase tracking-wider text-blue-700 flex items-center gap-2">
                         <Sparkles size={14} />
                         <span>1. Phát âm (Pronunciation)</span>
@@ -420,7 +420,7 @@ export const SpeakingResultPage: React.FC = () => {
 
                   {/* Grammar Feedback */}
                   {fb.grammar_feedback && typeof fb.grammar_feedback === "object" && (
-                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                    <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
                       <h3 className="text-xs font-extrabold uppercase tracking-wider text-amber-700 flex items-center gap-2">
                         <Sparkles size={14} />
                         <span>2. Ngữ pháp (Grammar)</span>
@@ -438,7 +438,7 @@ export const SpeakingResultPage: React.FC = () => {
 
                   {/* Fluency Feedback */}
                   {fb.fluency_feedback && typeof fb.fluency_feedback === "object" && (
-                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                    <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
                       <h3 className="text-xs font-extrabold uppercase tracking-wider text-emerald-700 flex items-center gap-2">
                         <Sparkles size={14} />
                         <span>3. Độ lưu loát (Fluency)</span>
@@ -456,7 +456,7 @@ export const SpeakingResultPage: React.FC = () => {
 
                   {/* Vocabulary Feedback */}
                   {fb.vocabulary_feedback && typeof fb.vocabulary_feedback === "object" && (
-                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+                    <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
                       <h3 className="text-xs font-extrabold uppercase tracking-wider text-indigo-700 flex items-center gap-2">
                         <Sparkles size={14} />
                         <span>4. Từ vựng (Vocabulary)</span>
@@ -479,7 +479,7 @@ export const SpeakingResultPage: React.FC = () => {
             })()}
 
             {/* Key Strengths */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-emerald-600" />
@@ -506,7 +506,7 @@ export const SpeakingResultPage: React.FC = () => {
             </div>
 
             {/* Areas for Growth */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                 <AlertTriangle size={14} className="text-amber-500" />
                 <span>Areas for Growth</span>
@@ -536,7 +536,7 @@ export const SpeakingResultPage: React.FC = () => {
             </div>
 
             {/* Recommended Resources */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                 <BookOpen size={14} className="text-blue-600" />
                 <span>Recommended Resources</span>
@@ -562,3 +562,4 @@ export const SpeakingResultPage: React.FC = () => {
 }
 
 export default SpeakingResultPage
+

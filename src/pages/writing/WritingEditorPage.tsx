@@ -163,9 +163,9 @@ export const WritingEditorPage: React.FC = () => {
         setWordCount(0);
         setTimeSpentSeconds(0);
       } else if (prompt.draft_content && !editorDivRef.current.innerText.trim()) {
-        editorDivRef.current.innerText = prompt.draft_content;
+        editorDivRef.current.innerHTML = prompt.draft_content;
         setEssayContent(prompt.draft_content);
-        const count = prompt.draft_content.trim().split(/\s+/).filter(Boolean).length;
+        const count = prompt.draft_content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
         setWordCount(count);
         if (prompt.time_spent_seconds) {
           setTimeSpentSeconds(prompt.time_spent_seconds);
@@ -173,6 +173,28 @@ export const WritingEditorPage: React.FC = () => {
       }
     }
   }, [prompt, loadingPrompt, isResetMode]);
+
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    insertUnorderedList: false,
+    insertOrderedList: false,
+  });
+
+  const checkActiveFormats = () => {
+    try {
+      setActiveFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        underline: document.queryCommandState('underline'),
+        insertUnorderedList: document.queryCommandState('insertUnorderedList'),
+        insertOrderedList: document.queryCommandState('insertOrderedList'),
+      });
+    } catch {
+      // ignore
+    }
+  };
 
 
   // Handle text selection change — works in both task description and the editor
@@ -345,6 +367,7 @@ export const WritingEditorPage: React.FC = () => {
   const MAX_WORDS = 300;
   const handleEditorInput = () => {
     if (!editorDivRef.current) return;
+    const html = editorDivRef.current.innerHTML || '';
     const text = editorDivRef.current.innerText || '';
     const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean) : [];
 
@@ -362,11 +385,13 @@ export const WritingEditorPage: React.FC = () => {
 
       setEssayContent(truncatedText);
       setWordCount(MAX_WORDS);
+      checkActiveFormats();
       return;
     }
 
-    setEssayContent(text);
+    setEssayContent(html);
     setWordCount(words.length);
+    checkActiveFormats();
   };
 
   // Save Draft
@@ -433,8 +458,9 @@ export const WritingEditorPage: React.FC = () => {
     if (editorDivRef.current) {
       editorDivRef.current.focus();
     }
-    document.execCommand(command, false);
+    document.execCommand(command, false, undefined);
     handleEditorInput();
+    checkActiveFormats();
   };
 
   // Insert Vocabulary Chip into Editor at Cursor Selection Point
@@ -625,7 +651,7 @@ export const WritingEditorPage: React.FC = () => {
 
   if (loadingPrompt || !prompt) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULES', href: '/practice-modules' }, { label: 'EDITOR' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện viết', href: '/practice-modules/writing' }, { label: 'Soạn thảo' }]}>
         <div className="flex flex-col items-center justify-center min-h-[600px]">
           <Loader2 className="w-10 h-10 text-[#1D4ED8] animate-spin mb-4" />
           <p className="text-sm font-bold text-slate-600">Đang tải trình soạn thảo bài viết Writing...</p>
@@ -635,32 +661,42 @@ export const WritingEditorPage: React.FC = () => {
   }
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULES', href: '/practice-modules' }, { label: prompt.title }]}>
+    <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện viết', href: '/practice-modules/writing' }, { label: prompt.title }]}>
       <div className="p-3 sm:p-6 max-w-[1600px] mx-auto font-['Be_Vietnam_Pro']">
 
         {/* 3-Column Layout Matching Screenshot 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
 
           {/* ================= LEFT COLUMN: Task Description & Reference Image (3 cols) ================= */}
-          <div className="lg:col-span-3 space-y-5">
+          <div className="lg:col-span-3 flex flex-col space-y-4">
             {/* Task Description Box */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs">
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
-                Task Description
-              </h2>
-              <div
-                ref={taskDescContainerRef}
-                onMouseUp={handleSelectionChange}
-                onKeyUp={handleSelectionChange}
-                className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs font-medium text-slate-700 leading-relaxed italic"
-              >
-                &ldquo;<span dangerouslySetInnerHTML={{ __html: descriptionHtml }} />&rdquo;
+            <div className="bg-white rounded-3xl border border-slate-400/60 p-5 shadow-glow-4side flex-1 flex flex-col justify-between min-h-[220px]">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[10px] font-black text-[#1D4ED8] bg-blue-50 px-2.5 py-1 rounded-lg uppercase tracking-wider border border-blue-100">
+                    {prompt.task_type === 'WITH_GRAPH' ? 'IELTS Writing Task 1' : 'IELTS Writing Task 2'}
+                  </span>
+                  <span className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                    Task Description
+                  </span>
+                </div>
+                <h2 className="text-sm sm:text-base font-black text-slate-900 leading-snug mb-3 tracking-tight">
+                  {prompt.title}
+                </h2>
+                <div
+                  ref={taskDescContainerRef}
+                  onMouseUp={handleSelectionChange}
+                  onKeyUp={handleSelectionChange}
+                  className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-sm sm:text-base font-semibold text-slate-800 leading-relaxed font-['Be_Vietnam_Pro'] overflow-y-auto max-h-[500px]"
+                >
+                  &ldquo;<span dangerouslySetInnerHTML={{ __html: descriptionHtml }} />&rdquo;
+                </div>
               </div>
             </div>
 
             {/* Reference Image Box (For Chart / Graph Tasks ONLY) */}
             {prompt.task_type === 'WITH_GRAPH' && prompt.reference_image_url && (
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-4 shadow-xs">
+              <div className="bg-white rounded-3xl border border-slate-400/60 p-4 shadow-glow-4side shrink-0">
                 <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer">
                   <img
                     src={prompt.reference_image_url}
@@ -682,11 +718,11 @@ export const WritingEditorPage: React.FC = () => {
           </div>
 
           {/* ================= CENTER COLUMN: Editor & Writing Controls (5 cols) ================= */}
-          <div className={`space-y-4 transition-all duration-300 ${isAiAssistantOpen ? 'lg:col-span-5' : 'lg:col-span-9'}`}>
+          <div className={`flex flex-col space-y-4 justify-between transition-all duration-300 ${isAiAssistantOpen ? 'lg:col-span-5' : 'lg:col-span-9'}`}>
 
             {/* Header Toolbar: Back Button + Prompt Title + Timer + Analyze Button */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 flex items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-center gap-2.5 truncate flex-1">
+            <div className="bg-white rounded-2xl border border-slate-400/60 p-3 sm:p-4 flex items-center justify-between gap-3 shadow-glow-4side shrink-0">
+              <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => handleRequestExit('/practice-modules')}
                   className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
@@ -695,9 +731,6 @@ export const WritingEditorPage: React.FC = () => {
                   <ArrowLeft size={14} />
                   <span className="hidden sm:inline">Quay lại</span>
                 </button>
-                <h1 className="font-extrabold text-sm sm:text-base text-blue-700 tracking-tight truncate">
-                  Writing Prompt: {prompt.title}
-                </h1>
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
@@ -737,41 +770,46 @@ export const WritingEditorPage: React.FC = () => {
             </div>
 
             {/* Rich Text Editor Container */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col min-h-[500px]">
+            <div className="bg-white rounded-3xl border border-slate-400/60 shadow-glow-4side overflow-hidden flex flex-col flex-1 min-h-[580px]">
 
               {/* Formatting Toolbar */}
-              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-4 text-slate-600">
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2 text-slate-600">
                 <button
-                  className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-900 font-extrabold cursor-pointer transition-colors"
+                  type="button"
+                  className={`p-1.5 rounded-lg font-extrabold cursor-pointer transition-colors ${activeFormats.bold ? "bg-blue-100 text-[#1D4ED8] ring-1 ring-blue-300" : "hover:bg-slate-200 hover:text-slate-900"}`}
                   title="In đậm (Bold)"
                   onClick={() => applyFormat('bold')}
                 >
                   <Bold size={16} />
                 </button>
                 <button
-                  className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-900 cursor-pointer transition-colors"
+                  type="button"
+                  className={`p-1.5 rounded-lg cursor-pointer transition-colors ${activeFormats.italic ? "bg-blue-100 text-[#1D4ED8] ring-1 ring-blue-300" : "hover:bg-slate-200 hover:text-slate-900"}`}
                   title="In nghiêng (Italic)"
                   onClick={() => applyFormat('italic')}
                 >
                   <Italic size={16} />
                 </button>
                 <button
-                  className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-900 cursor-pointer transition-colors"
+                  type="button"
+                  className={`p-1.5 rounded-lg cursor-pointer transition-colors ${activeFormats.underline ? "bg-blue-100 text-[#1D4ED8] ring-1 ring-blue-300" : "hover:bg-slate-200 hover:text-slate-900"}`}
                   title="Gạch chân (Underline)"
                   onClick={() => applyFormat('underline')}
                 >
                   <Underline size={16} />
                 </button>
-                <div className="h-4 w-px bg-slate-200" />
+                <div className="h-4 w-px bg-slate-300 mx-1" />
                 <button
-                  className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-900 cursor-pointer transition-colors"
+                  type="button"
+                  className={`p-1.5 rounded-lg cursor-pointer transition-colors ${activeFormats.insertUnorderedList ? "bg-blue-100 text-[#1D4ED8] ring-1 ring-blue-300" : "hover:bg-slate-200 hover:text-slate-900"}`}
                   title="Danh sách dấu chấm (Bullet List)"
                   onClick={() => applyFormat('insertUnorderedList')}
                 >
                   <ListIcon size={16} />
                 </button>
                 <button
-                  className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-900 cursor-pointer transition-colors"
+                  type="button"
+                  className={`p-1.5 rounded-lg cursor-pointer transition-colors ${activeFormats.insertOrderedList ? "bg-blue-100 text-[#1D4ED8] ring-1 ring-blue-300" : "hover:bg-slate-200 hover:text-slate-900"}`}
                   title="Danh sách số (Numbered List)"
                   onClick={() => applyFormat('insertOrderedList')}
                 >
@@ -783,14 +821,14 @@ export const WritingEditorPage: React.FC = () => {
               <div
                 ref={editorDivRef}
                 contentEditable
-                onInput={handleEditorInput}
-                onMouseUp={handleSelectionChange}
-                onKeyUp={handleSelectionChange}
-                className="w-full flex-1 p-5 text-sm sm:text-base text-slate-800 outline-none leading-relaxed font-['Be_Vietnam_Pro'] min-h-[420px] max-h-[600px] overflow-y-auto cursor-text select-text"
+                onInput={() => { handleEditorInput(); checkActiveFormats(); }}
+                onMouseUp={() => { handleSelectionChange(); checkActiveFormats(); }}
+                onKeyUp={() => { handleSelectionChange(); checkActiveFormats(); }}
+                className="w-full flex-1 p-5 text-sm sm:text-base text-slate-800 outline-none leading-relaxed font-['Be_Vietnam_Pro'] min-h-[460px] overflow-y-auto cursor-text select-text [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2 [&_li]:my-1"
               />
 
               {/* Footer Status Bar: Word Count & Save Draft */}
-              <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between text-xs font-extrabold text-slate-600">
+              <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between text-xs font-extrabold text-slate-600 shrink-0">
                 <div className="flex items-center gap-3">
                   <span>
                     WORDS: <strong className={wordCount >= 300 ? "text-red-600 font-black" : wordCount >= 250 ? "text-emerald-600 font-black" : "text-[#1D4ED8]"}>{wordCount}</strong> / 300 (MAX)
@@ -819,8 +857,8 @@ export const WritingEditorPage: React.FC = () => {
 
           {/* ================= RIGHT COLUMN: Writing Assistant Chat Drawer ================= */}
           {isAiAssistantOpen && (
-            <div className="lg:col-span-4 space-y-4">
-              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs flex flex-col h-[650px] overflow-hidden">
+            <div className="lg:col-span-4 flex flex-col">
+              <div className="bg-white rounded-3xl border border-slate-400/60 shadow-glow-4side flex flex-col h-full min-h-[660px] overflow-hidden">
                 <div className="px-4 py-3 bg-[#1D4ED8] text-white flex items-center justify-between shadow-xs shrink-0">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
@@ -1265,7 +1303,7 @@ export const WritingEditorPage: React.FC = () => {
       {/* Exit Confirmation Modal */}
       {showExitModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-glow-4side-lg border border-slate-400/60 animate-in fade-in zoom-in duration-200">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1D4ED8] flex items-center justify-center mb-4">
               <Save size={24} />
             </div>
@@ -1304,3 +1342,4 @@ export const WritingEditorPage: React.FC = () => {
 };
 
 export default WritingEditorPage;
+

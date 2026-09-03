@@ -12,10 +12,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab = 'content
   const location = useLocation();
 
   const menuItems = [
-    { id: 'analytics', label: 'Analytics', icon: LayoutGrid },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'content-cms', label: 'Content CMS', icon: FileText },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'analytics', label: 'Thống kê', icon: LayoutGrid },
+    { id: 'users', label: 'Người dùng', icon: Users },
+    { id: 'content-cms', label: 'Quản lý nội dung', icon: FileText },
+    { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 
   const currentTab = activeTab || (location.pathname.includes('settings') ? 'settings' : 'content-cms');
@@ -28,7 +28,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab = 'content
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-extrabold text-[#1e50e6] tracking-tight">OmniEnglish</h1>
           </div>
-          <p className="text-xs font-semibold text-slate-400 mt-0.5">Admin Suite</p>
+          <p className="text-xs font-semibold text-slate-400 mt-0.5">Trang Quản Trị</p>
         </div>
 
         {/* Navigation Menu */}

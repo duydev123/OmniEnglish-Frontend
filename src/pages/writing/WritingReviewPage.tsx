@@ -92,7 +92,7 @@ export const WritingReviewPage: React.FC = () => {
 
   if (loading || !reviewData) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULES', href: '/practice-modules' }, { label: 'REVIEW SUMMARY' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện viết', href: '/practice-modules/writing' }, { label: 'Kết quả đánh giá AI' }]}>
         <div className="flex flex-col items-center justify-center min-h-[600px]">
           <Loader2 className="w-10 h-10 text-[#1D4ED8] animate-spin mb-4" />
           <p className="text-sm font-bold text-slate-600">Đang chấm điểm & phân tích bài viết bằng AI...</p>
@@ -160,11 +160,11 @@ export const WritingReviewPage: React.FC = () => {
   };
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'PRACTICE MODULES', href: '/practice-modules' }, { label: 'REVIEW SUMMARY' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện viết', href: '/practice-modules/writing' }, { label: 'Kết quả đánh giá AI' }]}>
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1500px] mx-auto space-y-7 font-['Be_Vietnam_Pro']">
 
         {/* ================= TOP HEADER CARD: Writing Review Summary (Screenshot 2 Top) ================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="bg-white rounded-3xl border border-slate-400/60 p-6 sm:p-8 shadow-glow-4side flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-6">
 
             {/* CURRENT Score Badge */}
@@ -249,7 +249,7 @@ export const WritingReviewPage: React.FC = () => {
             {/* Improvement Comparison Cards matching Screenshot 2 */}
             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
               {(reviewData.improvements_comparison || []).map((imp, idx) => (
-                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs">
+                <div key={idx} className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white rounded-3xl border border-slate-400/60 p-4 sm:p-5 shadow-glow-4side">
                   {/* Original Side */}
                   <div className="bg-red-50/50 border border-red-100 rounded-2xl p-4 space-y-2">
                     <div className="flex items-center gap-1.5 text-[11px] font-black text-red-600 uppercase tracking-wider">
@@ -295,7 +295,7 @@ export const WritingReviewPage: React.FC = () => {
           <div className="lg:col-span-6 space-y-6">
 
             {/* Full Essay Box with Interactive Error Highlights */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-xs space-y-4 flex flex-col max-h-[600px]">
+            <div className="bg-white rounded-3xl border border-slate-400/60 p-6 shadow-glow-4side space-y-4 flex flex-col max-h-[600px]">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
                 <h2 className="text-base font-black text-slate-900">Full Essay</h2>
                 <span className="text-xs font-bold text-slate-400">Original Draft</span>
@@ -324,7 +324,7 @@ export const WritingReviewPage: React.FC = () => {
             </div>
 
             {/* IELTS Scoring Breakdown Card matching Screenshot 2 Right Bottom */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-xs space-y-5">
+            <div className="bg-white rounded-3xl border border-slate-400/60 p-6 shadow-glow-4side space-y-5">
               <h2 className="text-lg font-black text-slate-900 tracking-tight">
                 IELTS Scoring Breakdown
               </h2>
@@ -515,3 +515,4 @@ export const WritingReviewPage: React.FC = () => {
 };
 
 export default WritingReviewPage;
+

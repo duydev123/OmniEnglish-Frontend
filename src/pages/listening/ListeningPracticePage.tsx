@@ -130,7 +130,7 @@ export default function ListeningPracticePage() {
     }
   }
 
-  const completedCount = Object.keys(answers).length
+  const completedCount = Object.values(answers).filter((val) => val && String(val).trim() !== '').length
   const totalCount = session?.total_questions ?? 0
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
@@ -169,7 +169,7 @@ export default function ListeningPracticePage() {
 
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Listening' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện nghe', href: '/practice-modules/listening' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 size={40} className="text-blue-600 animate-spin" />
           <p className="text-slate-500 font-semibold">Đang tải bài nghe...</p>
@@ -180,15 +180,15 @@ export default function ListeningPracticePage() {
 
   if (error || !session) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Listening' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện nghe', href: '/practice-modules/listening' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <AlertCircle size={40} className="text-red-500" />
-          <p className="text-slate-700 font-semibold">{error ?? 'Không tìm thấy bài nghe'}</p>
+          <p className="text-slate-700 font-bold">{error || 'Không tìm thấy bài nghe này!'}</p>
           <button
-            onClick={() => navigate('/practice')}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition"
+            onClick={() => navigate('/practice-modules/listening')}
+            className="px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition cursor-pointer"
           >
-            Quay lại Practice Hub
+            Quay lại Luyện nghe
           </button>
         </div>
       </AppLayout>
@@ -198,9 +198,9 @@ export default function ListeningPracticePage() {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: 'Practice Modules', href: '/practice-modules' },
-        { label: 'Listening', href: '/practice-modules?tab=listening' },
-        { label: session.unit_code ?? 'Listening' },
+        { label: 'Luyện tập', href: '/practice-modules' },
+        { label: 'Luyện nghe', href: '/practice-modules/listening' },
+        { label: session.unit_code ?? 'Luyện nghe' },
       ]}
     >
       <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -211,7 +211,7 @@ export default function ListeningPracticePage() {
           {session.unit_code && <p className="text-sm text-slate-500">{session.unit_code}</p>}
         </div>
 
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-white border border-slate-400/60 rounded-2xl p-4 shadow-glow-4side flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="w-full sm:w-2/3 space-y-1.5">
             <div className="flex justify-between items-center text-xs font-bold">
               <span className="text-slate-800">Overall Lesson Progress</span>
@@ -239,7 +239,7 @@ export default function ListeningPracticePage() {
             />
 
             {showTranscript && session.interactive_transcript?.length > 0 && (
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-3">
+              <div className="bg-white border border-slate-400/60 rounded-2xl p-6 shadow-glow-4side space-y-3">
                 <h3 className="font-bold text-slate-900">Interactive Transcript</h3>
                 <div className="space-y-2 max-h-72 overflow-auto pr-2">
                   {session.interactive_transcript.map((item, index) => (
@@ -254,7 +254,7 @@ export default function ListeningPracticePage() {
             )}
 
             {session.multiple_choices?.map((question, index) => (
-              <div key={question.id} className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-4">
+              <div key={question.id} className="bg-white border border-slate-400/60 rounded-2xl p-6 shadow-glow-4side space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
@@ -303,7 +303,7 @@ export default function ListeningPracticePage() {
             ))}
 
             {session.completions?.map((completion, index) => (
-              <div key={completion.id} className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-4">
+              <div key={completion.id} className="bg-white border border-slate-400/60 rounded-2xl p-6 shadow-glow-4side space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                     {session.multiple_choices.length + index + 1}
@@ -319,7 +319,7 @@ export default function ListeningPracticePage() {
               </div>
             ))}
 
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div className="bg-white border border-slate-400/60 rounded-2xl p-4 shadow-glow-4side flex items-center justify-between">
               <button
                 onClick={() => navigate('/practice')}
                 className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
@@ -359,7 +359,7 @@ export default function ListeningPracticePage() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="bg-white border border-slate-400/60 rounded-2xl p-5 shadow-glow-4side space-y-4">
               <div className="flex items-center gap-2">
                 <BookMarked size={18} className="text-[#1D4ED8]" />
                 <h3 className="font-bold text-slate-900 text-base">Key Vocabulary</h3>
@@ -380,3 +380,4 @@ export default function ListeningPracticePage() {
     </AppLayout>
   )
 }
+

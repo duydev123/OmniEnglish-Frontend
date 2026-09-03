@@ -88,7 +88,7 @@ export const ReadingPassageCard: React.FC<ReadingPassageCardProps> = ({ passage,
   }
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col gap-5 h-full relative">
+    <div className="bg-white border border-slate-400/60 rounded-2xl p-5 sm:p-6 shadow-glow-4side flex flex-col gap-5 h-full relative">
       {/* Header Toolbar */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
@@ -101,22 +101,20 @@ export const ReadingPassageCard: React.FC<ReadingPassageCardProps> = ({ passage,
         <div className="flex items-center gap-1.5">
           <button
             onClick={toggleFontSize}
-            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
+            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
             title="Kích thước chữ"
           >
             <Type size={16} />
             <span className="uppercase text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold">{fontSize}</span>
           </button>
           <button
-            onClick={() => setIsBookmarked(!isBookmarked)}
-            className={`p-2 rounded-lg transition-colors ${
-              isBookmarked
-                ? 'bg-blue-50 text-[#1D4ED8]'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+            onClick={() => setIsBookmarked((b) => !b)}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              isBookmarked ? 'bg-amber-50 text-amber-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
             }`}
-            title="Đánh dấu đoạn văn"
+            title="Bookmark bài đọc"
           >
-            <Bookmark size={16} fill={isBookmarked ? 'currentColor' : 'none'} />
+            <Bookmark size={16} className={isBookmarked ? 'fill-amber-600' : ''} />
           </button>
         </div>
       </div>
@@ -190,3 +188,4 @@ export const ReadingPassageCard: React.FC<ReadingPassageCardProps> = ({ passage,
 }
 
 export default ReadingPassageCard
+

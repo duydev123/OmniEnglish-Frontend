@@ -427,10 +427,10 @@ export const SpeakingShadowingPage: React.FC = () => {
 
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: "Practice Module", href: "/practice-modules" }, { label: "Speaking" }]}>
+      <AppLayout breadcrumbs={[{ label: "Luyện tập", href: "/practice-modules" }, { label: "Luyện nói", href: "/practice-modules/speaking" }, { label: "Shadowing" }]}>
         <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-3">
           <Loader2 className="w-10 h-10 text-[#1e50e6] animate-spin" />
-          <p className="text-sm font-semibold text-slate-500">Loading Shadowing sentence...</p>
+          <p className="text-sm font-semibold text-slate-500">Đang tải câu Shadowing...</p>
         </div>
       </AppLayout>
     )
@@ -442,9 +442,9 @@ export const SpeakingShadowingPage: React.FC = () => {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: "PRACTICE MODULE", href: "/practice-modules" },
-        { label: "SPEAKING", href: "/practice-modules" },
-        { label: "SHADOWING" }
+        { label: "Luyện tập", href: "/practice-modules" },
+        { label: "Luyện nói", href: "/practice-modules/speaking" },
+        { label: "Shadowing" }
       ]}
     >
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -491,7 +491,7 @@ export const SpeakingShadowingPage: React.FC = () => {
           {/* Left Column (Sentence Card, Recorded Audio Player, Transcript) */}
           <div className="lg:col-span-8 space-y-6">
             {/* Main Shadowing Sentence Card */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 flex flex-col justify-between min-h-[420px]">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 sm:p-8 shadow-glow-4side space-y-6 flex flex-col justify-between min-h-[420px]">
               {/* Card Top Action Row */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -705,7 +705,7 @@ export const SpeakingShadowingPage: React.FC = () => {
 
             {/* Recorded User Audio Player Card */}
             {userAudioUrl && (
-              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+              <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
                     <Music size={16} className="text-blue-600" />
@@ -762,7 +762,7 @@ export const SpeakingShadowingPage: React.FC = () => {
           {/* Right Column (Analysis, AI Tips, History) */}
           <div className="lg:col-span-4 space-y-6">
             {/* Real-time Analysis Scores */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-5">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-5">
               <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">
                 Shadowing Scores (Kết quả chấm điểm)
               </h3>
@@ -803,7 +803,7 @@ export const SpeakingShadowingPage: React.FC = () => {
             </div>
 
             {/* ENGLISH AI TIPS */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-3">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-3">
               <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                 <Sparkles size={14} className="text-blue-600" />
                 <span>AI PHÂN TÍCH LỖI (AI TIPS)</span>
@@ -894,7 +894,7 @@ export const SpeakingShadowingPage: React.FC = () => {
             </div>
 
             {/* PRACTICE HISTORY
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="bg-white border border-slate-400/60 rounded-3xl p-6 shadow-glow-4side space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                   <History size={14} className="text-blue-600" />
@@ -1038,3 +1038,4 @@ export const SpeakingShadowingPage: React.FC = () => {
 }
 
 export default SpeakingShadowingPage
+

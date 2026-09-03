@@ -122,6 +122,7 @@ export interface SpeakingHistoryItem {
   session_id: string
   test_type: string
   title: string
+  prompt_id?: string
   overall_band_score: number
   duration_str: string
   status: string

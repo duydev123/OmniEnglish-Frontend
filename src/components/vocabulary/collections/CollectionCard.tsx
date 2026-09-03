@@ -54,8 +54,8 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
     return (
       <div
         onClick={() => navigate(`/vocabulary/${collection.id}`)}
-        className="group relative bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 hover:shadow-lg
-          hover:border-blue-400/80 transition-all duration-200 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none min-h-[90px]"
+        className="group relative bg-white rounded-3xl border border-slate-400/60 p-4 sm:p-5 shadow-glow-4side hover:shadow-glow-4side-lg
+          hover:border-blue-400/80 transition-all duration-300 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none min-h-[90px]"
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -107,8 +107,8 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
   return (
     <div
       onClick={() => navigate(`/vocabulary/${collection.id}`)}
-      className="group relative bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-6 hover:shadow-xl
-        hover:border-blue-400/80 transition-all duration-200 cursor-pointer flex flex-col justify-between
+      className="group relative bg-white rounded-3xl border border-slate-400/60 p-4 sm:p-6 shadow-glow-4side hover:shadow-glow-4side-lg
+        hover:border-blue-400/80 transition-all duration-300 cursor-pointer flex flex-col justify-between
         min-h-[290px] sm:h-[310px] w-full select-none overflow-hidden"
     >
       {/* Top Header & Description Section */}

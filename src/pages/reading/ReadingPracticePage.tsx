@@ -232,7 +232,7 @@ export default function ReadingPracticePage() {
   // ── Loading / Error states ───────────────────────────────────────────────
   if (loading) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Reading' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện đọc', href: '/practice-modules/reading' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <Loader2 size={40} className="text-blue-600 animate-spin" />
           <p className="text-slate-500 font-semibold">Đang tải bài đọc...</p>
@@ -243,15 +243,15 @@ export default function ReadingPracticePage() {
 
   if (error || !passageData || !session) {
     return (
-      <AppLayout breadcrumbs={[{ label: 'Practice Modules', href: '/practice-modules' }, { label: 'Reading' }]}>
+      <AppLayout breadcrumbs={[{ label: 'Luyện tập', href: '/practice-modules' }, { label: 'Luyện đọc', href: '/practice-modules/reading' }]}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <AlertCircle size={40} className="text-red-500" />
           <p className="text-slate-700 font-semibold">{error ?? 'Không tìm thấy bài đọc'}</p>
           <button
-            onClick={() => navigate('/practice')}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition"
+            onClick={() => navigate('/practice-modules/reading')}
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition cursor-pointer"
           >
-            Quay lại Practice Hub
+            Quay lại Luyện đọc
           </button>
         </div>
       </AppLayout>
@@ -261,8 +261,8 @@ export default function ReadingPracticePage() {
   return (
     <AppLayout
       breadcrumbs={[
-        { label: 'Practice Modules', href: '/practice-modules' },
-        { label: 'Reading', href: '/practice-modules?tab=reading' },
+        { label: 'Luyện tập', href: '/practice-modules' },
+        { label: 'Luyện đọc', href: '/practice-modules/reading' },
         { label: session.title },
       ]}
     >
@@ -283,7 +283,7 @@ export default function ReadingPracticePage() {
 
         {/* ── Sticky Progress & Timer Bar ───────────────────────────────── */}
         <div
-          className="sticky top-15 z-30 bg-white/95 backdrop-blur-sm border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 transition-shadow"
+          className="sticky top-15 z-30 bg-white/95 backdrop-blur-sm border border-slate-400/60 rounded-2xl p-4 shadow-glow-4side flex flex-col sm:flex-row items-center justify-between gap-4 transition-shadow"
           style={{ boxShadow: '0 2px 12px 0 rgba(0,0,0,0.07)' }}
         >
           <div className="w-full sm:w-2/3 space-y-1.5">
@@ -311,13 +311,13 @@ export default function ReadingPracticePage() {
         {/* Main Content: Passage + Tasks */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Left: Reading Passage */}
-          <div className="lg:sticky lg:top-20 max-h-[100vh] overflow-y-auto space-y-6">
+          <div className="lg:sticky lg:top-20 max-h-[100vh] overflow-y-auto space-y-6 scrollbar-none">
             <ReadingPassageCard passage={passageData} />
             {session.learning_tip && <LearningTipCard tip={session.learning_tip} />}
           </div>
 
           {/* Right: Tasks */}
-          <div className="space-y-6 max-h-[100vh] overflow-y-auto pr-2">
+          <div className="space-y-6 max-h-[100vh] overflow-y-auto pr-2 scrollbar-none">
             {tasks.map((task) => {
               if (task.type === 'multiple_choice') {
                 const questionKey = task.id.replace('mc-', '')
@@ -380,7 +380,7 @@ export default function ReadingPracticePage() {
         </div>
 
         {/* Bottom Actions Bar */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-400/60 rounded-2xl p-4 sm:p-5 shadow-glow-4side flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
@@ -427,3 +427,4 @@ export default function ReadingPracticePage() {
     </AppLayout>
   )
 }
+

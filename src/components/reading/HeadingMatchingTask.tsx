@@ -16,7 +16,7 @@ export const HeadingMatchingTask: React.FC<HeadingMatchingTaskProps> = ({
   const paragraphs = task.sentenceTemplate?.split('\n\n').filter(Boolean) || [] // We will store paragraphs list here, or custom mapping
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col gap-4">
+    <div className="bg-white border border-slate-400/60 rounded-2xl p-5 sm:p-6 shadow-glow-4side flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-[#1D4ED8] text-white font-black text-sm flex items-center justify-center shadow-xs">
@@ -71,3 +71,4 @@ export const HeadingMatchingTask: React.FC<HeadingMatchingTaskProps> = ({
 }
 
 export default HeadingMatchingTask
+

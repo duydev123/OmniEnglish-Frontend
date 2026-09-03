@@ -17,7 +17,9 @@ import {
   FileText,
   Headphones,
   Upload,
-  Trash2
+  Trash2,
+  Sparkles,
+  PenTool
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/common/AppLayout';
@@ -554,11 +556,11 @@ export const AdminCMSPage: React.FC = () => {
 
   // Simplified Tabs Definition (No Grammar!)
   const tabs = [
-    { id: 'vocab', label: 'Vocabulary', count: sets.filter(s => s.type === 'vocab').length },
-    { id: 'speaking', label: 'Speaking', count: sets.filter(s => s.type === 'speaking').length },
-    { id: 'reading', label: 'Reading', count: sets.filter(s => s.type === 'reading').length },
-    { id: 'listening', label: 'Listening', count: sets.filter(s => s.type === 'listening').length },
-    { id: 'writing', label: 'Writing', count: sets.filter(s => s.type === 'writing').length },
+    { id: 'vocab', label: 'Từ vựng (Vocabulary)', count: sets.filter(s => s.type === 'vocab').length },
+    { id: 'speaking', label: 'Luyện Nói (Speaking)', count: sets.filter(s => s.type === 'speaking').length },
+    { id: 'reading', label: 'Luyện Đọc (Reading)', count: sets.filter(s => s.type === 'reading').length },
+    { id: 'listening', label: 'Luyện Nghe (Listening)', count: sets.filter(s => s.type === 'listening').length },
+    { id: 'writing', label: 'Luyện Viết (Writing)', count: sets.filter(s => s.type === 'writing').length },
   ];
 
   // Filter sets by activeTab and searchQuery
@@ -872,87 +874,89 @@ export const AdminCMSPage: React.FC = () => {
   };
 
   return (
-    <AppLayout breadcrumbs={[{ label: 'Admin' }, { label: 'Content' }]}>
+    <AppLayout breadcrumbs={[{ label: 'Quản trị' }, { label: 'Quản lý nội dung' }]}>
       <div className="p-4 sm:p-6 lg:p-8 space-y-6 select-none font-['Be_Vietnam_Pro'] max-w-7xl mx-auto">
         {/* Page Title */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Content Management
+            Quản Lý Nội Dung Bài Học (CMS)
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
             Quản lý và tạo mới toàn bộ bài học các kỹ năng Speaking, Writing, Reading, Listening & Vocabulary.
           </p>
         </div>
 
-        {/* Dedicated Action Bar for Skill Creation Buttons */}
-        <div className="flex items-center gap-2.5 flex-wrap pt-1">
-          <button
-            onClick={openCreateWritingModal}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tạo Writing</span>
-          </button>
+        {/* Dedicated Action Bar Container for Skill Creation Buttons */}
+        <div className="bg-slate-100/90 border border-slate-300/80 rounded-2xl p-3 sm:p-4 shadow-inner space-y-3 select-none">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-500 block px-1">
+            Tạo Nhanh Bài Học Mới
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 w-full">
+            <button
+              onClick={openCreateWritingModal}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-3 bg-white hover:bg-blue-50/60 text-slate-800 hover:text-[#1D4ED8] border border-slate-200/90 hover:border-blue-400 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer shadow-glow-4side hover:shadow-glow-4side-lg active:scale-98"
+            >
+              <PenTool className="w-4 h-4 text-[#1D4ED8] stroke-[2.5]" />
+              <span>Tạo Writing</span>
+            </button>
 
-          <button
-            onClick={openCreateSpeakingModal}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-95"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tạo Speaking</span>
-          </button>
+            <button
+              onClick={openCreateSpeakingModal}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-3 bg-white hover:bg-blue-50/60 text-slate-800 hover:text-[#1D4ED8] border border-slate-200/90 hover:border-blue-400 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer shadow-glow-4side hover:shadow-glow-4side-lg active:scale-98"
+            >
+              <Mic className="w-4 h-4 text-[#1D4ED8] stroke-[2.5]" />
+              <span>Tạo Speaking</span>
+            </button>
 
-          <button
-            onClick={openCreateReadingModal}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md shadow-amber-600/20 active:scale-95"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tạo Reading</span>
-          </button>
+            <button
+              onClick={openCreateReadingModal}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-3 bg-white hover:bg-blue-50/60 text-slate-800 hover:text-[#1D4ED8] border border-slate-200/90 hover:border-blue-400 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer shadow-glow-4side hover:shadow-glow-4side-lg active:scale-98"
+            >
+              <BookOpen className="w-4 h-4 text-[#1D4ED8] stroke-[2.5]" />
+              <span>Tạo Reading</span>
+            </button>
 
-          <button
-            onClick={openCreateListeningModal}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md shadow-blue-600/20 active:scale-95"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tạo Listening</span>
-          </button>
+            <button
+              onClick={openCreateListeningModal}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-3 bg-white hover:bg-blue-50/60 text-slate-800 hover:text-[#1D4ED8] border border-slate-200/90 hover:border-blue-400 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer shadow-glow-4side hover:shadow-glow-4side-lg active:scale-98"
+            >
+              <Headphones className="w-4 h-4 text-[#1D4ED8] stroke-[2.5]" />
+              <span>Tạo Listening</span>
+            </button>
 
-          <button
-            onClick={() => setShowCreateVocabModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md shadow-purple-600/20 active:scale-95"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Tạo Bộ Từ Vựng</span>
-          </button>
+            <button
+              onClick={() => setShowCreateVocabModal(true)}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-3 bg-white hover:bg-blue-50/60 text-slate-800 hover:text-[#1D4ED8] border border-slate-200/90 hover:border-blue-400 rounded-xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer shadow-glow-4side hover:shadow-glow-4side-lg active:scale-98"
+            >
+              <Sparkles className="w-4 h-4 text-[#1D4ED8] stroke-[2.5]" />
+              <span>Tạo Bộ Từ Vựng</span>
+            </button>
+          </div>
         </div>
 
-        {/* Navigation Sub-Tabs */}
-        <div className="border-b border-slate-200/80 overflow-x-auto scrollbar-none">
-          <div className="flex gap-6 min-w-max pb-0.5">
-            {tabs.map(t => {
-              const isActive = activeTab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id as any)}
-                  className={`pb-3 text-xs sm:text-sm font-bold transition-all relative cursor-pointer flex items-center gap-2 ${isActive
-                      ? 'text-[#1e50e6]'
-                      : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                >
-                  <span>{t.label}</span>
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                    {t.count}
-                  </span>
-                  {isActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1e50e6] rounded-full" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        {/* Navigation Sub-Tabs Bar (Segmented Control Track) */}
+        <div className="bg-slate-100/90 border border-slate-300/80 rounded-2xl p-1.5 shadow-inner overflow-x-auto scrollbar-none flex gap-1.5">
+          {tabs.map(t => {
+            const isActive = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id as any)}
+                className={`flex-1 min-w-[120px] sm:min-w-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer select-none whitespace-nowrap ${
+                  isActive
+                    ? 'bg-white text-[#1D4ED8] shadow-glow-4side border border-slate-200/90 scale-[1.01]'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>{t.label}</span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full transition-colors ${
+                  isActive ? 'bg-blue-50 text-[#1D4ED8]' : 'bg-slate-200/80 text-slate-500'
+                }`}>
+                  {t.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Loading Spinner */}
@@ -968,7 +972,7 @@ export const AdminCMSPage: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all duration-200 flex flex-col justify-between group"
+                  className="bg-white border border-slate-400/60 rounded-2xl p-5 shadow-glow-4side hover:shadow-glow-4side-lg hover:border-blue-400/80 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
                 >
                   <div>
                     {/* Top Row: Icon + Edit Actions */}
@@ -1019,14 +1023,14 @@ export const AdminCMSPage: React.FC = () => {
                     {/* Metadata: Items & Status */}
                     <div className="mt-4 space-y-1.5 text-xs text-slate-500 font-medium">
                       <div className="flex items-center justify-between">
-                        <span>Items:</span>
+                        <span>Số phần:</span>
                         <span className="font-bold text-slate-800">
-                          {item.itemsCount} {item.itemUnit}
+                          {item.itemsCount} {item.itemUnit === 'Words' ? 'Từ' : item.itemUnit === 'Phrases' ? 'Cụm từ' : item.itemUnit === 'Lessons' ? 'Bài học' : item.itemUnit === 'Topics' ? 'Chủ đề' : item.itemUnit}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span>Status:</span>
+                        <span>Trạng thái:</span>
                         <button
                           onClick={() => toggleStatus(item.id)}
                           className="flex items-center gap-1.5 font-bold cursor-pointer hover:underline"
@@ -1036,7 +1040,7 @@ export const AdminCMSPage: React.FC = () => {
                               }`}
                           />
                           <span className={isPublished ? 'text-slate-800' : 'text-slate-500'}>
-                            {item.status}
+                            {item.status === 'Published' ? 'Đã xuất bản' : item.status === 'Draft' ? 'Bản nháp' : item.status}
                           </span>
                         </button>
                       </div>
@@ -1112,7 +1116,7 @@ export const AdminCMSPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block leading-tight">
-                TOTAL ITEMS
+                TỔNG SỐ BÀI HỌC
               </span>
               <span className="text-lg font-extrabold text-slate-900">
                 {sets.length} bài học
@@ -1129,7 +1133,7 @@ export const AdminCMSPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block leading-tight">
-                PUBLISHED SETS
+                BÀI ĐÃ XUẤT BẢN
               </span>
               <span className="text-lg font-extrabold text-slate-900">
                 {sets.filter(s => s.status === 'Published').length}
@@ -1146,7 +1150,7 @@ export const AdminCMSPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block leading-tight">
-                DRAFTS PENDING
+                BÀI BẢN NHÁP
               </span>
               <span className="text-lg font-extrabold text-slate-900">
                 {sets.filter(s => s.status === 'Draft').length}
@@ -1159,7 +1163,7 @@ export const AdminCMSPage: React.FC = () => {
       {/* 1. CREATE WRITING PROMPT MODAL */}
       {showCreateWritingModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-glow-4side-lg space-y-5 border border-slate-400/60 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
@@ -1329,7 +1333,7 @@ export const AdminCMSPage: React.FC = () => {
       {/* 2. CREATE SPEAKING TOPIC & MULTI-QUESTION PROMPTS MODAL */}
       {showCreateSpeakingModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-glow-4side-lg space-y-5 border border-slate-400/60 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
@@ -1596,7 +1600,7 @@ export const AdminCMSPage: React.FC = () => {
       {/* 3. CREATE READING PASSAGE MODAL WITH DYNAMIC QUESTIONS */}
       {showCreateReadingModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-glow-4side-lg space-y-5 border border-slate-400/60 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
@@ -1806,7 +1810,7 @@ export const AdminCMSPage: React.FC = () => {
       {/* 4. CREATE LISTENING PASSAGE MODAL WITH DYNAMIC QUESTIONS */}
       {showCreateListeningModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-glow-4side-lg space-y-5 border border-slate-400/60 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
@@ -2039,7 +2043,7 @@ export const AdminCMSPage: React.FC = () => {
       {/* 6. DETAIL VIEW QUESTIONS MODAL (When clicking any skill card) */}
       {viewDetailSet && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-glow-4side-lg space-y-5 border border-slate-400/60 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
@@ -2191,7 +2195,7 @@ export const AdminCMSPage: React.FC = () => {
                       {wDescription || "Nội dung mô tả đề bài essay Writing Task 2..."}
                     </p>
                     <div className="text-xs font-semibold text-slate-500 pt-1">
-                      Target Words: <span className="font-bold text-slate-800">{wTargetWords} từ</span> | Thời gian: <span className="font-bold text-slate-800">{wTimeLimit} phút</span>
+                      Mục tiêu số từ: <span className="font-bold text-slate-800">{wTargetWords} từ</span> | Thời gian: <span className="font-bold text-slate-800">{wTimeLimit} phút</span>
                     </div>
                   </div>
                 </div>
@@ -2272,7 +2276,7 @@ export const AdminCMSPage: React.FC = () => {
       {/* EDIT MODAL WITH QUESTION MANAGEMENT */}
       {editingSet && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-glow-4side-lg space-y-5 border border-slate-400/60 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-lg font-extrabold text-slate-900">Chỉnh Sửa Bộ Bài Học & Câu Hỏi</h3>

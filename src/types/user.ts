@@ -20,6 +20,11 @@ export interface UserStats {
   avg_speaking_score: number;
   avg_writing_score: number;
   overall_score?: number;
+  avg_band_score?: number;
+  reading_progress_pct?: number;
+  listening_progress_pct?: number;
+  speaking_progress_pct?: number;
+  writing_progress_pct?: number;
 }
 
 export interface User {
