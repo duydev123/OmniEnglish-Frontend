@@ -150,7 +150,8 @@ const ProfilePage = () => {
   const writingPct = user?.stats?.writing_progress_pct ?? 0;
   const overallPracticePct = Math.round((readingPct + listeningPct + speakingPct + writingPct) / 4);
 
-  const proficiencyLevel = user?.proficiency_level || user?.stats?.general_english_level || "A1";
+  // Prioritise the auto-computed level (from band score) over the static registration value
+  const proficiencyLevel = user?.stats?.general_english_level || user?.proficiency_level || "A1";
 
   const vocabProgressPercent = totalWords > 0 ? Math.min(100, Math.round((totalWords / 1000) * 100)) : 0;
 

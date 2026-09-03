@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Edit3, ArrowUpAZ, ArrowDownAZ, ChevronDown, Layers } from 'lucide-react'
 import VocabLayout from '../../components/vocabulary/layout/VocabLayout'
@@ -133,19 +133,8 @@ export default function CollectionDetailPage() {
     setShowFlashcard(false)
   }, [collection, id, showToast])
 
-  if (loading) {
-    return (
-      <VocabLayout breadcrumbs={[{ label: 'Từ vựng', href: '/vocabulary' }, { label: '...' }]}>
-        <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      </VocabLayout>
-    )
-  }
-
-  if (!collection) return null
-
-  const words = collection.words_list || []
+  // ── Derived state (must be computed before any early return to obey Rules of Hooks) ──
+  const words = collection?.words_list || []
   const masteredCount = words.filter(w => w.learning_status === 'MASTERED').length
   const learningCount = words.filter(w => w.learning_status === 'LEARNING').length
   const needsReviewCount = words.filter(w => w.learning_status === 'NEEDS_REVIEW').length
@@ -167,6 +156,25 @@ export default function CollectionDetailPage() {
   const hasMore = visibleCount < sortedWords.length
   const remainingCount = sortedWords.length - visibleCount
 
+  // Stable reference: only recompute when collection id or filtered word list changes
+  const flashcardCollection = useMemo(
+    () => collection ? { ...collection, words_list: filteredWords } : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [collection?.id, filteredWords]
+  )
+
+  if (loading) {
+    return (
+      <VocabLayout breadcrumbs={[{ label: 'Từ vựng', href: '/vocabulary' }, { label: '...' }]}>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </VocabLayout>
+    )
+  }
+
+  if (!collection) return null
+
   const handleStartFlashcard = () => {
     if (filteredWords.length === 0) {
       showToast('Không có từ vựng nào thuộc trạng thái này để luyện tập!', 'warning')
@@ -174,10 +182,6 @@ export default function CollectionDetailPage() {
     }
     setShowFlashcard(true)
   }
-
-  const flashcardCollection = collection
-    ? { ...collection, words_list: filteredWords }
-    : null
 
   return (
     <VocabLayout breadcrumbs={[
