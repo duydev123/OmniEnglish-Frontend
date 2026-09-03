@@ -379,11 +379,38 @@ export default function PracticeModulesPage() {
       const dictCompleted = listeningHistoryMap[dictKey]
       const dictIsCompleted = !!dictCompleted
 
+      let localDictDraft: { completed_sentences?: number; total_sentences?: number; typed?: Record<string, string>; blanks?: Record<string, any> } | null = null
+      try {
+        const rawLocal = localStorage.getItem(`dictation_draft_${item.id}`)
+        if (rawLocal) localDictDraft = JSON.parse(rawLocal)
+      } catch {
+        localDictDraft = null
+      }
+
       const dictDraft = listeningDraftMap[dictKey]
-      const dictIsDraft = !dictIsCompleted && !!dictDraft
-      const dictWordCount = dictDraft?.words_typed ?? 0
-      const dictTargetWords = dictDraft?.total_words || 50
-      const dictProgress = dictIsCompleted ? 100 : (dictDraft && dictWordCount > 0 ? Math.min(100, Math.round((dictWordCount / dictTargetWords) * 100)) : 0)
+      const dictIsDraft = !dictIsCompleted && (!!dictDraft || !!localDictDraft)
+
+      let localCompletedCount = localDictDraft?.completed_sentences
+      if (localCompletedCount === undefined && localDictDraft) {
+        const typedObj: Record<string, string> = localDictDraft.typed || {}
+        const blanksObj: Record<string, any> = localDictDraft.blanks || {}
+        const uniqueIndices = new Set([
+          ...Object.keys(typedObj).filter(k => typedObj[k]?.trim() !== ''),
+          ...Object.keys(blanksObj).filter(k => Object.values(blanksObj[k] || {}).some(v => typeof v === 'string' && v.trim() !== ''))
+        ])
+        localCompletedCount = uniqueIndices.size
+      }
+
+      const dictCompletedAnswers = dictIsDraft
+        ? (localCompletedCount ?? dictDraft?.completed_questions ?? 0)
+        : 0
+      const dictTotalQuestions = item.total_dictation_sentences || localDictDraft?.total_sentences || dictDraft?.total_questions || 1
+
+      const dictProgress = dictIsCompleted
+        ? 100
+        : (dictIsDraft && dictTotalQuestions > 0
+          ? Math.min(100, Math.round((dictCompletedAnswers / dictTotalQuestions) * 100))
+          : 0)
 
       listeningCards.push({
         id: `${item.id}-dict`,
@@ -395,9 +422,17 @@ export default function PracticeModulesPage() {
         completedSession: dictCompleted,
         href: `/listening/dictation?id=${item.id}`,
         question_types: ['Dictation'],
-        draftSession: dictDraft,
+        draftSession: dictDraft ? {
+          ...dictDraft,
+          completed_questions: dictCompletedAnswers,
+          total_questions: dictTotalQuestions,
+        } : (dictIsDraft ? {
+          completed_questions: dictCompletedAnswers,
+          total_questions: dictTotalQuestions,
+          session_type: 'DICTATION',
+        } : null),
         isDraft: dictIsDraft,
-        total_questions: 1,
+        total_questions: dictTotalQuestions,
       })
     })
 
@@ -828,7 +863,7 @@ export default function PracticeModulesPage() {
                             ) : isDraft ? (
                               <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-md tracking-wider flex items-center gap-1">
                                 <FileEdit size={9} />
-                                {draft?.session_type === 'DICTATION' ? 'DRAFT — Dictation' : `DRAFT — ${completedAnswers}/${totalQ} câu`}
+                                {`DRAFT — ${completedAnswers}/${totalQ} câu`}
                               </span>
                             ) : (
                               <span className="text-slate-400 text-xs font-semibold">Progress</span>

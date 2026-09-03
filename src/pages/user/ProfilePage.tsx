@@ -363,7 +363,7 @@ const ProfilePage = () => {
                           className={`w-7 h-7 rounded-full text-xs flex items-center justify-center transition-all duration-200 cursor-pointer ${isActive
                             ? "bg-[#1e50e6] text-white font-black shadow-soft-4side ring-2 ring-blue-400/50 scale-105"
                             : "bg-slate-100 text-slate-400 font-semibold hover:bg-slate-200"
-                          }`}
+                            }`}
                         >
                           {lvl}
                         </span>
@@ -431,7 +431,7 @@ const ProfilePage = () => {
                     className={`rounded-2xl p-6 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center ${selectedGoal === "fluency"
                       ? "border-[#1e50e6] bg-blue-50/40 shadow-soft-4side scale-[1.02]"
                       : "border-slate-200/70 bg-white hover:border-slate-300"
-                    }`}
+                      }`}
                   >
                     <Zap className={`w-5 h-5 mb-2 ${selectedGoal === "fluency" ? "text-blue-600 fill-current" : "text-slate-400"}`} />
                     <h4 className="text-xs sm:text-sm font-bold text-slate-800">
@@ -447,7 +447,7 @@ const ProfilePage = () => {
                     className={`rounded-2xl p-6 border-2 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center ${selectedGoal === "steady"
                       ? "border-[#1e50e6] bg-blue-50/40 shadow-soft-4side scale-[1.02]"
                       : "border-slate-200/70 bg-white hover:border-slate-300"
-                    }`}
+                      }`}
                   >
                     <Leaf className={`w-5 h-5 mb-2 ${selectedGoal === "steady" ? "text-blue-600 fill-current" : "text-slate-400"}`} />
                     <h4 className="text-xs sm:text-sm font-bold text-slate-800">
@@ -571,7 +571,7 @@ const ProfilePage = () => {
                     key={idx}
                     onClick={() => setSelectedAvatarUrl(url)}
                     className={`relative rounded-2xl overflow-hidden ring-2 transition p-0.5 cursor-pointer ${selectedAvatarUrl === url ? "ring-[#1e50e6] scale-105 shadow-md" : "ring-transparent hover:ring-slate-300"
-                    }`}
+                      }`}
                   >
                     <img src={url} alt={`Preset ${idx}`} className="w-full h-16 rounded-xl object-cover" />
                     {selectedAvatarUrl === url && (

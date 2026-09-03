@@ -111,12 +111,31 @@ export default function ListeningDictationPage() {
     }
   }, [searchParams, setSearchParams])
 
+  const getCompletedSentencesCount = () => {
+    if (!session?.interactive_transcript) return 0
+    let count = 0
+    session.interactive_transcript.forEach((_, idx) => {
+      const typed = userTypedSentences[idx]
+      const blanks = userBlankSentences[idx]
+      const hasTyped = typed !== undefined && typed.trim().length > 0
+      const hasBlanks = blanks !== undefined && Object.values(blanks).some(v => v && v.trim().length > 0)
+      if (hasTyped || hasBlanks) {
+        count++
+      }
+    })
+    return count
+  }
+
   // Auto-save draft changes to localStorage
   useEffect(() => {
     if (session?.passage_id && (Object.keys(userTypedSentences).length > 0 || Object.keys(userBlankSentences).length > 0)) {
+      const completedCount = getCompletedSentencesCount()
+      const totalCount = session.interactive_transcript.length
       localStorage.setItem(`dictation_draft_${session.passage_id}`, JSON.stringify({
         typed: userTypedSentences,
         blanks: userBlankSentences,
+        completed_sentences: completedCount,
+        total_sentences: totalCount,
       }))
     }
   }, [session, userTypedSentences, userBlankSentences])
@@ -159,14 +178,19 @@ export default function ListeningDictationPage() {
     setSaving(true)
     try {
       const combined = getCombinedText()
+      const completedCount = getCompletedSentencesCount()
+      const totalCount = session.interactive_transcript.length
       localStorage.setItem(`dictation_draft_${session.passage_id}`, JSON.stringify({
         typed: userTypedSentences,
         blanks: userBlankSentences,
         combined,
+        completed_sentences: completedCount,
+        total_sentences: totalCount,
       }))
       await saveListeningDraft(session.session_id, {
         session_type: 'DICTATION',
         user_typed_text: combined,
+        completed_questions: completedCount,
       })
       showToast('Lưu nháp thành công.', 'success')
     } catch {
