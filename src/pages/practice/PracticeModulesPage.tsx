@@ -379,7 +379,7 @@ export default function PracticeModulesPage() {
       const dictCompleted = listeningHistoryMap[dictKey]
       const dictIsCompleted = !!dictCompleted
 
-      let localDictDraft: { completed_sentences?: number; total_sentences?: number; typed?: Record<number, string>; blanks?: Record<number, any> } | null = null
+      let localDictDraft: { completed_sentences?: number; total_sentences?: number; typed?: Record<string, string>; blanks?: Record<string, any> } | null = null
       try {
         const rawLocal = localStorage.getItem(`dictation_draft_${item.id}`)
         if (rawLocal) localDictDraft = JSON.parse(rawLocal)
@@ -392,8 +392,8 @@ export default function PracticeModulesPage() {
 
       let localCompletedCount = localDictDraft?.completed_sentences
       if (localCompletedCount === undefined && localDictDraft) {
-        const typedObj = localDictDraft.typed || {}
-        const blanksObj = localDictDraft.blanks || {}
+        const typedObj: Record<string, string> = localDictDraft.typed || {}
+        const blanksObj: Record<string, any> = localDictDraft.blanks || {}
         const uniqueIndices = new Set([
           ...Object.keys(typedObj).filter(k => typedObj[k]?.trim() !== ''),
           ...Object.keys(blanksObj).filter(k => Object.values(blanksObj[k] || {}).some(v => typeof v === 'string' && v.trim() !== ''))
