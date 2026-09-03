@@ -38,8 +38,11 @@ export const SpeakingResultPage: React.FC = () => {
     return `${m.toString().padStart(2, "0")}:${rem.toString().padStart(2, "0")}`
   }
 
+  const [playingQuestionIdx, setPlayingQuestionIdx] = useState<number | null>(null)
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null)
+
   const handleToggleAudio = () => {
-    const url = result?.user_audio_url || (result as any)?.audio_url
+    const url = result?.full_session_audio_url || result?.questions_detail?.[0]?.user_audio_url || (result as any)?.user_audio_url || (result as any)?.audio_url
     if (!url) return
 
     if (!audioRef.current) {
@@ -60,6 +63,31 @@ export const SpeakingResultPage: React.FC = () => {
       audioRef.current.play().catch((e: unknown) => console.error("Result audio play error:", e))
       setIsPlaying(true)
     }
+  }
+
+  const handleToggleQuestionAudio = (idx: number, audioUrl?: string) => {
+    if (!audioUrl) return
+
+    if (playingQuestionIdx === idx && questionAudioRef.current) {
+      if (questionAudioRef.current.paused) {
+        questionAudioRef.current.play().catch((e) => console.error("Question audio play error:", e))
+      } else {
+        questionAudioRef.current.pause()
+        setPlayingQuestionIdx(null)
+      }
+      return
+    }
+
+    if (questionAudioRef.current) {
+      questionAudioRef.current.pause()
+      questionAudioRef.current = null
+    }
+
+    const audio = new Audio(audioUrl)
+    audio.onended = () => setPlayingQuestionIdx(null)
+    questionAudioRef.current = audio
+    setPlayingQuestionIdx(idx)
+    audio.play().catch((e) => console.error("Question audio play error:", e))
   }
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -351,11 +379,23 @@ export const SpeakingResultPage: React.FC = () => {
                       </h3>
                     </div>
 
-                    <p className="text-sm font-extrabold text-slate-900">
-                      "{q.question_text}"
-                    </p>
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-sm font-extrabold text-slate-900">
+                        "{q.question_text}"
+                      </p>
 
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      {q.user_audio_url && (
+                        <button
+                          onClick={() => handleToggleQuestionAudio(idx, q.user_audio_url)}
+                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#1e50e6] rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-blue-200 cursor-pointer shrink-0"
+                        >
+                          {playingQuestionIdx === idx ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+                          <span>{playingQuestionIdx === idx ? "Tạm dừng" : "🔊 Nghe audio câu này"}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-700 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto pr-2">
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                         CÂU TRẢ LỜI CỦA BẠN (TRANSCRIPT):
                       </span>
@@ -368,9 +408,9 @@ export const SpeakingResultPage: React.FC = () => {
                           <BookOpen size={13} />
                           GỢI Ý CÂU TRẢ LỜI MẪU HOÀN CHỈNH (BAND 8.0+ SAMPLE ANSWER):
                         </span>
-                        <p className="text-xs text-indigo-100 font-medium leading-relaxed whitespace-pre-wrap">
+                        <div className="max-h-48 overflow-y-auto pr-2 text-xs text-indigo-100 font-medium leading-relaxed whitespace-pre-wrap">
                           {q.sample_response}
-                        </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -380,7 +420,7 @@ export const SpeakingResultPage: React.FC = () => {
           </div>
 
           {/* Right Main Column */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
             {(() => {
               const fb = parseSpeakingFeedback(result.ai_insights_summary)
 
@@ -392,9 +432,9 @@ export const SpeakingResultPage: React.FC = () => {
                       <Sparkles size={14} />
                       <span>Phân tích tổng quan (AI Insights)</span>
                     </h3>
-                    <p className="text-xs font-medium leading-relaxed text-blue-100 whitespace-pre-wrap">
+                    <div className="max-h-60 overflow-y-auto pr-2 text-xs font-medium leading-relaxed text-blue-100 whitespace-pre-wrap">
                       {fb.ai_insights || fb.raw_text || "Chưa có nhận xét tổng quan từ máy chủ."}
-                    </p>
+                    </div>
                   </div>
 
                   {/* Pronunciation Feedback */}

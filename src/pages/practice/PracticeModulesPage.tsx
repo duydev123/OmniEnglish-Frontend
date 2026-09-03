@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   Headphones, BookOpen, Mic, PenTool, SlidersHorizontal,
   ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight,
-  FileEdit, Zap, Loader2, FileText, Trophy, RotateCcw
+  FileEdit, Zap, Loader2, FileText, Trophy, RotateCcw, Clock
 } from 'lucide-react'
 import AppLayout from '../../components/common/AppLayout'
 import { useUserStore, initialUser } from '../../stores/user/useUserStore'
@@ -14,6 +14,7 @@ import { getPassages, getInProgressSessions, getUserHistory, type PassageSummary
 import { getListeningPassages, getInProgressListeningSessions, getListeningHistory, type ListeningPassageSummary } from '../../services/listeningApi'
 import { speakingApi } from '../../services/speakingApi'
 import { writingApi } from '../../services/writingApi'
+import SpeakingHistoryList from '../../components/speaking/SpeakingHistoryList'
 import type { SpeakingTopic, ShadowingSentence } from '../../types/speaking'
 import type { WritingPrompt } from '../../types/writing'
 
@@ -79,7 +80,7 @@ export default function PracticeModulesPage() {
   const [writingMeta, setWritingMeta] = useState({ page: 1, limit: DEFAULT_PAGE_SIZE, total: 0, total_pages: 1 })
 
   // Speaking state
-  const [speakingSubTab, setSpeakingSubTab] = useState<'ielts' | 'shadowing'>('ielts')
+  const [speakingSubTab, setSpeakingSubTab] = useState<'ielts' | 'shadowing' | 'history'>('ielts')
   const [speakingTopics, setSpeakingTopics] = useState<SpeakingTopic[]>([])
   const [shadowingSentences, setShadowingSentences] = useState<ShadowingSentence[]>([])
   const [speakingLoading, setSpeakingLoading] = useState(false)
@@ -1109,7 +1110,7 @@ export default function PracticeModulesPage() {
 
             {activeTab === 'speaking' && (
               <div className="space-y-4">
-                {/* Sub-tab selection for Speaking: IELTS Tests vs Shadowing */}
+                {/* Sub-tab selection for Speaking: IELTS Tests vs Shadowing vs History */}
                 <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
                   <button
                     onClick={() => setSpeakingSubTab("ielts")}
@@ -1129,9 +1130,21 @@ export default function PracticeModulesPage() {
                   >
                     Shadowing Practice
                   </button>
+                  <button
+                    onClick={() => setSpeakingSubTab("history")}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${speakingSubTab === "history"
+                        ? "bg-[#1e50e6] text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                  >
+                    <Clock size={14} />
+                    <span>Lịch sử bài làm</span>
+                  </button>
                 </div>
 
-                {speakingSubTab === 'ielts' ? (
+                {speakingSubTab === 'history' ? (
+                  <SpeakingHistoryList userId={userId} />
+                ) : speakingSubTab === 'ielts' ? (
                   speakingTopics.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
                       {speakingTopics.map((topic, idx) => (
@@ -1292,93 +1305,95 @@ export default function PracticeModulesPage() {
             )}
 
         {/* Pagination Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-          {/* Items per page dropdown */}
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-            <span>Hiển thị</span>
-            <div className="relative" ref={pageSizeDropdownRef}>
-              <div
-                onClick={() => setShowPageSizeDropdown(!showPageSizeDropdown)}
-                className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 flex items-center gap-2 cursor-pointer shadow-2xs hover:border-slate-300 transition-colors select-none"
-              >
-                <span className="font-bold">{pageSize} bài/trang</span>
-                <ChevronDown
-                  size={13}
-                  className="text-slate-400 transition-transform duration-200"
-                  style={{ transform: showPageSizeDropdown ? 'rotate(180deg)' : 'none' }}
-                />
-              </div>
-              {showPageSizeDropdown && (
-                <div className="absolute left-0 bottom-full mb-2 w-44 bg-white border border-slate-200 rounded-2xl shadow-lg z-50 py-1.5 overflow-hidden">
-                  {PAGE_SIZE_OPTIONS.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => { setPageSize(size); setShowPageSizeDropdown(false) }}
-                      className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors flex items-center justify-between ${pageSize === size ? 'bg-blue-50 text-[#1D4ED8]' : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                    >
-                      <span>{size} bài/trang</span>
-                      {pageSize === size && <Check size={13} className="text-[#1D4ED8] stroke-[2.5]" />}
-                    </button>
-                  ))}
+        {!(activeTab === 'speaking' && speakingSubTab === 'history') && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+            {/* Items per page dropdown */}
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <span>Hiển thị</span>
+              <div className="relative" ref={pageSizeDropdownRef}>
+                <div
+                  onClick={() => setShowPageSizeDropdown(!showPageSizeDropdown)}
+                  className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-800 flex items-center gap-2 cursor-pointer shadow-2xs hover:border-slate-300 transition-colors select-none"
+                >
+                  <span className="font-bold">{pageSize} bài/trang</span>
+                  <ChevronDown
+                    size={13}
+                    className="text-slate-400 transition-transform duration-200"
+                    style={{ transform: showPageSizeDropdown ? 'rotate(180deg)' : 'none' }}
+                  />
                 </div>
+                {showPageSizeDropdown && (
+                  <div className="absolute left-0 bottom-full mb-2 w-44 bg-white border border-slate-200 rounded-2xl shadow-lg z-50 py-1.5 overflow-hidden">
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => { setPageSize(size); setShowPageSizeDropdown(false) }}
+                        className={`w-full text-left px-4 py-2 text-xs font-semibold transition-colors flex items-center justify-between ${pageSize === size ? 'bg-blue-50 text-[#1D4ED8]' : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                      >
+                        <span>{size} bài/trang</span>
+                        {pageSize === size && <Check size={13} className="text-[#1D4ED8] stroke-[2.5]" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {activeTab === 'reading' && (
+                <span className="text-slate-400">
+                  • Trang {readingMeta.page}/{readingMeta.total_pages} • Tổng {readingMeta.total} bài đọc
+                </span>
+              )}
+              {activeTab === 'listening' && (
+                <span className="text-slate-400">
+                  • Trang {listeningMeta.page}/{listeningMeta.total_pages} • Tổng {listeningMeta.total} bài nghe
+                </span>
+              )}
+              {activeTab === 'writing' && (
+                <span className="text-slate-400">
+                  • Trang {writingMeta.page}/{writingMeta.total_pages} • Tổng {writingMeta.total} đề bài
+                </span>
+              )}
+              {activeTab === 'speaking' && (
+                <span className="text-slate-400">
+                  • Trang {speakingMeta.page} • {speakingSubTab === 'ielts' ? 'Chủ đề IELTS' : 'Câu Shadowing'}
+                </span>
               )}
             </div>
 
-            {activeTab === 'reading' && (
-              <span className="text-slate-400">
-                • Trang {readingMeta.page}/{readingMeta.total_pages} • Tổng {readingMeta.total} bài đọc
-              </span>
-            )}
-            {activeTab === 'listening' && (
-              <span className="text-slate-400">
-                • Trang {listeningMeta.page}/{listeningMeta.total_pages} • Tổng {listeningMeta.total} bài nghe
-              </span>
-            )}
-            {activeTab === 'writing' && (
-              <span className="text-slate-400">
-                • Trang {writingMeta.page}/{writingMeta.total_pages} • Tổng {writingMeta.total} đề bài
-              </span>
-            )}
-            {activeTab === 'speaking' && (
-              <span className="text-slate-400">
-                • Trang {speakingMeta.page} • {speakingSubTab === 'ielts' ? 'Chủ đề IELTS' : 'Câu Shadowing'}
-              </span>
-            )}
-          </div>
-
-          {/* Page number buttons */}
-          <div className="flex items-center gap-1.5 text-xs font-bold">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            {pageNumbers.map((page) => (
+            {/* Page number buttons */}
+            <div className="flex items-center gap-1.5 text-xs font-bold">
               <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${currentPage === page
-                  ? 'bg-[#1D4ED8] text-white shadow-xs font-black'
-                  : 'text-slate-600 hover:bg-slate-100'
-                  }`}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
               >
-                {page}
+                <ChevronLeft size={16} />
               </button>
-            ))}
 
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(activeMeta.total_pages, prev + 1))}
-              disabled={currentPage >= activeMeta.total_pages}
-              className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
-            >
-              <ChevronRight size={16} />
-            </button>
+              {pageNumbers.map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${currentPage === page
+                    ? 'bg-[#1D4ED8] text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(activeMeta.total_pages, prev + 1))}
+                disabled={currentPage >= activeMeta.total_pages}
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 
