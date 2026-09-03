@@ -4,6 +4,7 @@ import { AppLayout } from '../../components/common/AppLayout';
 import { writingApi } from '../../services/writingApi';
 import { useToast } from '../../components/common/Toast';
 import { getApiErrorMessage } from '../../utils/error';
+import { cleanHtmlToText } from '../../utils/text';
 import type {
   WritingSubmitResponse,
   ImprovedEssaySampleResponse,
@@ -103,7 +104,8 @@ export const WritingReviewPage: React.FC = () => {
 
   // Render Highlighted Essay Text dynamically matching reviewData.highlight_spans
   const renderHighlightedEssay = () => {
-    const content = reviewData.essay_content || '';
+    const rawContent = reviewData.essay_content || '';
+    const content = cleanHtmlToText(rawContent);
     const spans = reviewData.highlight_spans || [];
 
     if (!spans || spans.length === 0) {
@@ -460,7 +462,7 @@ export const WritingReviewPage: React.FC = () => {
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
                       <h3 className="font-extrabold text-xs text-slate-500 uppercase tracking-wider">Bài viết gốc của bạn</h3>
                       <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line font-semibold">
-                        {improvedData.original_essay}
+                        {cleanHtmlToText(improvedData.original_essay)}
                       </p>
                     </div>
 
@@ -469,7 +471,7 @@ export const WritingReviewPage: React.FC = () => {
                         <CheckCircle2 size={14} /> Phiên bản AI nâng cấp
                       </h3>
                       <p className="text-xs text-slate-900 font-bold leading-relaxed whitespace-pre-line">
-                        {improvedData.improved_essay}
+                        {cleanHtmlToText(improvedData.improved_essay)}
                       </p>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { writingApi } from '../services/writingApi';
+import { cleanHtmlToText } from '../utils/text';
 
 describe('Writing Module Services & Utils', () => {
   beforeEach(() => {
@@ -134,5 +135,15 @@ describe('Writing Module Services & Utils', () => {
     const res = await writingApi.getImprovedEssaySample('session_demo_123');
     expect(res.status).toBe('success');
     expect(res).toHaveProperty('improved_essay');
+  });
+
+  it('should clean raw HTML tags into plain text with newlines (cleanHtmlToText)', () => {
+    const rawHtml = '<div>The bar chart compares...</div><div><br></div><div>Overall, <span>student choices</span> exhibit a contrast.</div>';
+    const cleaned = cleanHtmlToText(rawHtml);
+    expect(cleaned).not.toContain('<div>');
+    expect(cleaned).not.toContain('<br>');
+    expect(cleaned).not.toContain('<span>');
+    expect(cleaned).toContain('The bar chart compares...');
+    expect(cleaned).toContain('Overall, student choices exhibit a contrast.');
   });
 });
