@@ -25,6 +25,7 @@ export interface ListeningPassageSummary {
   audio_url: string
   time_limit_minutes: number
   total_questions: number
+  total_dictation_sentences?: number
   question_types?: string[]
 }
 
@@ -156,6 +157,7 @@ export async function saveListeningDraft(
     time_remaining_seconds?: number
     user_answers?: Record<string, string>
     user_typed_text?: string
+    completed_questions?: number
   }
 ): Promise<ListeningDraftResponse> {
   const { data } = await axiosClient.patch(`/listening/sessions/${sessionId}/draft`, payload)
